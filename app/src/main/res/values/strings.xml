@@ -1,0 +1,373 @@
+<resources>
+    <string name="app_name">Smarttrace-Beacon</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_login">Sign in</string>
+
+    <!-- Strings related to login -->
+    <string name="prompt_email">Email</string>
+    <string name="prompt_password">Password (optional)</string>
+    <string name="action_sign_in">Sign in or register</string>
+    <string name="action_sign_in_short">Sign in</string>
+    <string name="error_invalid_email">This email address is invalid</string>
+    <string name="error_invalid_password">This password is too short</string>
+    <string name="error_incorrect_password">This password is incorrect</string>
+    <string name="error_field_required">This field is required</string>
+    <string name="permission_rationale">"Contacts permissions are needed for providing email
+        completions."
+    </string>
+    <string name="local_service_started">Smarttrace-gateway started</string>
+    <string name="local_service_label">Beacon Gateway</string>
+    <string name="channel_name">Smarttrace Notification</string>
+    <string name="channel_description">Smarttrace Notification Description</string>
+
+    <string name="lan_1">(Factory Special Edition)</string>
+    <string name="lan_2">Message</string>
+    <string name="lan_3">Discover the new version, if you want to download?</string>
+    <string name="lan_4">Download</string>
+    <string name="lan_5">Cancel</string>
+    <string name="lan_6">4.0 BLE detects that the device does not support Bluetooth</string>
+    <string name="lan_7">Native Bluetooth hardware or driver was not found!</string>
+    <string name="lan_8">Bluetooth is open</string>
+    <string name="lan_9">Bluetooth is not allowed to open</string>
+    <string name="lan_10">Have not found a storage medium or does not have read permission! </string>
+    <string name="lan_11">Personal edition</string>
+    <string name="lan_12">Menu</string>
+    <string name="lan_13">Bluetooth Humiture Recorder</string>
+    <string name="lan_14">Query Report</string>
+    <string name="lan_15">Bluetooth Printer</string>
+    <string name="lan_16">Setting</string>
+    <string name="lan_17">Find Device</string>
+    <string name="lan_18">Please enter the device serial number(SN)</string>
+    <string name="lan_19">OR</string>
+    <string name="lan_20">RealTime</string>
+    <string name="lan_21">Query</string>
+    <string name="lan_22">Configure</string>
+    <string name="lan_23">Configure</string>
+    <string name="lan_24">SN</string>
+    <string name="lan_25">Password</string>
+    <string name="lan_26">Broadcast interval</string>
+    <string name="lan_27">TX power</string>
+    <string name="lan_28">Sampling interval</string>
+    <string name="lan_29">Storage interval</string>
+    <string name="lan_30">Normal</string>
+    <string name="lan_31">Alarm</string>
+    <string name="lan_32">Storage number</string>
+    <string name="lan_33">Cover</string>
+    <string name="lan_34">Alarm Settings</string>
+    <string name="lan_35">Low Temperature</string>
+    <string name="lan_36">High Temperature</string>
+    <string name="lan_37">Memory Clear</string>
+    <string name="lan_38">Save Settings</string>
+    <string name="lan_39">Device Name</string>
+    <string name="lan_40">Firmware version</string>
+    <string name="lan_41">Upper Temp</string>
+    <string name="lan_42">Lower temp</string>
+    <string name="lan_43">Total Records</string>
+    <string name="lan_44">Realtime Humiture</string>
+    <string name="lan_45">Battery</string>
+    <string name="lan_46">Printer</string>
+    <string name="lan_47">Default Printer</string>
+    <string name="lan_48">Select Printer</string>
+    <string name="lan_49">(Searching ...)</string>
+    <string name="lan_50">Printer Settings</string>
+    <string name="lan_51">Ready</string>
+    <string name="lan_52">Pair</string>
+    <string name="lan_53">Set Default Printer</string>
+    <string name="lan_54">Print a test page</string>
+    <string name="lan_55">Report Details</string>
+    <string name="lan_56">Data Report</string>
+    <string name="lan_57">Number</string>
+    <string name="lan_58">Access code</string>
+    <string name="lan_59">Data Record</string>
+    <string name="lan_60">SN</string>
+    <string name="lan_61">Second</string>
+    <string name="lan_62">Max Temp</string>
+    <string name="lan_63">Min Temp</string>
+    <string name="lan_64">Max Humidity</string>
+    <string name="lan_65">Min Humidity</string>
+    <string name="lan_66">Start Time</string>
+    <string name="lan_67">End Time</string>
+    <string name="lan_68">Temperature and humidity graph</string>
+    <string name="lan_69">Print Report</string>
+    <string name="lan_70">Select Printer</string>
+    <string name="lan_71">Print</string>
+    <string name="lan_72">Data Records</string>
+    <string name="lan_73">Data Total</string>
+    <string name="lan_74">Settings</string>
+    <string name="lan_75">Time Zone</string>
+    <string name="lan_76">Connection Security</string>
+    <string name="lan_77">Web(www.tzonedigital.cn)</string>
+    <string name="lan_78">Check for updates</string>
+    <string name="lan_79">Confirm</string>
+    <string name="lan_80">Security</string>
+    <string name="lan_81">Password</string>
+    <string name="lan_82">Enable</string>
+    <string name="lan_83">Disable</string>
+    <string name="lan_84">User Setting</string>
+    <string name="lan_85">Software versions: Personal</string>
+    <string name="lan_86">Please viewfinder aligned two-dimensional code / barcode</string>
+    <string name="lan_87">Cancel</string>
+    <string name="lan_88">Paired</string>
+    <string name="lan_89">Number：</string>
+    <string name="lan_90">Access code：</string>
+    <string name="lan_91">Generation time：</string>
+    <string name="lan_92">Setting success!</string>
+    <string name="lan_93">Setting failed!</string>
+    <string name="lan_94">Getting version information from the server, please wait ......</string>
+    <string name="lan_95">We have the latest version</string>
+    <string name="lan_96">SN is error !</string>
+    <string name="lan_97">Please enter a password to connect</string>
+    <string name="lan_98">Password is error!</string>
+    <string name="lan_99">Searching for devices...</string>
+    <string name="lan_100">Could not find the device!</string>
+    <string name="lan_101">Connecting...</string>
+    <string name="lan_102">Unable to connect the device!</string>
+    <string name="lan_103">Reading device parameters...</string>
+    <string name="lan_104">Can not read the device parameters!</string>
+    <string name="lan_105">Reading device parameters failed!</string>
+    <string name="lan_106">Acquisition interval is error!</string>
+    <string name="lan_107">Storage interval is error!</string>
+    <string name="lan_108">Storage of data is error!</string>
+    <string name="lan_109">Alarm is error!</string>
+    <string name="lan_110">Saving device parameters...</string>
+    <string name="lan_111">Parameter is error!</string>
+    <string name="lan_112">Save the configuration successful!</string>
+    <string name="lan_113">Save configuration failed!</string>
+    <string name="lan_114">No devices found!</string>
+    <string name="lan_115">Device Mac Address Error!</string>
+    <string name="lan_116">Unpaired</string>
+    <string name="lan_117">Trying to pair...</string>
+    <string name="lan_118">Pairing failed</string>
+    <string name="lan_119">Print a test in progress...</string>
+    <string name="lan_120">Unable to connect to the printer!</string>
+    <string name="lan_121">Print a test. See this text on behalf of the normal printer!</string>
+    <string name="lan_122">The test is completed!</string>
+    <string name="lan_123">Can not print! Cause: Unable to connect to the printer.</string>
+    <string name="lan_124">Please configure the printer</string>
+    <string name="lan_125">Loading data...</string>
+    <string name="lan_126">Temperature</string>
+    <string name="lan_127">Humidity%</string>
+    <string name="lan_128">Sent successfully!</string>
+    <string name="lan_129">Failed to send!</string>
+    <string name="lan_130">Connection to the server timed out!</string>
+    <string name="lan_131">Sending report...</string>
+    <string name="lan_132">Printing...</string>
+    <string name="lan_133">Unable to connect to the printer!</string>
+    <string name="lan_134">Print complete!</string>
+    <string name="lan_135">Can not print! Please check whether the printer is online.</string>
+    <string name="lan_136">Data record is empty or setting is error!</string>
+    <string name="lan_137">Fetching data...</string>
+    <string name="lan_138">Extract the data has been canceled!</string>
+    <string name="lan_139">Extract data during abnormal!</string>
+    <string name="lan_140">Report is being generated, please wait...</string>
+    <string name="lan_141">Generate reports error!</string>
+    <string name="lan_142">Travel Records</string>
+    <string name="lan_143">Temperature</string>
+    <string name="lan_144">Humidity</string>
+    <string name="lan_145">Model</string>
+    <string name="lan_146">Default</string>
+    <string name="lan_147">Distance</string>
+    <string name="lan_148">RSSI</string>
+    <string name="lan_149">Battery</string>
+    <string name="lan_150">Scan Device</string>
+    <string name="lan_151">Disconnected!</string>
+    <string name="lan_152">Saved Settings</string>
+    <string name="lan_153">Voltage</string>
+    <string name="lan_154">Packet Loss</string>
+    <string name="lan_155">Send Report</string>
+    <string name="lan_156">Revice Email</string>
+    <string name="lan_157">Send</string>
+    <string name="lan_158">Report is not generated, unable to send! </string>
+    <string name="lan_159">Please fill out the receiving mail! </string>
+    <string name="lan_160">Has been sent</string>
+    <string name="lan_161">Note</string>
+    <string name="lan_162">Description</string>
+    <string name="lan_163">Report Name</string>
+    <string name="lan_164">Report Setting</string>
+    <string name="lan_165">Report Name：</string>
+    <string name="lan_166">Set the PDF graph scaling</string>
+    <string name="lan_167">Send Email</string>
+    <string name="lan_168">Password is error</string>
+    <string name="lan_169">Restore factory settings</string>
+    <string name="lan_170">Please send equipment within 10 cm close to the cell phone</string>
+    <string name="lan_171">Initializing...</string>
+    <string name="lan_172">Initialize the success </string>
+    <string name="lan_173">Failed to initialize </string>
+    <string name="lan_174">Do you want to delete ?</string>
+    <string name="lan_175">Default Settings</string>
+    <string name="lan_176">Create Time</string>
+    <string name="lan_177">Total Time</string>
+    <string name="lan_178">Avg Tempe</string>
+    <string name="lan_179">Avg Humidity</string>
+    <string name="lan_180">Set the time range</string>
+    <string name="lan_181">Time format is not error!(yyyy-MM-dd HH:mm:ss)</string>
+    <string name="lan_182">Set period of time than range</string>
+    <string name="lan_183">Whether confirmation shows the default parameters</string>
+    <string name="lan_184">Checker</string>
+    <string name="lan_185">Device Time</string>
+    <string name="lan_186">Print information</string>
+    <string name="lan_187">Temperature Unit</string>
+    <string name="lan_188">Celsius(℃)</string>
+    <string name="lan_189">Fahrenheit(℉)</string>
+    <string name="lan_190">Kelvin(K)</string>
+    <string name="lan_191">Rankine(°R)</string>
+    <string name="lan_192">Reaumer(°Re)</string>
+    <string name="lan_193">Firmware Upgrade</string>
+    <string name="lan_194">Please notification permissions to open</string>
+    <string name="lan_195">Continue</string>
+    <string name="lan_196">Are you sure you want to exit the upgrade?</string>
+    <string name="lan_197">During the upgrade process, please do not exit the program, so as to avoid permanent damage to the equipment!</string>
+    <string name="lan_198">Yes</string>
+    <string name="lan_199">No</string>
+    <string name="lan_200">Ready</string>
+    <string name="lan_201">Please enter your password</string>
+    <string name="lan_202">The current version does not upgrade firmware!</string>
+    <string name="lan_203">Power is too low to upgrade firmware!</string>
+    <string name="lan_204">Get failed firmware upgrade!</string>
+    <string name="lan_205">The current device model is not the same as the firmware model!</string>
+    <string name="lan_206">The firmware version can not be the same as the device version!</string>
+    <string name="lan_207">The device firmware is already up to date!</string>
+    <string name="lan_208">Updating</string>
+    <string name="lan_209">Update successed!</string>
+    <string name="lan_210">Upgrade failed! (Click "Continue" to try to continue the upgrade)</string>
+    <string name="lan_211">Upgrade failed!</string>
+    <string name="lan_212">Is entering OTA mode</string>
+    <string name="lan_213">Restarting device, please wait</string>
+    <string name="lan_214">Configuring device</string>
+    <string name="lan_215">Writing update file</string>
+    <string name="lan_216">Checking device firmware information</string>
+    <string name="lan_217">Update firmware failed!</string>
+    <string name="lan_218">Is there an updated version of the upgrade file for the service, is it downloaded first?</string>
+    <string name="lan_219">Download update file</string>
+    <string name="lan_220">Downloading</string>
+    <string name="lan_221">Download failed!</string>
+    <string name="lan_222">Download successed!</string>
+    <string name="lan_223">Prompt:</string>
+    <string name="lan_224">1, Pls reboot Bluetooth or smartphone if feel hard to connect with devices.</string>
+    <string name="lan_225">Download firmware </string>
+    <string name="lan_226">Whether to try again ?</string>
+    <string name="lan_227">update completed! (Due to some mobile compatibility issues, can not get equipment information)</string>
+    <string name="lan_228">Whether to return ?</string>
+    <string name="lan_229">Please select the extraction mode?</string>
+    <string name="lan_230">Default</string>
+    <string name="lan_231">Speed</string>
+    <string name="lan_232">Please select the extraction period?</string>
+    <string name="lan_233">All</string>
+    <string name="lan_234">1 day</string>
+    <string name="lan_235">3 day</string>
+    <string name="lan_236">7 day</string>
+    <string name="lan_237">30 day</string>
+    <string name="lan_238">Multi Query</string>
+    <string name="lan_239">Connection Timeout</string>
+    <string name="lan_240">Search for "count" devices</string>
+    <string name="lan_241">Did you start extracting device data?</string>
+    <string name="lan_242">Fetching data...</string>
+    <string name="lan_243">Fetch Complete！</string>
+    <string name="lan_244">Searching for devices,please wait</string>
+    <string name="lan_245">Recommended mailbox app: GMail</string>
+    <string name="lan_246">Please sign in!</string>
+    <string name="lan_247">Uploading......</string>
+    <string name="lan_248">Uploaded successfully !</string>
+    <string name="lan_249">Upload failed !</string>
+    <string name="lan_250">Synchronize</string>
+    <string name="lan_251">Local Report</string>
+    <string name="lan_252">Cloud Report</string>
+    <string name="lan_253">Local</string>
+    <string name="lan_254">Cloud</string>
+    <string name="lan_255">Please sign in</string>
+    <string name="lan_256">Is logged in, please wait ...</string>
+    <string name="lan_257">Login successful!</string>
+    <string name="lan_258">Login failed!</string>
+    <string name="lan_259">Please turn on location service and enable GPS satellite positioning!</string>
+    <string name="lan_260">Logged out!</string>
+    <string name="lan_261">UserName</string>
+    <string name="lan_262">Password</string>
+    <string name="lan_263">Login</string>
+    <string name="lan_264">User Info</string>
+    <string name="lan_265">Email</string>
+    <string name="lan_266">Synchronize</string>
+    <string name="lan_267">Interval</string>
+    <string name="lan_268">Logout</string>
+    <string name="lan_269">Username is empty!</string>
+    <string name="lan_270">Sync is open</string>
+    <string name="lan_271">Sync is close</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+    <string name="pref_title_social_recommendations">Enable social recommendations</string>
+    <string name="pref_description_social_recommendations">Recommendations for people to contact
+        based on your message history
+    </string>
+
+    <string name="pref_title_display_name">Display name</string>
+    <string name="pref_default_display_name">John Smith</string>
+
+    <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
+    <string-array name="pref_example_list_titles">
+        <item>Always</item>
+        <item>When possible</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_example_list_values">
+        <item>1</item>
+        <item>0</item>
+        <item>-1</item>
+    </string-array>
+
+    <!-- Example settings for Data & Sync -->
+    <string name="pref_header_data_sync">Data &amp; sync</string>
+
+    <string name="pref_title_sync_frequency">Sync frequency</string>
+    <string-array name="pref_sync_frequency_titles">
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>1 hour</item>
+        <item>3 hours</item>
+        <item>6 hours</item>
+        <item>Never</item>
+    </string-array>
+    <string-array name="pref_sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>180</item>
+        <item>360</item>
+        <item>-1</item>
+    </string-array>
+
+    <string-array name="list_preference_entries">
+        <item>Entry 1</item>
+        <item>Entry 2</item>
+        <item>Entry 3</item>
+    </string-array>
+
+    <string-array name="list_preference_entry_values">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="multi_select_list_preference_default_value" />
+
+    <string name="pref_title_system_sync_settings">System sync settings</string>
+
+    <!-- Example settings for Notifications -->
+    <string name="pref_header_notifications">Notifications</string>
+
+    <string name="pref_title_new_message_notifications">New message notifications</string>
+
+    <string name="pref_title_ringtone">Ringtone</string>
+    <string name="pref_ringtone_silent">Silent</string>
+
+    <string name="pref_title_vibrate">Vibrate</string>
+    <string name="search_beacon">Search Beacons</string>
+    <string name="txt_search">Search</string>
+</resources>
