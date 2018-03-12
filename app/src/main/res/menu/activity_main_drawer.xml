@@ -35,4 +35,9 @@
         </menu>
     </item>
 
+    <item
+        android:id="@+id/nav_exit"
+        android:icon="@drawable/ic_menu_send"
+        android:title="Exit"/>
+
 </menu>

@@ -39,6 +39,7 @@ import java.util.List;
 
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.protocol.Net;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import au.com.smarttrace.beacon.R;
@@ -376,6 +377,12 @@ public class LoggingService extends Service {
             //start this service in background
             stopForeground(true);
         }
+    }
+
+    @Subscribe
+    public void onExitEvent(ExitEvent exitEvent) {
+        stopForeground(true);
+        stopSelf();
     }
     private void registerEventBus() {
         EventBus.getDefault().register(this);

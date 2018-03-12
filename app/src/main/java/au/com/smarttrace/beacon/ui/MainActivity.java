@@ -31,6 +31,7 @@ import java.util.List;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.model.AdvancedDevice;
+import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.services.LoggingService;
 
 public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -155,6 +156,9 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         } else if (id == R.id.nav_send) {
 
+        } else if (id == R.id.nav_exit) {
+            EventBus.getDefault().post(new ExitEvent());
+            finish();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
