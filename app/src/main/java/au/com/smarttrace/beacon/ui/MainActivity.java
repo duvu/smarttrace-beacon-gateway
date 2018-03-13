@@ -143,20 +143,23 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
+        /*if (id == R.id.nav_camera) {
             // Handle the camera action
         } else if (id == R.id.nav_gallery) {
 
         } else if (id == R.id.nav_slideshow) {
 
-        } else if (id == R.id.nav_manage) {
+        } else */
+        if (id == R.id.nav_manage) {
             startActivity(new Intent(this, SettingsActivity.class));
 
-        } else if (id == R.id.nav_share) {
+        }
+        /*else if (id == R.id.nav_share) {
 
         } else if (id == R.id.nav_send) {
 
-        } else if (id == R.id.nav_exit) {
+        }*/
+        else if (id == R.id.nav_exit) {
             EventBus.getDefault().post(new ExitEvent());
             finish();
         }
