@@ -20,7 +20,7 @@ public class AppBase {
     /**
      * Is debug
      */
-    public static final boolean IsDebug = false;
+    public static final boolean IsDebug = true;
     /**
      * Is Beta
      */
