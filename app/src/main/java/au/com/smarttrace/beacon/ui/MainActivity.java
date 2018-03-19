@@ -1,7 +1,6 @@
 package au.com.smarttrace.beacon.ui;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
@@ -14,8 +13,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -32,7 +29,7 @@ import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.model.AdvancedDevice;
 import au.com.smarttrace.beacon.model.ExitEvent;
-import au.com.smarttrace.beacon.services.LoggingService;
+import au.com.smarttrace.beacon.services.BeaconService;
 
 public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
     private static final String[] INITIAL_PERMS={
@@ -57,8 +54,64 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         requestBluetoothPermission();
 
-        Intent intent = new Intent(MainActivity.this, LoggingService.class);
-        startService(intent);
+//        LogManager.setVerboseLoggingEnabled(true);
+//        LogManager.setLogger(new org.altbeacon.beacon.logging.Logger() {
+//            @Override
+//            public void v(String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void v(Throwable throwable, String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void d(String s, String s1, Object... objects) {
+//                String mess = String.format(s1, objects);
+//                Log.d(s, mess);
+//            }
+//
+//            @Override
+//            public void d(Throwable throwable, String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void i(String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void i(Throwable throwable, String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void w(String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void w(Throwable throwable, String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void e(String s, String s1, Object... objects) {
+//
+//            }
+//
+//            @Override
+//            public void e(Throwable throwable, String s, String s1, Object... objects) {
+//
+//            }
+//        });
+
+//        Intent intent = new Intent(MainActivity.this, LoggingService.class);
+        Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
+//        startService(intent);
+        startService(intent1);
 
 
         ListView deviceListView = (ListView) findViewById(R.id.device_listview);
