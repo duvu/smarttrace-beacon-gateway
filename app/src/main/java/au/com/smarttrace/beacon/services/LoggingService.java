@@ -248,6 +248,7 @@ public class LoggingService extends Service {
     }
 
     private void startBluetoothScan2() {
+        Logger.d("[LoggingService] startBluetoothScan2");
         try {
             if (broadcastService == null) {
                 broadcastService = new BroadcastService();
@@ -272,7 +273,8 @@ public class LoggingService extends Service {
         }
     }
 
-    private void addOrUpdate(BLE ble) {
+    private void updateBle(BLE ble) {
+        Logger.d("[LoggingService] updateBle");
         try {
             Device device = new Device();
             device.fromScanData(ble);
@@ -311,16 +313,18 @@ public class LoggingService extends Service {
     public ILocalBluetoothCallBack bluetoothCallback = new ILocalBluetoothCallBack() {
         @Override
         public void OnEntered(BLE ble) {
+            Logger.d("[Bluetooth] OnEntered");
             try {
-                addOrUpdate(ble);
+                updateBle(ble);
             } catch (Exception ignored) {
             }
         }
 
         @Override
         public void OnUpdate(BLE ble) {
+            Logger.d("[Bluetooth] OnUpdate");
             try {
-                addOrUpdate(ble);
+                updateBle(ble);
             } catch (Exception ignored) {
             }
         }

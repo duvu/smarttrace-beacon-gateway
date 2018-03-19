@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import au.com.smarttrace.beacon.Logger;
+
 /**
  * Native Bluetooth service
  * Created by Forrest on 2016/6/1.
@@ -179,13 +181,17 @@ public class LocalBluetoothServer {
                                 ble.LastScanTime = new Date();
                                 IsBleNewEnter(ble);
                             }
-                        }catch (Exception ex){}
+                        } catch (Exception ex){
+                            Logger.d("[LocalBluetoothServer ] " + ex.getMessage());
+                        }
                     }
                     @Override
                     public void onScanFailed(int errorCode){
                         super.onScanFailed(errorCode);
                         if(_LocalBluetoothCallBack != null)
                             _LocalBluetoothCallBack.OnScanComplete();//状态改变
+
+                        Logger.d("[LocalBluetoothServer] scan failed: " + errorCode);
                     }
                 };
             }

@@ -24,24 +24,24 @@ public class Net {
 
     private static OkHttpClient client = new OkHttpClient();
 
+    public static void postBundle(AdvancedDevice advancedDevice) throws IOException {
+        String data  = DataUtil.formatData(advancedDevice);
+        Logger.d("[Net] - data: " + data);
+        post(_URL, data);
+    }
+
     private static void post(String url, String data) throws IOException {
         callPost(url, data, new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Logger.d("Failed");
+                Logger.d("Failed ");
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                Logger.d("Success" + response.toString());
+                Logger.d("Success " + response.toString());
             }
         });
-    }
-
-    public static void postBundle(AdvancedDevice advancedDevice) throws IOException {
-        String data  = DataUtil.formatData(advancedDevice);
-        Logger.d("Data: " + data);
-        post(_URL, data);
     }
 
     private static void callPost(String url, String data, Callback callback) {

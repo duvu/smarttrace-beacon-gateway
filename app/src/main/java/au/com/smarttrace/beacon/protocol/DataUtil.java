@@ -20,12 +20,12 @@ public class DataUtil {
 
     public static String formatData(AdvancedDevice advancedDevice) {
         StringBuffer sb = new StringBuffer();
-        // phone-imei|epoch-time|latitude|longitude|altitude|accuracy|speedKPH|<LF>
-        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<LF>
-        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<LF>
-        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<LF>
-        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<LF>
-        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<LF>
+        // phone-imei|epoch-time|latitude|longitude|altitude|accuracy|speedKPH|<\n>
+        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
+        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
+        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
+        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
+        // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         Long timestamp = (new Date()).getTime();
         Location location = advancedDevice.getLocation();
         List<Device> deviceList = advancedDevice.getDeviceList();

@@ -176,11 +176,10 @@ public class Device extends BLE {
             this.ScanData = scanData;
             this.LastScanTime = new Date();
             String strScanData = StringConvertUtil.bytesToHexString(scanData);
-            String serviceData = BroadcastPacketsUtil.GetScanParam(strScanData, "16");
             if (AppBase.IsDebug) {
                 Log.i("DeviceBase", "fromScanData:" + strScanData);
-                Log.i("DeviceBase", "serviceData:" + serviceData);
             }
+            String serviceData = BroadcastPacketsUtil.GetScanParam(strScanData, "16");
             int len = Integer.parseInt(serviceData.substring(4, 6), 16);
             if (len >= 11) {
                 this.HardwareModel = serviceData.substring(6, 10).toUpperCase();
@@ -233,7 +232,7 @@ public class Device extends BLE {
                 this.Humidity = Double.parseDouble(StringUtil.ToString(this.Humidity, 1));
             return true;
         } catch (Exception ex) {
-            // Log.e("DeviceBase", "fromScanData" + StringConvertUtil.bytesToHexString(scanData) + " ex:" + ex.toString());
+            Log.e("DeviceBase", "fromScanData" + StringConvertUtil.bytesToHexString(scanData) + " ex:" + ex.toString());
         }
         return false;
     }

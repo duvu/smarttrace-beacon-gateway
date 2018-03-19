@@ -177,23 +177,17 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(AdvancedDevice data) {
+        Logger.d("[MainActivity] onUpdateScan" + data.getDeviceList().size());
         //update data
         advancedDevice = data;
         deviceList = data.getDeviceList();
         adapter.setDeviceList(deviceList);
         //adapter.notifyDataSetChanged();
         Location location = data.getLocation();
-//        if (location != null) {
-//            Logger.i("Latitude: " + location.getLatitude());
-//            Logger.i("Longitude: " + location.getLongitude());
-//            Logger.i("Altitude: " + location.getAltitude());
-//            Logger.i("Accuracy: " + location.getAccuracy());
-//        }
         for (int i = 0; i < deviceList.size(); i++) {
             Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.get(i).SN +" Temperature:" + (deviceList.get(i).Temperature != - 1000 ? deviceList.get(i).Temperature : "--") +"℃  Humidity:" + (deviceList.get(i).Humidity != -1000 ? deviceList.get(i).Humidity : "--") + "% Battery:"+deviceList.get(i).Battery+"%");
         }
     }
-    //--
 
     private void registerEventBus() {
         EventBus.getDefault().register(this);
