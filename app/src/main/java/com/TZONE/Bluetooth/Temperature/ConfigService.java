@@ -516,12 +516,12 @@ public class ConfigService extends ConfigServiceBase{
         try {
             Device device = _CharacteristicHandle.Set(uuids);
 
-            //byte[] notes = BinaryUtil.Merge(device.OtherBytes.get(0),device.OtherBytes.get(1));
+            //byte[] notes = BinaryUtil.Merge(device.OtherBytes.getAsync(0),device.OtherBytes.getAsync(1));
             byte[] notes = BinaryUtil.TrimEnd(device.OtherBytes.get(0));
             if(notes != null)
                 device.Notes = new String (notes,"UTF-8").trim();//StringConvertUtil.bytesToHexString(location); //location.toString();
 
-            //byte[] description = BinaryUtil.MultipleMerge(device.OtherBytes.get(2),device.OtherBytes.get(3),device.OtherBytes.get(4));
+            //byte[] description = BinaryUtil.MultipleMerge(device.OtherBytes.getAsync(2),device.OtherBytes.getAsync(3),device.OtherBytes.getAsync(4));
             byte[] description =  BinaryUtil.TrimEnd(device.OtherBytes.get(1));
             if(description != null)
                 device.Description = new String (description,"UTF-8").trim();//StringConvertUtil.bytesToHexString(description);

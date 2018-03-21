@@ -146,11 +146,13 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             // Handle the camera action
         } else if (id == R.id.nav_gallery) {
 
-        } else if (id == R.id.nav_slideshow) {
-
         } else */
+        if (id == R.id.nav_login) {
+            startActivity(new Intent(this, LoginActivity.class));
+        } else
         if (id == R.id.nav_manage) {
             startActivity(new Intent(this, SettingsActivity.class));
+            //overridePendingTransition(R.anim.hold, R.anim.fade_in);
 
         }
         /*else if (id == R.id.nav_share) {
@@ -184,7 +186,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 //        //adapter.notifyDataSetChanged();
 //        Location location = data.getLocation();
 //        for (int i = 0; i < deviceList.size(); i++) {
-//            Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.get(i).SN +" Temperature:" + (deviceList.get(i).Temperature != - 1000 ? deviceList.get(i).Temperature : "--") +"℃  Humidity:" + (deviceList.get(i).Humidity != -1000 ? deviceList.get(i).Humidity : "--") + "% Battery:"+deviceList.get(i).Battery+"%");
+//            Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.getAsync(i).SN +" Temperature:" + (deviceList.getAsync(i).Temperature != - 1000 ? deviceList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (deviceList.getAsync(i).Humidity != -1000 ? deviceList.getAsync(i).Humidity : "--") + "% Battery:"+deviceList.getAsync(i).Battery+"%");
 //        }
 //    }
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
@@ -196,7 +198,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         adapter.setDeviceList(deviceList);
         Location location = data.getLocation();
         //for (int i = 0; i < deviceList.size(); i++) {
-        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.get(i).SN +" Temperature:" + (deviceList.get(i).Temperature != - 1000 ? deviceList.get(i).Temperature : "--") +"℃  Humidity:" + (deviceList.get(i).Humidity != -1000 ? deviceList.get(i).Humidity : "--") + "% Battery:"+deviceList.get(i).Battery+"%");
+        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.getAsync(i).SN +" Temperature:" + (deviceList.getAsync(i).Temperature != - 1000 ? deviceList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (deviceList.getAsync(i).Humidity != -1000 ? deviceList.getAsync(i).Humidity : "--") + "% Battery:"+deviceList.getAsync(i).Battery+"%");
         //}
     }
 

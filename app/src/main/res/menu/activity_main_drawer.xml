@@ -19,7 +19,11 @@
         <item
             android:id="@+id/nav_manage"
             android:icon="@drawable/ic_menu_manage"
-            android:title="Tools" />
+            android:title="@string/action_settings" />
+        <item
+            android:id="@+id/nav_login"
+            android:icon="@drawable/ic_menu_login"
+            android:title="@string/action_sign_in_short" />
     </group>
 
     <!--item android:title="Communicate">
@@ -37,7 +41,7 @@
 
     <item
         android:id="@+id/nav_exit"
-        android:icon="@drawable/ic_menu_exit"
-        android:title="Exit"/>
+        android:icon="@drawable/ic_menu_logout"
+        android:title="@string/logout"/>
 
 </menu>

@@ -244,7 +244,7 @@ public class OTAService {
 
                 if(_Index == 0) {
                     if (_PasswordCharacteristic == null) {
-                        // Unable to get device information
+                        // Unable to getAsync device information
                         OnError(7);
                         return;
                     } else {

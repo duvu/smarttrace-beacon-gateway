@@ -36,7 +36,7 @@ public interface IOTAService {
      * 4 = Unable to receive directed broadcasts
      * 5 = In upgrade mode, device information can not be obtained
      * 6 = The password is not correct
-     * 7 = Unable to get device information
+     * 7 = Unable to getAsync device information
      * 8 = Password is error
      * 9 = Upgrade mode initialization failed
      * 10 = Write file size process exception

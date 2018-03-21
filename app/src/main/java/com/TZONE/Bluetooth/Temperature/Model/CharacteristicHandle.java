@@ -71,7 +71,7 @@ public class CharacteristicHandle {
     }
 
     /**
-     * According to UUID get feature type
+     * According to UUID getAsync feature type
      * @param uuid
      * @return
      */

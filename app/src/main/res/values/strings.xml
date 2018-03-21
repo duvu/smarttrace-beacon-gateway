@@ -370,4 +370,5 @@
     <string name="pref_title_vibrate">Vibrate</string>
     <string name="search_beacon">Search Beacons</string>
     <string name="txt_search">Search</string>
+    <string name="logout">Logout</string>
 </resources>

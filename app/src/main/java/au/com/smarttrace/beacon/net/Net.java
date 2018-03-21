@@ -1,12 +1,12 @@
-package au.com.smarttrace.beacon.protocol;
+package au.com.smarttrace.beacon.net;
 
 import android.support.annotation.NonNull;
 
 import java.io.IOException;
 
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.model.AdvancedDevice;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
+import au.com.smarttrace.beacon.net.model.CommonResponse;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -25,13 +25,13 @@ public class Net {
 
     private static OkHttpClient client = new OkHttpClient();
 
-    public static void postBundle(BroadcastEvent broadcastEvent) throws IOException {
+    public static void uploadData(BroadcastEvent broadcastEvent) throws IOException {
         String data  = DataUtil.formatData(broadcastEvent);
         Logger.d("[Net] - data: " + data);
-        post(_URL, data);
+        postAync(_URL, data);
     }
-
-    private static void post(String url, String data) throws IOException {
+    //--Async
+    public static void postAync(String url, String data) throws IOException {
         callPost(url, data, new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
@@ -45,6 +45,24 @@ public class Net {
         });
     }
 
+    public static void getAsync(String url) throws IOException {
+        callGetAsync(url, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Logger.d("Failed " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Logger.d("Success " + response.toString());
+            }
+        });
+    }
+
+    public static void getAsync(String url, Callback callback) throws IOException {
+        callGetAsync(url, callback);
+    }
+
     private static void callPost(String url, String data, Callback callback) {
         RequestBody body = RequestBody.create(TEXT, data);
         Request request = new Request.Builder()
@@ -52,6 +70,16 @@ public class Net {
                 .post(body)
                 .build();
 
+        Call call = client.newCall(request);
+        call.enqueue(callback);
+    }
+
+    private static void callGetAsync(String url, Callback callback) {
+        Logger.d("[Net] - getAsync: " + url);
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
         Call call = client.newCall(request);
         call.enqueue(callback);
     }

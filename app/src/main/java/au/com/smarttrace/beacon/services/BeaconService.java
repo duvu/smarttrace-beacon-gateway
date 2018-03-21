@@ -46,8 +46,7 @@ import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.DataLogger;
 import au.com.smarttrace.beacon.model.Device;
 import au.com.smarttrace.beacon.model.ExitEvent;
-import au.com.smarttrace.beacon.model.ForeGroundEvent;
-import au.com.smarttrace.beacon.protocol.Net;
+import au.com.smarttrace.beacon.net.Net;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import io.objectbox.Box;
 
@@ -94,16 +93,10 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         //--
         dataLoggerBox = ((MyApplication) getApplication()).getBoxStore().boxFor(DataLogger.class);
 
-        // The PendingIntent to launch our activity if the user selects this notification
-        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
-
         //init
         notification = Util.createNotification(this.getApplicationContext(), CHANNEL_ID);
-
-
-
+        startForeground();
         registerEventBus();
-
     }
 
     @Override
@@ -228,7 +221,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         event.setLocation(lastKnownLocation);
         event.setGatewayId(AppConfig.GATEWAY_ID);
         try {
-            Net.postBundle(event);
+            Net.uploadData(event);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -250,8 +243,11 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
                 lastKnownLocation = newLocation;
             }
         }
+    }
 
-        //setNewLocation(newLocation);
+    private void startForeground() {
+        notification.contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
+        startForeground(R.string.local_service_started, notification);
     }
 
     @Override
@@ -292,17 +288,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
             //this may crash if registration did not go through. just be safe
         }
     }
-    @Subscribe
-    public void onForegroundEvent(ForeGroundEvent fge) {
-        if (fge.isForeground()) {
-            PendingIntent contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
-            notification.contentIntent = contentIntent;
-            startForeground(R.string.local_service_started, notification);
-        } else {
-            //start this service in background
-            stopForeground(true);
-        }
-    }
+
     @Subscribe
     public void onExitEvent(ExitEvent exitEvent) {
         stopForeground(true);
