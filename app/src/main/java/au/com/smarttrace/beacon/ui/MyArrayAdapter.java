@@ -12,10 +12,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.TZONE.Bluetooth.Temperature.Model.Device;
-import com.TZONE.Bluetooth.Utils.MeasuringDistance;
-import com.TZONE.Bluetooth.Utils.StringUtil;
-import com.TZONE.Bluetooth.Utils.TemperatureUnitUtil;
+//import com.TZONE.Bluetooth.Temperature.Model.Device;
+//import com.TZONE.Bluetooth.Utils.MeasuringDistance;
+//import com.TZONE.Bluetooth.Utils.StringUtil;
+//import com.TZONE.Bluetooth.Utils.TemperatureUnitUtil;
 
 import java.util.Date;
 import java.util.List;
@@ -24,6 +24,7 @@ import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.model.AdvancedDevice;
+import au.com.smarttrace.beacon.model.Device;
 
 /**
  * Created by beou on 3/9/18.
@@ -92,33 +93,34 @@ public class MyArrayAdapter extends ArrayAdapter {
         viewHolder.layoutIbeacon.setVisibility(View.GONE);
         viewHolder.layoutEddystone.setVisibility(View.GONE);
         if (device != null) {
-            int rssi = device.RSSI;
+            int rssi = device.getRssi();
             viewHolder.txtRSSI.setText("rssi:" + rssi + " dBm");
 
             int measuredPower = -60;
-            double distance = MeasuringDistance.calculateAccuracy(measuredPower, rssi);
+            double distance = device.getDistance();
             viewHolder.txtDistance.setText("" + distance + "m  " + measuredPower + "");
 
             String strName = "";
-            if (device.Name == null || device.Name.equals(""))
+            if (device.getName() == null || device.getName().equals(""))
                 strName = "--";
             else
-                strName = device.Name;
+                strName = device.getName();
             viewHolder.txtName.setText(strName);
-            viewHolder.txtMacAddress.setText(device.MacAddress);
+            viewHolder.txtMacAddress.setText(device.getBluetoothAddress());
 
-            if (device.HardwareModel.equals("3901"))
-                viewHolder.txtProtocol.setText("BT04 (v" + device.Firmware + ")");
-            else if (device.HardwareModel.equals("3C01"))
-                viewHolder.txtProtocol.setText("BT04B (v" + device.Firmware + ")");
-            else if (device.HardwareModel.equals("3A01"))
-                viewHolder.txtProtocol.setText("BT05 (v" + device.Firmware + ")");
-            else if (device.HardwareModel.equals("3A04"))
-                viewHolder.txtProtocol.setText("BT05B (v" + device.Firmware + ")");
-            else
-                viewHolder.txtProtocol.setText(device.HardwareModel + " (v" + device.Firmware + ")");
+//            if (device.HardwareModel.equals("3901"))
+//                viewHolder.txtProtocol.setText("BT04 (v" + device.Firmware + ")");
+//            else if (device.HardwareModel.equals("3C01"))
+//                viewHolder.txtProtocol.setText("BT04B (v" + device.Firmware + ")");
+//            else if (device.HardwareModel.equals("3A01"))
+//                viewHolder.txtProtocol.setText("BT05 (v" + device.Firmware + ")");
+//            else if (device.HardwareModel.equals("3A04"))
+//                viewHolder.txtProtocol.setText("BT05B (v" + device.Firmware + ")");
+//            else
+//                viewHolder.txtProtocol.setText(device.HardwareModel + " (v" + device.Firmware + ")");
 
-            String sn = device.SN;
+
+            String sn = device.getSerialNumber();
             viewHolder.txtSN.setText("--");
             if (sn != null && !sn.isEmpty()) {
                 viewHolder.txtSN.setText(sn);
@@ -138,15 +140,14 @@ public class MyArrayAdapter extends ArrayAdapter {
 
             // More than 1 minute is not scanned to be offline
             Date now = new Date();
-            long TotalTime = (now.getTime() - device.LastScanTime.getTime())
-                    / (1000);
+            long TotalTime = (now.getTime() - device.getTimestamp()) / (1000);
             if (TotalTime > 60) {
                 convertView.setBackgroundColor(Color.parseColor("#AFCCCCCC"));
             } else {
                 convertView.setBackgroundColor(Color.TRANSPARENT);
             }
 
-            int battery = device.Battery;
+            int battery = device.getBatteryLevel();
             if (battery < 20) {
                 viewHolder.imgBattery.setImageResource(R.drawable.battery_00);
             } else if (battery < 40) {
@@ -171,16 +172,17 @@ public class MyArrayAdapter extends ArrayAdapter {
             }
 
             viewHolder.txtTemperature.setText("-- ");
-            if (device.Temperature != -1000) {
+            if (device.getTemperature() != -1000) {
                 //viewHolder.txtTemperature.setText(d.Temperature + " ℃ | " + (int) ((d.Temperature + 273.15) * 100) / 100.00 + "K");
                 //viewHolder.txtTemperature.setText(d.Temperature+" ℃ | "+(int)((d.Temperature*1.8+32)*100)/100.00+"℉");
-                viewHolder.txtTemperature.setText(new TemperatureUnitUtil(device.Temperature).GetStringTemperature(AppConfig.TemperatureUnit));
+                //viewHolder.txtTemperature.setText(new TemperatureUnitUtil(device.Temperature).GetStringTemperature(AppConfig.TemperatureUnit));
+                viewHolder.txtTemperature.setText("" + device.getTemperature());
             }
             viewHolder.txtHumidity.setText("--");
-            if (device.Humidity != -1000)
-                viewHolder.txtHumidity.setText(StringUtil.ToString(device.Humidity, 1) + " %");
+            if (device.getHumidity() != -1000)
+                viewHolder.txtHumidity.setText(device.getHumidity() + " %");
 
-            if (device.AlarmType.equals("80") || device.AlarmType.equals("40") || device.AlarmType.equals("C0")) {
+            /*if (device.AlarmType.equals("80") || device.AlarmType.equals("40") || device.AlarmType.equals("C0")) {
                 //convertView.setBackgroundColor(Color.parseColor("#AFAE0000"));
                 if (device.AlarmType.equals("40") || device.AlarmType.equals("C0")) {
                     viewHolder.txtTemperature.setTextColor(Color.RED);
@@ -188,7 +190,7 @@ public class MyArrayAdapter extends ArrayAdapter {
                 if (device.AlarmType.equals("80") || device.AlarmType.equals("C0")) {
                     viewHolder.txtBattery.setTextColor(Color.RED);
                 }
-            } else {
+            } else*/ {
                 viewHolder.txtTemperature.setTextColor(Color.parseColor("#808080"));
                 viewHolder.txtBattery.setTextColor(Color.parseColor("#808080"));
             }

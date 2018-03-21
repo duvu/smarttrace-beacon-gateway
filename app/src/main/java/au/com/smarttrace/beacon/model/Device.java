@@ -1,23 +1,14 @@
 package au.com.smarttrace.beacon.model;
 
-import android.os.SystemClock;
-
 import org.altbeacon.beacon.Beacon;
-import org.altbeacon.beacon.Identifier;
 
 import java.util.Date;
 
-import io.objectbox.annotation.Entity;
-import io.objectbox.annotation.Id;
-
 /**
- * Created by beou on 3/20/18.
+ * Created by beou on 3/21/18.
  */
 
-@Entity
-public class DataLogger {
-    @Id
-    private Long id;
+public class Device {
     private String bluetoothAddress;
     private String name;
     private int rssi;
@@ -31,12 +22,8 @@ public class DataLogger {
     private String firmware;
     private String serialNumber;
 
-    public DataLogger() {
-
-    }
-
-    public static DataLogger fromBeacon(Beacon beacon) {
-        DataLogger dl = new DataLogger();
+    public static Device fromBeacon(Beacon beacon) {
+        Device dl = new Device();
         dl.bluetoothAddress = beacon.getBluetoothAddress();
         dl.name = beacon.getBluetoothName();
         dl.rssi = beacon.getRssi();
@@ -68,7 +55,7 @@ public class DataLogger {
         return dl;
     }
 
-    public DataLogger updateFromBeacon(Beacon beacon) {
+    public Device updateFromBeacon(Beacon beacon) {
         this.bluetoothAddress = beacon.getBluetoothAddress();
         this.name = beacon.getBluetoothName();
         this.rssi = beacon.getRssi();
@@ -102,14 +89,6 @@ public class DataLogger {
         return this;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getBluetoothAddress() {
         return bluetoothAddress;
     }
@@ -124,6 +103,38 @@ public class DataLogger {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public int getRssi() {
+        return rssi;
+    }
+
+    public void setRssi(int rssi) {
+        this.rssi = rssi;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public Long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public int getBatteryLevel() {
+        return batteryLevel;
+    }
+
+    public void setBatteryLevel(int batteryLevel) {
+        this.batteryLevel = batteryLevel;
     }
 
     public Double getTemperature() {
@@ -142,36 +153,12 @@ public class DataLogger {
         this.humidity = humidity;
     }
 
-    public int getRssi() {
-        return rssi;
-    }
-
-    public void setRssi(int rssi) {
-        this.rssi = rssi;
-    }
-
     public Double getDistance() {
         return distance;
     }
 
     public void setDistance(Double distance) {
         this.distance = distance;
-    }
-
-    public int getType() {
-        return type;
-    }
-
-    public void setType(int type) {
-        this.type = type;
-    }
-
-    public Long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
     }
 
     public String getModel() {
@@ -196,13 +183,5 @@ public class DataLogger {
 
     public void setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
-    }
-
-    public int getBatteryLevel() {
-        return batteryLevel;
-    }
-
-    public void setBatteryLevel(int batteryLevel) {
-        this.batteryLevel = batteryLevel;
     }
 }

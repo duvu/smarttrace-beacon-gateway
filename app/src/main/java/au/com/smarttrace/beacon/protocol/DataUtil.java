@@ -2,13 +2,11 @@ package au.com.smarttrace.beacon.protocol;
 
 import android.location.Location;
 
-import com.TZONE.Bluetooth.Temperature.Model.Device;
-import com.TZONE.Bluetooth.Utils.MeasuringDistance;
-
 import java.util.Date;
 import java.util.List;
 
-import au.com.smarttrace.beacon.model.AdvancedDevice;
+import au.com.smarttrace.beacon.model.BroadcastEvent;
+import au.com.smarttrace.beacon.model.Device;
 
 /**
  * Created by beou on 3/9/18.
@@ -18,7 +16,7 @@ public class DataUtil {
     private static final String SEP = "|";
     private static final String N = "\n";
 
-    public static String formatData(AdvancedDevice advancedDevice) {
+    public static String formatData(BroadcastEvent broadcastEvent) {
         StringBuffer sb = new StringBuffer();
         // phone-imei|epoch-time|latitude|longitude|altitude|accuracy|speedKPH|<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
@@ -27,10 +25,10 @@ public class DataUtil {
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         Long timestamp = (new Date()).getTime();
-        Location location = advancedDevice.getLocation();
-        List<Device> deviceList = advancedDevice.getDeviceList();
+        Location location = broadcastEvent.getLocation();
+        List<Device> deviceList = broadcastEvent.getDeviceList();
 
-        sb.append(advancedDevice.getImei()).append(SEP);
+        sb.append(broadcastEvent.getGatewayId()).append(SEP);
         sb.append(timestamp).append(SEP);
         if (location != null) {
             sb.append(location.getLatitude()).append(SEP);
@@ -41,15 +39,15 @@ public class DataUtil {
         }
 
         for (Device device : deviceList) {
-            sb.append(device.SN).append(SEP);
-            sb.append(device.Name).append(SEP);
-            sb.append(device.Temperature).append(SEP);
-            sb.append(device.Humidity).append(SEP);
-            sb.append(device.RSSI).append(SEP);
-            sb.append(MeasuringDistance.calculateAccuracy(60, device.RSSI)).append(SEP);
-            sb.append(device.Battery).append(SEP);
-            sb.append(device.LastScanTime.getTime()).append(SEP);
-            sb.append(device.HardwareModel).append(SEP).append(N);
+            sb.append(device.getSerialNumber()).append(SEP);
+            sb.append(device.getName()).append(SEP);
+            sb.append(device.getTemperature()).append(SEP);
+            sb.append(device.getHumidity()).append(SEP);
+            sb.append(device.getRssi()).append(SEP);
+            sb.append(device.getDistance()).append(SEP);
+            sb.append(device.getBatteryLevel()).append(SEP);
+            sb.append(device.getTimestamp()).append(SEP);
+            sb.append(device.getModel()).append(SEP).append(N);
         }
         return sb.toString();
     }

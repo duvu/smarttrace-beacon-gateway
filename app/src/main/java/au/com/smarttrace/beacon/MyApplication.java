@@ -9,16 +9,25 @@ import org.altbeacon.beacon.powersave.BackgroundPowerSaver;
 import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
+import au.com.smarttrace.beacon.model.MyObjectBox;
+import io.objectbox.BoxStore;
+
 /**
  * Created by beou on 3/19/18.
  */
 
 public class MyApplication extends Application {
 
-    private BackgroundPowerSaver backgroundPowerSaver;
+    // private BackgroundPowerSaver backgroundPowerSaver;
+    private RegionBootstrap regionBootstrap;
+    private BoxStore boxStore;
 
     public void onCreate() {
         super.onCreate();
+        AppConfig.populateSetting(MyApplication.this);
+        //-- init database
+        boxStore = MyObjectBox.builder().androidContext(MyApplication.this).build();
+
         BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
         // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
         // find a different type of beacon, you must specify the byte layout for that beacon's
@@ -38,15 +47,8 @@ public class MyApplication extends Application {
 //        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BeaconParser.EDDYSTONE_URL_LAYOUT)); //"s:0-1=feaa,m:2-2=10,p:3-3:-41,i:4-20v"));
 //        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BeaconParser.URI_BEACON_LAYOUT)); //"m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("s:0-1=cbff,m:2-2=11,i:3-4,i:5-5,i:6-9,p:10-10,d:11-11=04,d:12-13,d:14-15,d:16-18"));
-
-
-        // simply constructing this class and holding a reference to it in your custom Application
-        // class will automatically cause the BeaconLibrary to save battery whenever the application
-        // is not visible.  This reduces bluetooth power usage by about 60%
-        backgroundPowerSaver = new BackgroundPowerSaver(this);
-
-        // If you wish to test beacon detection in the Android Emulator, you can use code like this:
-        // BeaconManager.setBeaconSimulator(new TimedBeaconSimulator() );
-        // ((TimedBeaconSimulator) BeaconManager.getBeaconSimulator()).createTimedSimulatedBeacons();
+    }
+    public BoxStore getBoxStore() {
+        return boxStore;
     }
 }

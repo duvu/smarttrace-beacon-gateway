@@ -17,7 +17,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 
-import com.TZONE.Bluetooth.Temperature.Model.Device;
+//import com.TZONE.Bluetooth.Temperature.Model.Device;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -28,6 +28,8 @@ import java.util.List;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.model.AdvancedDevice;
+import au.com.smarttrace.beacon.model.BroadcastEvent;
+import au.com.smarttrace.beacon.model.Device;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.services.BeaconService;
 
@@ -54,68 +56,12 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         requestBluetoothPermission();
 
-//        LogManager.setVerboseLoggingEnabled(true);
-//        LogManager.setLogger(new org.altbeacon.beacon.logging.Logger() {
-//            @Override
-//            public void v(String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void v(Throwable throwable, String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void d(String s, String s1, Object... objects) {
-//                String mess = String.format(s1, objects);
-//                Log.d(s, mess);
-//            }
-//
-//            @Override
-//            public void d(Throwable throwable, String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void i(String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void i(Throwable throwable, String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void w(String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void w(Throwable throwable, String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void e(String s, String s1, Object... objects) {
-//
-//            }
-//
-//            @Override
-//            public void e(Throwable throwable, String s, String s1, Object... objects) {
-//
-//            }
-//        });
-
-//        Intent intent = new Intent(MainActivity.this, LoggingService.class);
         Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
-//        startService(intent);
         startService(intent1);
 
 
         ListView deviceListView = (ListView) findViewById(R.id.device_listview);
-        deviceList = advancedDevice != null ? advancedDevice.getDeviceList() : null;
+        //deviceList = advancedDevice != null ? advancedDevice.getDeviceList() : null;
         adapter = new MyArrayAdapter(this, R.layout.control_scan_device_list, deviceList);
         deviceListView.setAdapter(adapter);
 
@@ -228,18 +174,30 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         }
     }
 
+//    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
+//    public void onUpdateScan(AdvancedDevice data) {
+//        Logger.d("[MainActivity] onUpdateScan" + data.getDeviceList().size());
+//        //update data
+//        advancedDevice = data;
+//        deviceList = data.getDeviceList();
+//        adapter.setDeviceList(deviceList);
+//        //adapter.notifyDataSetChanged();
+//        Location location = data.getLocation();
+//        for (int i = 0; i < deviceList.size(); i++) {
+//            Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.get(i).SN +" Temperature:" + (deviceList.get(i).Temperature != - 1000 ? deviceList.get(i).Temperature : "--") +"℃  Humidity:" + (deviceList.get(i).Humidity != -1000 ? deviceList.get(i).Humidity : "--") + "% Battery:"+deviceList.get(i).Battery+"%");
+//        }
+//    }
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
-    public void onUpdateScan(AdvancedDevice data) {
+    public void onUpdateScan(BroadcastEvent data) {
         Logger.d("[MainActivity] onUpdateScan" + data.getDeviceList().size());
         //update data
-        advancedDevice = data;
+        //advancedDevice = data;
         deviceList = data.getDeviceList();
         adapter.setDeviceList(deviceList);
-        //adapter.notifyDataSetChanged();
         Location location = data.getLocation();
-        for (int i = 0; i < deviceList.size(); i++) {
-            Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.get(i).SN +" Temperature:" + (deviceList.get(i).Temperature != - 1000 ? deviceList.get(i).Temperature : "--") +"℃  Humidity:" + (deviceList.get(i).Humidity != -1000 ? deviceList.get(i).Humidity : "--") + "% Battery:"+deviceList.get(i).Battery+"%");
-        }
+        //for (int i = 0; i < deviceList.size(); i++) {
+        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.get(i).SN +" Temperature:" + (deviceList.get(i).Temperature != - 1000 ? deviceList.get(i).Temperature : "--") +"℃  Humidity:" + (deviceList.get(i).Humidity != -1000 ? deviceList.get(i).Humidity : "--") + "% Battery:"+deviceList.get(i).Battery+"%");
+        //}
     }
 
     private void registerEventBus() {

@@ -14,13 +14,11 @@ public class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        EventBus.getDefault().post(new ForeGroundEvent(true));
         super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        EventBus.getDefault().post(new ForeGroundEvent(false));
     }
 }

@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.model.AdvancedDevice;
+import au.com.smarttrace.beacon.model.BroadcastEvent;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -24,8 +25,8 @@ public class Net {
 
     private static OkHttpClient client = new OkHttpClient();
 
-    public static void postBundle(AdvancedDevice advancedDevice) throws IOException {
-        String data  = DataUtil.formatData(advancedDevice);
+    public static void postBundle(BroadcastEvent broadcastEvent) throws IOException {
+        String data  = DataUtil.formatData(broadcastEvent);
         Logger.d("[Net] - data: " + data);
         post(_URL, data);
     }
@@ -34,7 +35,7 @@ public class Net {
         callPost(url, data, new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Logger.d("Failed ");
+                Logger.d("Failed " + e.getMessage());
             }
 
             @Override

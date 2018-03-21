@@ -10,11 +10,11 @@ import au.com.smarttrace.beacon.Logger;
  * Created by beou on 3/7/18.
  */
 
-public class GeneralLocationListener implements LocationListener {
+public class GeneralLocationListener2 implements LocationListener {
     private static String name;
-    private static LoggingService loggingService;
+    private static BeaconService loggingService;
 
-    public GeneralLocationListener(LoggingService activity, String name1) {
+    public GeneralLocationListener2(BeaconService activity, String name1) {
         loggingService = activity;
         name = name1;
     }
