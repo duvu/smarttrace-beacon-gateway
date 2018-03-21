@@ -46,9 +46,13 @@ import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.DataLogger;
 import au.com.smarttrace.beacon.model.Device;
 import au.com.smarttrace.beacon.model.ExitEvent;
-import au.com.smarttrace.beacon.net.Net;
+import au.com.smarttrace.beacon.net.DataUtil;
+import au.com.smarttrace.beacon.net.Http;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import io.objectbox.Box;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 import static au.com.smarttrace.beacon.AppConfig.UPDATE_INTERVAL;
 
@@ -220,11 +224,17 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         event.setDeviceList(getDeviceList());
         event.setLocation(lastKnownLocation);
         event.setGatewayId(AppConfig.GATEWAY_ID);
-        try {
-            Net.uploadData(event);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Http.getIntance().post(AppConfig.BACKEND_URL_BT04, DataUtil.formatData(event), new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Logger.d("[Http] failed " + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Logger.d("[Http] success " + response.toString());
+            }
+        });
         EventBus.getDefault().postSticky(event);
     }
 

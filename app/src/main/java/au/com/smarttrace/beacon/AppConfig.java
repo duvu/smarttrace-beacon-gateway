@@ -24,6 +24,7 @@ public class AppConfig {
     public static int TemperatureUnit = 0;
     static final String TAG = "Smarttrace-Beacon";
     public static final String BACKEND_URL = "https://smarttrace.com.au/web/vf/rest";
+    public static final String BACKEND_URL_BT04 = "https://smarttrace.com.au/bt04";
     static final boolean LOG_DEBUG_ENABLED = true;
     // max "age" in ms of last location (default 120000).
     public static final long LAST_LOCATION_MAX_AGE = 30 * MILLISECONDS_PER_SECOND;

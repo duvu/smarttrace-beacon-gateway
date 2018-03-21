@@ -32,13 +32,8 @@ import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.net.Http;
-import au.com.smarttrace.beacon.net.Net;
-import au.com.smarttrace.beacon.net.model.CommonResponse;
 import au.com.smarttrace.beacon.net.model.LoginBody;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.Response;
 
 /**
  * A login screen that offers login via email/password.
@@ -258,27 +253,18 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
 
-//            try {
-//                // Simulate network access.
-//                Thread.sleep(2000);
-//            } catch (InterruptedException e) {
-//                return false;
-//            }
             String url = AppConfig.BACKEND_URL + "/login?email=" + mEmail + "&password="+mPassword;
             try {
                 LoginResponse response = Http.getIntance().get(url, LoginResponse.class);
+                if (response.getStatus().getCode() != 0) {
+                    return false;
+                }
+                //-- start store login data
+                // get more data and store
+                storeUserData(response);
+            } catch (IOException e) {}
 
-                LoginBody body = (LoginBody) response.getResponse();
-
-                Logger.d("LoginBody: " + body.getToken());
-                Logger.d("LoginBody: " + response.getStatus().getMessage());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            // TODO: register the new account here.
             return true;
         }
 
@@ -299,6 +285,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         protected void onCancelled() {
             mAuthTask = null;
             showProgress(false);
+        }
+
+        private void storeUserData(LoginResponse data) {
+
         }
     }
 }
