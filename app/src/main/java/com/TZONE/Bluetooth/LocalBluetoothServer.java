@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import au.com.smarttrace.beacon.Logger;
+import io.smarttrace.beacon.Logger;
 
 /**
  * Native Bluetooth service
