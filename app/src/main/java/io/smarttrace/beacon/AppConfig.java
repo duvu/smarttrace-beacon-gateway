@@ -1,8 +1,6 @@
 package io.smarttrace.beacon;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
-import android.telephony.TelephonyManager;
 
 /**
  * Created by beou on 3/7/18.
@@ -38,9 +36,9 @@ public class AppConfig {
 
     private Context context;
 
-    @SuppressLint("MissingPermission")
     public static void populateSetting(Context context) {
-        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        GATEWAY_ID = telephonyManager != null ? telephonyManager.getDeviceId() : null;
+        //GATEWAY_ID = "356024089973101";
+//        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+//        GATEWAY_ID = telephonyManager != null ? telephonyManager.getDeviceId() : null;
     }
 }

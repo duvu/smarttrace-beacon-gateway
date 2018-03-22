@@ -1,5 +1,6 @@
 package io.smarttrace.beacon.services;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.AlarmManager;
 import android.app.Notification;
@@ -18,6 +19,7 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -228,7 +230,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         BroadcastEvent event = new BroadcastEvent();
         event.setDeviceList(getDeviceList());
         event.setLocation(lastKnownLocation);
-        event.setGatewayId(AppConfig.GATEWAY_ID);
+        event.setGatewayId(getGatewayId());
         Http.getIntance().post(AppConfig.BACKEND_URL_BT04, DataUtil.formatData(event), new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -289,6 +291,24 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
             beaconManager.startRangingBeaconsInRegion(myRegion);
         } catch (RemoteException e) {   }
 
+    }
+
+    @SuppressLint("MissingPermission")
+    private String getGatewayId() {
+        if (TextUtils.isEmpty(AppConfig.GATEWAY_ID)) {
+            telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (telephonyManager.getPhoneType() ==  TelephonyManager.PHONE_TYPE_CDMA) {
+                    AppConfig.GATEWAY_ID = telephonyManager.getMeid();
+                } else {
+                    // GSM
+                    AppConfig.GATEWAY_ID = telephonyManager.getImei();
+                }
+            } else {
+                AppConfig.GATEWAY_ID = telephonyManager.getDeviceId();
+            }
+        }
+        return AppConfig.GATEWAY_ID;
     }
 
     // EventBus
