@@ -18,8 +18,23 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
+import android.telephony.CellIdentityCdma;
+import android.telephony.CellIdentityGsm;
+import android.telephony.CellIdentityLte;
+import android.telephony.CellIdentityWcdma;
+import android.telephony.CellInfo;
+import android.telephony.CellInfoCdma;
+import android.telephony.CellInfoGsm;
+import android.telephony.CellInfoLte;
+import android.telephony.CellInfoWcdma;
+import android.telephony.CellSignalStrengthCdma;
+import android.telephony.CellSignalStrengthGsm;
+import android.telephony.CellSignalStrengthLte;
+import android.telephony.CellSignalStrengthWcdma;
+import android.telephony.NeighboringCellInfo;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -46,8 +61,9 @@ import io.smarttrace.beacon.MyApplication;
 import io.smarttrace.beacon.R;
 import io.smarttrace.beacon.Systems;
 import io.smarttrace.beacon.model.BroadcastEvent;
+import io.smarttrace.beacon.model.CellTower;
 import io.smarttrace.beacon.model.DataLogger;
-import io.smarttrace.beacon.model.Device;
+import io.smarttrace.beacon.model.DataPackage;
 import io.smarttrace.beacon.model.ExitEvent;
 import io.smarttrace.beacon.net.DataUtil;
 import io.smarttrace.beacon.net.Http;
@@ -65,7 +81,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private RegionBootstrap regionBootstrap;
     AlarmManager nextPointAlarmManager;
     Location lastKnownLocation;
-    Map<String, Device> deviceMap = new HashMap<>();
+    Map<String, DataPackage> deviceMap = new HashMap<>();
 
     private LocationManager gpsLocationManager;
     private LocationManager passiveLocationManager;
@@ -81,7 +97,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
 
     Box<DataLogger> dataLoggerBox;
     Notification notification;
-    private Handler handler = new Handler();
+    private final Handler handler = new Handler();
     public BeaconService() {
     }
     @Override
@@ -117,7 +133,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         handle();
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     private void handle() {
@@ -227,25 +243,58 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
 
     private void broadcastData() {
         Logger.d("broadcasting data");
-        BroadcastEvent event = new BroadcastEvent();
-        event.setDeviceList(getDeviceList());
-        event.setLocation(lastKnownLocation);
-        event.setGatewayId(getGatewayId());
-        Http.getIntance().post(AppConfig.BACKEND_URL_BT04, DataUtil.formatData(event), new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Logger.d("[Http] failed " + e.getMessage());
+        List<CellTower> cellTowerList = getAllCellInfo();
+        for (CellTower tower: cellTowerList) {
+            Logger.d("Tower - Cid: " + tower.getCid());
+            Logger.d("Tower - Lac: " + tower.getLac());
+            Logger.d("Tower - Mcc: " + tower.getMcc());
+            Logger.d("Tower - Mnc: " + tower.getMnc());
+        }
+
+            List<DataPackage> dataPackageList = getDataPackageList();
+            BroadcastEvent event = new BroadcastEvent();
+            event.setDataPackageList(getDataPackageList());
+            event.setLocation(lastKnownLocation);
+            event.setGatewayId(getGatewayId());
+            event.setCellTowerList(cellTowerList);
+
+            //old protocol
+            List<String> stringList = DataUtil.formatData1(event);
+
+            for (String str : stringList) {
+                Logger.d("[Http-Old]: " + str);
+                Http.getIntance().post(AppConfig.BACKEND_URL_BT04, str, new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        Logger.d("[Http-Old] failed " + e.getMessage());
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        Logger.d("[Http-Old] success");
+                    }
+                });
             }
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                Logger.d("[Http] success " + response.toString());
-            }
-        });
-        EventBus.getDefault().postSticky(event);
+            //send data bundle - new protocol
+            Logger.d(DataUtil.formatData(event));
+            Http.getIntance().post(AppConfig.BACKEND_URL_BT04_NEW, DataUtil.formatData(event), new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Logger.d("[Http] failed " + e.getMessage());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    Logger.d("[Http] success " + response.toString());
+                }
+            });
+
+            EventBus.getDefault().removeStickyEvent(BroadcastEvent.class);
+            EventBus.getDefault().postSticky(event);
     }
 
-    private List<Device> getDeviceList() {
+    private List<DataPackage> getDataPackageList() {
         return new ArrayList<>(deviceMap.values());
     }
 
@@ -274,13 +323,13 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
                 if (beacons.size() > 0) {
                     for (Beacon beacon : beacons) {
-                        Device existedDevice = deviceMap.get(beacon.getBluetoothAddress());
-                        if (existedDevice != null) {
+                        DataPackage existedDataPackage = deviceMap.get(beacon.getBluetoothAddress());
+                        if (existedDataPackage != null) {
                             //update
-                            existedDevice.updateFromBeacon(beacon);
-                            deviceMap.put(beacon.getBluetoothAddress(), existedDevice);
+                            existedDataPackage.updateFromBeacon(beacon);
+                            deviceMap.put(beacon.getBluetoothAddress(), existedDataPackage);
                         } else {
-                            deviceMap.put(beacon.getBluetoothAddress(), Device.fromBeacon(beacon));
+                            deviceMap.put(beacon.getBluetoothAddress(), DataPackage.fromBeacon(beacon));
                         }
                     }
                 }
@@ -296,7 +345,9 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     @SuppressLint("MissingPermission")
     private String getGatewayId() {
         if (TextUtils.isEmpty(AppConfig.GATEWAY_ID)) {
-            telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            if (telephonyManager == null) {
+                telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (telephonyManager.getPhoneType() ==  TelephonyManager.PHONE_TYPE_CDMA) {
                     AppConfig.GATEWAY_ID = telephonyManager.getMeid();
@@ -310,6 +361,75 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         }
         return AppConfig.GATEWAY_ID;
     }
+
+    @SuppressLint("MissingPermission")
+    private List<CellTower> getAllCellInfo() {
+        Logger.d("getAllCellInfo");
+        if (telephonyManager == null) {
+            telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        }
+        List<CellTower> cellTowerList = new ArrayList<>();
+
+        String networkOperator = telephonyManager.getNetworkOperator();
+        int mcc = Integer.parseInt(networkOperator.substring(0, 3));
+        int mnc = Integer.parseInt(networkOperator.substring(3));
+
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            List<NeighboringCellInfo> neighboringCellInfoList = telephonyManager.getNeighboringCellInfo();
+            for (NeighboringCellInfo info : neighboringCellInfoList) {
+                CellTower cellTower = new CellTower();
+                cellTower.setLac(info.getLac());
+                cellTower.setCid(info.getCid());
+                cellTower.setMcc(mcc);
+                cellTower.setMnc(mnc);
+                cellTower.setRxlev(info.getRssi());
+                cellTowerList.add(cellTower);
+            }
+        } else {
+            List<CellInfo> cellInfos = telephonyManager.getAllCellInfo();
+            Logger.d("CellinfosList: " + cellInfos.size());
+            for (CellInfo info: cellInfos) {
+                CellTower cellTower = new CellTower();
+
+                if (info instanceof CellInfoGsm) {
+                    CellSignalStrengthGsm gsm = ((CellInfoGsm) info).getCellSignalStrength();
+                    CellIdentityGsm identityGsm = ((CellInfoGsm) info).getCellIdentity();
+                    cellTower.setLac(identityGsm.getLac());
+                    cellTower.setCid(identityGsm.getCid());
+                    cellTower.setMcc(identityGsm.getMcc());
+                    cellTower.setMnc(identityGsm.getMnc());
+                    cellTower.setRxlev(gsm.getAsuLevel());
+                    cellTowerList.add(cellTower);
+
+                } else if (info instanceof CellInfoLte) {
+                    CellSignalStrengthLte lte = ((CellInfoLte) info).getCellSignalStrength();
+                    CellIdentityLte identityLte = ((CellInfoLte) info).getCellIdentity();
+                    cellTower.setLac(identityLte.getTac());
+                    cellTower.setCid(identityLte.getCi());
+                    cellTower.setMcc(identityLte.getMcc());
+                    cellTower.setMnc(identityLte.getMnc());
+                    cellTower.setRxlev(lte.getAsuLevel());
+                    cellTowerList.add(cellTower);
+                } else if (info instanceof CellInfoWcdma) {
+                    CellSignalStrengthWcdma wcdma = ((CellInfoWcdma) info).getCellSignalStrength();
+                    CellIdentityWcdma identityWcdma = ((CellInfoWcdma) info).getCellIdentity();
+
+                    cellTower.setLac(identityWcdma.getLac());
+                    cellTower.setCid(identityWcdma.getCid());
+                    cellTower.setMnc(identityWcdma.getMnc());
+                    cellTower.setMcc(identityWcdma.getMcc());
+                    cellTower.setRxlev(wcdma.getAsuLevel());
+                    cellTowerList.add(cellTower);
+                } else if (info instanceof CellInfoCdma) {
+                    CellSignalStrengthCdma cdma = ((CellInfoCdma) info).getCellSignalStrength();
+                    CellIdentityCdma identityCdma = ((CellInfoCdma) info).getCellIdentity();
+                    //
+                }
+            }
+        }
+        return cellTowerList;
+    }
+
 
     // EventBus
     private void registerEventBus() {

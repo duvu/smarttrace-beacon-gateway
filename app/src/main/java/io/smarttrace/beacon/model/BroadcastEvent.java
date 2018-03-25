@@ -10,8 +10,9 @@ import java.util.List;
 
 public class BroadcastEvent {
     private String gatewayId;
-    private List<Device> deviceList;
+    private List<DataPackage> dataPackageList;
     private Location location;
+    private List<CellTower> cellTowerList;
 
     public String getGatewayId() {
         return gatewayId;
@@ -21,12 +22,12 @@ public class BroadcastEvent {
         this.gatewayId = gatewayId;
     }
 
-    public List<Device> getDeviceList() {
-        return deviceList;
+    public List<DataPackage> getDataPackageList() {
+        return dataPackageList;
     }
 
-    public void setDeviceList(List<Device> deviceList) {
-        this.deviceList = deviceList;
+    public void setDataPackageList(List<DataPackage> dataPackageList) {
+        this.dataPackageList = dataPackageList;
     }
 
     public Location getLocation() {
@@ -35,5 +36,13 @@ public class BroadcastEvent {
 
     public void setLocation(Location location) {
         this.location = location;
+    }
+
+    public List<CellTower> getCellTowerList() {
+        return cellTowerList;
+    }
+
+    public void setCellTowerList(List<CellTower> cellTowerList) {
+        this.cellTowerList = cellTowerList;
     }
 }

@@ -11,7 +11,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-//import com.TZONE.Bluetooth.Temperature.Model.Device;
+//import com.TZONE.Bluetooth.Temperature.Model.DataPackage;
 //import com.TZONE.Bluetooth.Utils.MeasuringDistance;
 //import com.TZONE.Bluetooth.Utils.StringUtil;
 //import com.TZONE.Bluetooth.Utils.TemperatureUnitUtil;
@@ -20,8 +20,7 @@ import java.util.Date;
 import java.util.List;
 
 import io.smarttrace.beacon.R;
-import io.smarttrace.beacon.model.AdvancedDevice;
-import io.smarttrace.beacon.model.Device;
+import io.smarttrace.beacon.model.DataPackage;
 
 /**
  * Created by beou on 3/9/18.
@@ -29,24 +28,24 @@ import io.smarttrace.beacon.model.Device;
 
 public class MyArrayAdapter extends ArrayAdapter {
     private Context context;
-    private List<Device> deviceList;
+    private List<DataPackage> dataPackageList;
     private int resourceId;
 
-    public MyArrayAdapter(@NonNull Context context, int resource, List<Device> deviceList) {
+    public MyArrayAdapter(@NonNull Context context, int resource, List<DataPackage> dataPackageList) {
         super(context, resource);
         this.context = context;
         this.resourceId = resource;
-        this.deviceList = deviceList;
+        this.dataPackageList = dataPackageList;
     }
 
     @Override
     public int getCount() {
-        return deviceList != null ? deviceList.size() : 0;
+        return dataPackageList != null ? dataPackageList.size() : 0;
     }
 
     @Override
     public Object getItem(int position) {
-        return deviceList != null ? deviceList.get(position) : null;
+        return dataPackageList != null ? dataPackageList.get(position) : null;
     }
 
     @Override
@@ -85,39 +84,39 @@ public class MyArrayAdapter extends ArrayAdapter {
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        Device device = (Device) getItem(position);
+        DataPackage dataPackage = (DataPackage) getItem(position);
         viewHolder.layoutTemperature.setVisibility(View.VISIBLE);
         viewHolder.layoutIbeacon.setVisibility(View.GONE);
         viewHolder.layoutEddystone.setVisibility(View.GONE);
-        if (device != null) {
-            int rssi = device.getRssi();
+        if (dataPackage != null) {
+            int rssi = dataPackage.getRssi();
             viewHolder.txtRSSI.setText("rssi:" + rssi + " dBm");
 
             int measuredPower = -60;
-            double distance = device.getDistance();
+            double distance = dataPackage.getDistance();
             viewHolder.txtDistance.setText("" + distance + "m  " + measuredPower + "");
 
             String strName = "";
-            if (device.getName() == null || device.getName().equals(""))
+            if (dataPackage.getName() == null || dataPackage.getName().equals(""))
                 strName = "--";
             else
-                strName = device.getName();
+                strName = dataPackage.getName();
             viewHolder.txtName.setText(strName);
-            viewHolder.txtMacAddress.setText(device.getBluetoothAddress());
+            viewHolder.txtMacAddress.setText(dataPackage.getBluetoothAddress());
 
-//            if (device.HardwareModel.equals("3901"))
-//                viewHolder.txtProtocol.setText("BT04 (v" + device.Firmware + ")");
-//            else if (device.HardwareModel.equals("3C01"))
-//                viewHolder.txtProtocol.setText("BT04B (v" + device.Firmware + ")");
-//            else if (device.HardwareModel.equals("3A01"))
-//                viewHolder.txtProtocol.setText("BT05 (v" + device.Firmware + ")");
-//            else if (device.HardwareModel.equals("3A04"))
-//                viewHolder.txtProtocol.setText("BT05B (v" + device.Firmware + ")");
+//            if (dataPackage.HardwareModel.equals("3901"))
+//                viewHolder.txtProtocol.setText("BT04 (v" + dataPackage.Firmware + ")");
+//            else if (dataPackage.HardwareModel.equals("3C01"))
+//                viewHolder.txtProtocol.setText("BT04B (v" + dataPackage.Firmware + ")");
+//            else if (dataPackage.HardwareModel.equals("3A01"))
+//                viewHolder.txtProtocol.setText("BT05 (v" + dataPackage.Firmware + ")");
+//            else if (dataPackage.HardwareModel.equals("3A04"))
+//                viewHolder.txtProtocol.setText("BT05B (v" + dataPackage.Firmware + ")");
 //            else
-//                viewHolder.txtProtocol.setText(device.HardwareModel + " (v" + device.Firmware + ")");
+//                viewHolder.txtProtocol.setText(dataPackage.HardwareModel + " (v" + dataPackage.Firmware + ")");
 
 
-            String sn = device.getSerialNumber();
+            String sn = dataPackage.getSerialNumber();
             viewHolder.txtSN.setText("--");
             if (sn != null && !sn.isEmpty()) {
                 viewHolder.txtSN.setText(sn);
@@ -137,14 +136,14 @@ public class MyArrayAdapter extends ArrayAdapter {
 
             // More than 1 minute is not scanned to be offline
             Date now = new Date();
-            long TotalTime = (now.getTime() - device.getTimestamp()) / (1000);
+            long TotalTime = (now.getTime() - dataPackage.getTimestamp()) / (1000);
             if (TotalTime > 60) {
                 convertView.setBackgroundColor(Color.parseColor("#AFCCCCCC"));
             } else {
                 convertView.setBackgroundColor(Color.TRANSPARENT);
             }
 
-            int battery = device.getBatteryLevel();
+            int battery = dataPackage.getBatteryLevel();
             if (battery < 20) {
                 viewHolder.imgBattery.setImageResource(R.drawable.battery_00);
             } else if (battery < 40) {
@@ -169,22 +168,22 @@ public class MyArrayAdapter extends ArrayAdapter {
             }
 
             viewHolder.txtTemperature.setText("-- ");
-            if (device.getTemperature() != -1000) {
+            if (dataPackage.getTemperature() != -1000) {
                 //viewHolder.txtTemperature.setText(d.Temperature + " ℃ | " + (int) ((d.Temperature + 273.15) * 100) / 100.00 + "K");
                 //viewHolder.txtTemperature.setText(d.Temperature+" ℃ | "+(int)((d.Temperature*1.8+32)*100)/100.00+"℉");
-                //viewHolder.txtTemperature.setText(new TemperatureUnitUtil(device.Temperature).GetStringTemperature(AppConfig.TemperatureUnit));
-                viewHolder.txtTemperature.setText("" + device.getTemperature());
+                //viewHolder.txtTemperature.setText(new TemperatureUnitUtil(dataPackage.Temperature).GetStringTemperature(AppConfig.TemperatureUnit));
+                viewHolder.txtTemperature.setText("" + dataPackage.getTemperature());
             }
             viewHolder.txtHumidity.setText("--");
-            if (device.getHumidity() != -1000)
-                viewHolder.txtHumidity.setText(device.getHumidity() + " %");
+            if (dataPackage.getHumidity() != -1000)
+                viewHolder.txtHumidity.setText(dataPackage.getHumidity() + " %");
 
-            /*if (device.AlarmType.equals("80") || device.AlarmType.equals("40") || device.AlarmType.equals("C0")) {
+            /*if (dataPackage.AlarmType.equals("80") || dataPackage.AlarmType.equals("40") || dataPackage.AlarmType.equals("C0")) {
                 //convertView.setBackgroundColor(Color.parseColor("#AFAE0000"));
-                if (device.AlarmType.equals("40") || device.AlarmType.equals("C0")) {
+                if (dataPackage.AlarmType.equals("40") || dataPackage.AlarmType.equals("C0")) {
                     viewHolder.txtTemperature.setTextColor(Color.RED);
                 }
-                if (device.AlarmType.equals("80") || device.AlarmType.equals("C0")) {
+                if (dataPackage.AlarmType.equals("80") || dataPackage.AlarmType.equals("C0")) {
                     viewHolder.txtBattery.setTextColor(Color.RED);
                 }
             } else*/ {
@@ -224,8 +223,8 @@ public class MyArrayAdapter extends ArrayAdapter {
         public ImageView btnDetail;
     }
 
-    public void setDeviceList(List<Device> deviceList) {
-        this.deviceList = deviceList;
+    public void setDataPackageList(List<DataPackage> dataPackageList) {
+        this.dataPackageList = dataPackageList;
         notifyDataSetChanged();
     }
 }

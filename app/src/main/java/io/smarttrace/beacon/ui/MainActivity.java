@@ -17,7 +17,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 
-//import com.TZONE.Bluetooth.Temperature.Model.Device;
+//import com.TZONE.Bluetooth.Temperature.Model.DataPackage;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -27,9 +27,8 @@ import java.util.List;
 
 import io.smarttrace.beacon.Logger;
 import io.smarttrace.beacon.R;
-import io.smarttrace.beacon.model.AdvancedDevice;
 import io.smarttrace.beacon.model.BroadcastEvent;
-import io.smarttrace.beacon.model.Device;
+import io.smarttrace.beacon.model.DataPackage;
 import io.smarttrace.beacon.model.ExitEvent;
 import io.smarttrace.beacon.services.BeaconService;
 
@@ -43,8 +42,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             Manifest.permission.BLUETOOTH_ADMIN
     };
 
-    AdvancedDevice advancedDevice;
-    List<Device> deviceList;
+    List<DataPackage> dataPackageList;
     MyArrayAdapter adapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,8 +59,8 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
 
         ListView deviceListView = (ListView) findViewById(R.id.device_listview);
-        //deviceList = advancedDevice != null ? advancedDevice.getDeviceList() : null;
-        adapter = new MyArrayAdapter(this, R.layout.control_scan_device_list, deviceList);
+        //dataPackageList = advancedDevice != null ? advancedDevice.getDataPackageList() : null;
+        adapter = new MyArrayAdapter(this, R.layout.control_scan_device_list, dataPackageList);
         deviceListView.setAdapter(adapter);
 
 
@@ -176,29 +174,16 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         }
     }
 
-//    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
-//    public void onUpdateScan(AdvancedDevice data) {
-//        Logger.d("[MainActivity] onUpdateScan" + data.getDeviceList().size());
-//        //update data
-//        advancedDevice = data;
-//        deviceList = data.getDeviceList();
-//        adapter.setDeviceList(deviceList);
-//        //adapter.notifyDataSetChanged();
-//        Location location = data.getLocation();
-//        for (int i = 0; i < deviceList.size(); i++) {
-//            Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.getAsync(i).SN +" Temperature:" + (deviceList.getAsync(i).Temperature != - 1000 ? deviceList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (deviceList.getAsync(i).Humidity != -1000 ? deviceList.getAsync(i).Humidity : "--") + "% Battery:"+deviceList.getAsync(i).Battery+"%");
-//        }
-//    }
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(BroadcastEvent data) {
-        Logger.d("[MainActivity] onUpdateScan" + data.getDeviceList().size());
+        Logger.d("[MainActivity] onUpdateScan" + data.getDataPackageList().size());
         //update data
         //advancedDevice = data;
-        deviceList = data.getDeviceList();
-        adapter.setDeviceList(deviceList);
+        dataPackageList = data.getDataPackageList();
+        adapter.setDataPackageList(dataPackageList);
         Location location = data.getLocation();
-        //for (int i = 0; i < deviceList.size(); i++) {
-        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + deviceList.getAsync(i).SN +" Temperature:" + (deviceList.getAsync(i).Temperature != - 1000 ? deviceList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (deviceList.getAsync(i).Humidity != -1000 ? deviceList.getAsync(i).Humidity : "--") + "% Battery:"+deviceList.getAsync(i).Battery+"%");
+        //for (int i = 0; i < dataPackageList.size(); i++) {
+        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + dataPackageList.getAsync(i).SN +" Temperature:" + (dataPackageList.getAsync(i).Temperature != - 1000 ? dataPackageList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (dataPackageList.getAsync(i).Humidity != -1000 ? dataPackageList.getAsync(i).Humidity : "--") + "% Battery:"+dataPackageList.getAsync(i).Battery+"%");
         //}
     }
 
