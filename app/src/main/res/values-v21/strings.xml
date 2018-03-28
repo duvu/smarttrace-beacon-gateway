@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="local_service_started">Smarttrace-gateway started</string>
     <string name="local_service_label">Beacon Gateway</string>
 </resources>

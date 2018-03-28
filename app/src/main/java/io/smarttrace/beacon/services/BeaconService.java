@@ -34,7 +34,6 @@ import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.NeighboringCellInfo;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.Log;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -60,10 +59,10 @@ import io.smarttrace.beacon.Logger;
 import io.smarttrace.beacon.MyApplication;
 import io.smarttrace.beacon.R;
 import io.smarttrace.beacon.Systems;
+import io.smarttrace.beacon.model.BT04Package;
 import io.smarttrace.beacon.model.BroadcastEvent;
 import io.smarttrace.beacon.model.CellTower;
 import io.smarttrace.beacon.model.DataLogger;
-import io.smarttrace.beacon.model.DataPackage;
 import io.smarttrace.beacon.model.ExitEvent;
 import io.smarttrace.beacon.net.DataUtil;
 import io.smarttrace.beacon.net.Http;
@@ -81,7 +80,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private RegionBootstrap regionBootstrap;
     AlarmManager nextPointAlarmManager;
     Location lastKnownLocation;
-    Map<String, DataPackage> deviceMap = new HashMap<>();
+    Map<String, BT04Package> deviceMap = new HashMap<>();
 
     private LocationManager gpsLocationManager;
     private LocationManager passiveLocationManager;
@@ -96,7 +95,6 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private Region myRegion = new Region("myRangingUniqueId", null, null, null);
 
     Box<DataLogger> dataLoggerBox;
-    Notification notification;
     private final Handler handler = new Handler();
     public BeaconService() {
     }
@@ -112,11 +110,9 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
 
         regionBootstrap = new RegionBootstrap(this, myRegion);
         beaconManager.bind(this);
-        //--
         dataLoggerBox = ((MyApplication) getApplication()).getBoxStore().boxFor(DataLogger.class);
 
-        //init
-        notification = Util.createNotification(this.getApplicationContext(), CHANNEL_ID);
+        NotificationUtil.init(this.getApplicationContext());
         startForeground();
         registerEventBus();
     }
@@ -244,37 +240,37 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private void broadcastData() {
         Logger.d("broadcasting data");
         List<CellTower> cellTowerList = getAllCellInfo();
-        for (CellTower tower: cellTowerList) {
-            Logger.d("Tower - Cid: " + tower.getCid());
-            Logger.d("Tower - Lac: " + tower.getLac());
-            Logger.d("Tower - Mcc: " + tower.getMcc());
-            Logger.d("Tower - Mnc: " + tower.getMnc());
-        }
-
-            List<DataPackage> dataPackageList = getDataPackageList();
+//        for (CellTower tower: cellTowerList) {
+//            Logger.d("Tower - Cid: " + tower.getCid());
+//            Logger.d("Tower - Lac: " + tower.getLac());
+//            Logger.d("Tower - Mcc: " + tower.getMcc());
+//            Logger.d("Tower - Mnc: " + tower.getMnc());
+//        }
+//
+            List<BT04Package> BT04PackageList = getDataPackageList();
             BroadcastEvent event = new BroadcastEvent();
-            event.setDataPackageList(getDataPackageList());
+            event.setBT04PackageList(getDataPackageList());
             event.setLocation(lastKnownLocation);
             event.setGatewayId(getGatewayId());
             event.setCellTowerList(cellTowerList);
-
-            //old protocol
-            List<String> stringList = DataUtil.formatData1(event);
-
-            for (String str : stringList) {
-                Logger.d("[Http-Old]: " + str);
-                Http.getIntance().post(AppConfig.BACKEND_URL_BT04, str, new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        Logger.d("[Http-Old] failed " + e.getMessage());
-                    }
-
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        Logger.d("[Http-Old] success");
-                    }
-                });
-            }
+//
+//            //old protocol
+//            List<String> stringList = DataUtil.formatData1(event);
+//
+//            for (String str : stringList) {
+//                Logger.d("[Http-Old]: " + str);
+//                Http.getIntance().post(AppConfig.BACKEND_URL_BT04, str, new Callback() {
+//                    @Override
+//                    public void onFailure(Call call, IOException e) {
+//                        Logger.d("[Http-Old] failed " + e.getMessage());
+//                    }
+//
+//                    @Override
+//                    public void onResponse(Call call, Response response) throws IOException {
+//                        Logger.d("[Http-Old] success");
+//                    }
+//                });
+//            }
 
             //send data bundle - new protocol
             Logger.d(DataUtil.formatData(event));
@@ -294,7 +290,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
             EventBus.getDefault().postSticky(event);
     }
 
-    private List<DataPackage> getDataPackageList() {
+    private List<BT04Package> getDataPackageList() {
         return new ArrayList<>(deviceMap.values());
     }
 
@@ -312,8 +308,9 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     }
 
     private void startForeground() {
+        Notification notification = NotificationUtil.createNotification(CHANNEL_ID);
         notification.contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
-        startForeground(R.string.local_service_started, notification);
+        startForeground(R.string.smarttrace_io, notification);
     }
 
     @Override
@@ -323,14 +320,23 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
                 if (beacons.size() > 0) {
                     for (Beacon beacon : beacons) {
-                        DataPackage existedDataPackage = deviceMap.get(beacon.getBluetoothAddress());
-                        if (existedDataPackage != null) {
-                            //update
-                            existedDataPackage.updateFromBeacon(beacon);
-                            deviceMap.put(beacon.getBluetoothAddress(), existedDataPackage);
-                        } else {
-                            deviceMap.put(beacon.getBluetoothAddress(), DataPackage.fromBeacon(beacon));
+                        BT04Package bt04 = deviceMap.get(beacon.getBluetoothAddress());
+                        if (bt04 == null) {
+                            bt04 = BT04Package.fromBeacon(beacon);
                         }
+                        deviceMap.put(beacon.getBluetoothAddress(), bt04);
+
+
+                        Notification notification = NotificationUtil.createNotification(CHANNEL_ID, bt04.getSerialNumber() + "Temperature: " + bt04.getTemperature() + "Humidity: " + bt04.getHumidity());
+                        NotificationUtil.notify(Integer.parseInt(bt04.getSerialNumber()), notification);
+
+//                        if (bt04 != null) {
+//                            //update
+//                            bt04.updateFromBeacon(beacon);
+//                            deviceMap.put(beacon.getBluetoothAddress(), bt04);
+//                        } else {
+//                            deviceMap.put(beacon.getBluetoothAddress(), BT04Package.fromBeacon(beacon));
+//                        }
                     }
                 }
             }

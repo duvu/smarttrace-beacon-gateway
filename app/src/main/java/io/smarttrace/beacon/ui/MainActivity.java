@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -17,7 +19,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 
-//import com.TZONE.Bluetooth.Temperature.Model.DataPackage;
+//import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -27,8 +29,8 @@ import java.util.List;
 
 import io.smarttrace.beacon.Logger;
 import io.smarttrace.beacon.R;
+import io.smarttrace.beacon.model.BT04Package;
 import io.smarttrace.beacon.model.BroadcastEvent;
-import io.smarttrace.beacon.model.DataPackage;
 import io.smarttrace.beacon.model.ExitEvent;
 import io.smarttrace.beacon.services.BeaconService;
 
@@ -42,8 +44,8 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             Manifest.permission.BLUETOOTH_ADMIN
     };
 
-    List<DataPackage> dataPackageList;
-    MyArrayAdapter adapter;
+    List<BT04Package> BT04PackageList;
+    BeaconAdapter adapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,8 +61,8 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
 
         ListView deviceListView = (ListView) findViewById(R.id.device_listview);
-        //dataPackageList = advancedDevice != null ? advancedDevice.getDataPackageList() : null;
-        adapter = new MyArrayAdapter(this, R.layout.control_scan_device_list, dataPackageList);
+        //BT04PackageList = advancedDevice != null ? advancedDevice.getBT04PackageList() : null;
+        adapter = new BeaconAdapter(this, R.layout.control_scan_device_list, BT04PackageList);
         deviceListView.setAdapter(adapter);
 
 
@@ -72,6 +74,15 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, getText(R.string.creating_shipment), Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
 
 
         //--Toolbar
@@ -176,14 +187,14 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(BroadcastEvent data) {
-        Logger.d("[MainActivity] onUpdateScan" + data.getDataPackageList().size());
+        Logger.d("[MainActivity] onUpdateScan" + data.getBT04PackageList().size());
         //update data
         //advancedDevice = data;
-        dataPackageList = data.getDataPackageList();
-        adapter.setDataPackageList(dataPackageList);
+        BT04PackageList = data.getBT04PackageList();
+        adapter.setDataPackageList(BT04PackageList);
         Location location = data.getLocation();
-        //for (int i = 0; i < dataPackageList.size(); i++) {
-        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + dataPackageList.getAsync(i).SN +" Temperature:" + (dataPackageList.getAsync(i).Temperature != - 1000 ? dataPackageList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (dataPackageList.getAsync(i).Humidity != -1000 ? dataPackageList.getAsync(i).Humidity : "--") + "% Battery:"+dataPackageList.getAsync(i).Battery+"%");
+        //for (int i = 0; i < BT04PackageList.size(); i++) {
+        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.getAsync(i).SN +" Temperature:" + (BT04PackageList.getAsync(i).Temperature != - 1000 ? BT04PackageList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (BT04PackageList.getAsync(i).Humidity != -1000 ? BT04PackageList.getAsync(i).Humidity : "--") + "% Battery:"+BT04PackageList.getAsync(i).Battery+"%");
         //}
     }
 

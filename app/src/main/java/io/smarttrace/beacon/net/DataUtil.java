@@ -3,7 +3,6 @@ package io.smarttrace.beacon.net;
 import android.location.Location;
 import android.text.TextUtils;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,9 +10,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import io.smarttrace.beacon.model.BT04Package;
 import io.smarttrace.beacon.model.BroadcastEvent;
 import io.smarttrace.beacon.model.CellTower;
-import io.smarttrace.beacon.model.DataPackage;
 
 /**
  * Created by beou on 3/9/18.
@@ -24,22 +23,22 @@ public class DataUtil {
     private static final String N = "\n";
 
     public static List<String> formatData1(BroadcastEvent broadcastEvent) {
-        List<DataPackage> dataPackageList = broadcastEvent.getDataPackageList();
+        List<BT04Package> BT04PackageList = broadcastEvent.getBT04PackageList();
         Date curremtDate = (new Date());
         List<String> stringList = new ArrayList<>();
-        for (DataPackage dataPackage : dataPackageList) {
+        for (BT04Package BT04Package : BT04PackageList) {
             StringBuffer sb = new StringBuffer();
 
             Location location = broadcastEvent.getLocation();
 
 
-            //sb.append(broadcastEvent.getGatewayId() + dataPackage.getSerialNumber()).append(SEP);
-            sb.append(dataPackage.getSerialNumber()).append(SEP);
+            //sb.append(broadcastEvent.getGatewayId() + BT04Package.getSerialNumber()).append(SEP);
+            sb.append(BT04Package.getSerialNumber()).append(SEP);
             sb.append("AUT").append(SEP); //type
             sb.append(formatDate(curremtDate, null)).append(SEP).append(N);
 
-            sb.append(dataPackage.getBatteryLevel()).append(SEP);
-            sb.append(dataPackage.getTemperature()).append(SEP).append(N);
+            sb.append(BT04Package.getBatteryLevel()).append(SEP);
+            sb.append(BT04Package.getTemperature()).append(SEP).append(N);
 
             List<CellTower> cellTowerList = broadcastEvent.getCellTowerList();
             for (CellTower cell : cellTowerList) {
@@ -66,7 +65,7 @@ public class DataUtil {
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         Long timestamp = (new Date()).getTime();
         Location location = broadcastEvent.getLocation();
-        List<DataPackage> dataPackageList = broadcastEvent.getDataPackageList();
+        List<BT04Package> BT04PackageList = broadcastEvent.getBT04PackageList();
 
         sb.append(broadcastEvent.getGatewayId()).append(SEP);
         sb.append(timestamp).append(SEP);
@@ -78,16 +77,16 @@ public class DataUtil {
             sb.append(location.getSpeed()).append(SEP).append(N);
         }
 
-        for (DataPackage dataPackage : dataPackageList) {
-            sb.append(dataPackage.getSerialNumber()).append(SEP);
-            sb.append(dataPackage.getName()).append(SEP);
-            sb.append(dataPackage.getTemperature()).append(SEP);
-            sb.append(dataPackage.getHumidity()).append(SEP);
-            sb.append(dataPackage.getRssi()).append(SEP);
-            sb.append(dataPackage.getDistance()).append(SEP);
-            sb.append(dataPackage.getBatteryLevel()).append(SEP);
-            sb.append(dataPackage.getTimestamp()).append(SEP);
-            sb.append(dataPackage.getModel()).append(SEP).append(N);
+        for (BT04Package BT04Package : BT04PackageList) {
+            sb.append(BT04Package.getSerialNumber()).append(SEP);
+            sb.append(BT04Package.getName()).append(SEP);
+            sb.append(BT04Package.getTemperature()).append(SEP);
+            sb.append(BT04Package.getHumidity()).append(SEP);
+            sb.append(BT04Package.getRssi()).append(SEP);
+            sb.append(BT04Package.getDistance()).append(SEP);
+            sb.append(BT04Package.getBatteryLevel()).append(SEP);
+            sb.append(BT04Package.getTimestamp()).append(SEP);
+            sb.append(BT04Package.getModel()).append(SEP).append(N);
         }
         return sb.toString();
     }

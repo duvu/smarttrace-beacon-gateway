@@ -11,30 +11,41 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-//import com.TZONE.Bluetooth.Temperature.Model.DataPackage;
+//import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 //import com.TZONE.Bluetooth.Utils.MeasuringDistance;
 //import com.TZONE.Bluetooth.Utils.StringUtil;
 //import com.TZONE.Bluetooth.Utils.TemperatureUnitUtil;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import io.smarttrace.beacon.R;
-import io.smarttrace.beacon.model.DataPackage;
+import io.smarttrace.beacon.model.BT04Package;
 
 /**
  * Created by beou on 3/9/18.
  */
 
-public class MyArrayAdapter extends ArrayAdapter {
+public class BeaconAdapter extends ArrayAdapter {
     private Context context;
-    private List<DataPackage> dataPackageList;
+    private List<BT04Package> dataPackageList;
     private int resourceId;
 
-    public MyArrayAdapter(@NonNull Context context, int resource, List<DataPackage> dataPackageList) {
+    public BeaconAdapter(@NonNull Context context, int resource, List<BT04Package> dataPackageList) {
         super(context, resource);
         this.context = context;
         this.resourceId = resource;
+        if (dataPackageList != null) {
+            Collections.sort(dataPackageList, new Comparator<BT04Package>() {
+                @Override
+                public int compare(BT04Package o1, BT04Package o2) {
+                    return o1.getDistance().compareTo(o2.getDistance());
+                }
+            });
+        }
         this.dataPackageList = dataPackageList;
     }
 
@@ -64,14 +75,13 @@ public class MyArrayAdapter extends ArrayAdapter {
             viewHolder = new ViewHolder();
             viewHolder.txtRSSI = (TextView) convertView.findViewById(R.id.txtRSSI);
             viewHolder.txtDistance = (TextView) convertView.findViewById(R.id.txtDistance);
-            viewHolder.txtName = (TextView) convertView.findViewById(R.id.txtName);
+            //viewHolder.txtName = (TextView) convertView.findViewById(R.id.txtName);
             viewHolder.txtMajor = (TextView) convertView.findViewById(R.id.txtMajor);
             viewHolder.txtMinor = (TextView) convertView.findViewById(R.id.txtMinor);
             viewHolder.txtUrl = (TextView) convertView.findViewById(R.id.txtUrl);
             viewHolder.txtMacAddress = (TextView) convertView.findViewById(R.id.txtMacAddress);
             viewHolder.txtProtocol = (TextView) convertView.findViewById(R.id.txtProtocol);
             viewHolder.txtSN = (TextView) convertView.findViewById(R.id.txtSN);
-            viewHolder.btnDetail = (ImageView) convertView.findViewById(R.id.btnDetail);
             viewHolder.imgRssi = (ImageView) convertView.findViewById(R.id.imgRssi);
             viewHolder.imgBattery = (ImageView) convertView.findViewById(R.id.imgBattery);
             viewHolder.txtBattery = (TextView) convertView.findViewById(R.id.txtBattery);
@@ -84,39 +94,38 @@ public class MyArrayAdapter extends ArrayAdapter {
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        DataPackage dataPackage = (DataPackage) getItem(position);
+        BT04Package beaconData = (BT04Package) getItem(position);
         viewHolder.layoutTemperature.setVisibility(View.VISIBLE);
         viewHolder.layoutIbeacon.setVisibility(View.GONE);
         viewHolder.layoutEddystone.setVisibility(View.GONE);
-        if (dataPackage != null) {
-            int rssi = dataPackage.getRssi();
+        if (beaconData != null) {
+            int rssi = beaconData.getRssi();
             viewHolder.txtRSSI.setText("rssi:" + rssi + " dBm");
 
-            int measuredPower = -60;
-            double distance = dataPackage.getDistance();
-            viewHolder.txtDistance.setText("" + distance + "m  " + measuredPower + "");
+            double distance = beaconData.getDistance();
+            viewHolder.txtDistance.setText(formatDistance(distance));
 
             String strName = "";
-            if (dataPackage.getName() == null || dataPackage.getName().equals(""))
+            if (beaconData.getName() == null || beaconData.getName().equals(""))
                 strName = "--";
             else
-                strName = dataPackage.getName();
-            viewHolder.txtName.setText(strName);
-            viewHolder.txtMacAddress.setText(dataPackage.getBluetoothAddress());
+                strName = beaconData.getName();
+//            viewHolder.txtName.setText(strName);
+            viewHolder.txtMacAddress.setText(beaconData.getBluetoothAddress());
 
-//            if (dataPackage.HardwareModel.equals("3901"))
-//                viewHolder.txtProtocol.setText("BT04 (v" + dataPackage.Firmware + ")");
-//            else if (dataPackage.HardwareModel.equals("3C01"))
-//                viewHolder.txtProtocol.setText("BT04B (v" + dataPackage.Firmware + ")");
-//            else if (dataPackage.HardwareModel.equals("3A01"))
-//                viewHolder.txtProtocol.setText("BT05 (v" + dataPackage.Firmware + ")");
-//            else if (dataPackage.HardwareModel.equals("3A04"))
-//                viewHolder.txtProtocol.setText("BT05B (v" + dataPackage.Firmware + ")");
+//            if (beaconData.HardwareModel.equals("3901"))
+//                viewHolder.txtProtocol.setText("BT04 (v" + beaconData.Firmware + ")");
+//            else if (beaconData.HardwareModel.equals("3C01"))
+//                viewHolder.txtProtocol.setText("BT04B (v" + beaconData.Firmware + ")");
+//            else if (beaconData.HardwareModel.equals("3A01"))
+//                viewHolder.txtProtocol.setText("BT05 (v" + beaconData.Firmware + ")");
+//            else if (beaconData.HardwareModel.equals("3A04"))
+//                viewHolder.txtProtocol.setText("BT05B (v" + beaconData.Firmware + ")");
 //            else
-//                viewHolder.txtProtocol.setText(dataPackage.HardwareModel + " (v" + dataPackage.Firmware + ")");
+//                viewHolder.txtProtocol.setText(beaconData.HardwareModel + " (v" + beaconData.Firmware + ")");
 
 
-            String sn = dataPackage.getSerialNumber();
+            String sn = beaconData.getSerialNumber();
             viewHolder.txtSN.setText("--");
             if (sn != null && !sn.isEmpty()) {
                 viewHolder.txtSN.setText(sn);
@@ -136,14 +145,14 @@ public class MyArrayAdapter extends ArrayAdapter {
 
             // More than 1 minute is not scanned to be offline
             Date now = new Date();
-            long TotalTime = (now.getTime() - dataPackage.getTimestamp()) / (1000);
+            long TotalTime = (now.getTime() - beaconData.getTimestamp()) / (1000);
             if (TotalTime > 60) {
                 convertView.setBackgroundColor(Color.parseColor("#AFCCCCCC"));
             } else {
                 convertView.setBackgroundColor(Color.TRANSPARENT);
             }
 
-            int battery = dataPackage.getBatteryLevel();
+            int battery = beaconData.getBatteryLevel();
             if (battery < 20) {
                 viewHolder.imgBattery.setImageResource(R.drawable.battery_00);
             } else if (battery < 40) {
@@ -168,22 +177,22 @@ public class MyArrayAdapter extends ArrayAdapter {
             }
 
             viewHolder.txtTemperature.setText("-- ");
-            if (dataPackage.getTemperature() != -1000) {
+            if (beaconData.getTemperature() != -1000) {
                 //viewHolder.txtTemperature.setText(d.Temperature + " ℃ | " + (int) ((d.Temperature + 273.15) * 100) / 100.00 + "K");
                 //viewHolder.txtTemperature.setText(d.Temperature+" ℃ | "+(int)((d.Temperature*1.8+32)*100)/100.00+"℉");
-                //viewHolder.txtTemperature.setText(new TemperatureUnitUtil(dataPackage.Temperature).GetStringTemperature(AppConfig.TemperatureUnit));
-                viewHolder.txtTemperature.setText("" + dataPackage.getTemperature());
+                //viewHolder.txtTemperature.setText(new TemperatureUnitUtil(beaconData.Temperature).GetStringTemperature(AppConfig.TemperatureUnit));
+                viewHolder.txtTemperature.setText("" + beaconData.getTemperature());
             }
             viewHolder.txtHumidity.setText("--");
-            if (dataPackage.getHumidity() != -1000)
-                viewHolder.txtHumidity.setText(dataPackage.getHumidity() + " %");
+            if (beaconData.getHumidity() != -1000)
+                viewHolder.txtHumidity.setText(beaconData.getHumidity() + " %");
 
-            /*if (dataPackage.AlarmType.equals("80") || dataPackage.AlarmType.equals("40") || dataPackage.AlarmType.equals("C0")) {
+            /*if (beaconData.AlarmType.equals("80") || beaconData.AlarmType.equals("40") || beaconData.AlarmType.equals("C0")) {
                 //convertView.setBackgroundColor(Color.parseColor("#AFAE0000"));
-                if (dataPackage.AlarmType.equals("40") || dataPackage.AlarmType.equals("C0")) {
+                if (beaconData.AlarmType.equals("40") || beaconData.AlarmType.equals("C0")) {
                     viewHolder.txtTemperature.setTextColor(Color.RED);
                 }
-                if (dataPackage.AlarmType.equals("80") || dataPackage.AlarmType.equals("C0")) {
+                if (beaconData.AlarmType.equals("80") || beaconData.AlarmType.equals("C0")) {
                     viewHolder.txtBattery.setTextColor(Color.RED);
                 }
             } else*/ {
@@ -219,12 +228,26 @@ public class MyArrayAdapter extends ArrayAdapter {
         public LinearLayout layoutTemperature;
         public TextView txtTemperature;
         public TextView txtHumidity;
-
-        public ImageView btnDetail;
     }
 
-    public void setDataPackageList(List<DataPackage> dataPackageList) {
+    public void setDataPackageList(List<BT04Package> dataPackageList) {
+        if (dataPackageList != null) {
+            Collections.sort(dataPackageList, new Comparator<BT04Package>() {
+                @Override
+                public int compare(BT04Package o1, BT04Package o2) {
+                    return o1.getDistance().compareTo(o2.getDistance());
+                }
+            });
+        }
         this.dataPackageList = dataPackageList;
         notifyDataSetChanged();
+    }
+
+    private String formatDistance(double distance) {
+        String units = "m";
+        String text = context.getResources().getString(R.string.distance_around);
+        if (distance < 1) {
+            distance = 1;}
+        return String.format(Locale.US, "%.0f", distance) + units + " " + text;
     }
 }

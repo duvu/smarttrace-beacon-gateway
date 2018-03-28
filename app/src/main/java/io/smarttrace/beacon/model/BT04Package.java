@@ -8,7 +8,7 @@ import java.util.Date;
  * Created by beou on 3/21/18.
  */
 
-public class DataPackage extends AbstractDataPackage{
+public class BT04Package extends AbstractDataPackage{
     private Double temperature;
     private Double humidity;
     private Double distance;
@@ -16,8 +16,8 @@ public class DataPackage extends AbstractDataPackage{
     private String firmware;
     private String serialNumber;
 
-    public static DataPackage fromBeacon(Beacon beacon) {
-        DataPackage dl = new DataPackage();
+    public static BT04Package fromBeacon(Beacon beacon) {
+        BT04Package dl = new BT04Package();
         dl.setBluetoothAddress(beacon.getBluetoothAddress());
         dl.setName(beacon.getBluetoothName());
         dl.setRssi(beacon.getRssi());
@@ -49,7 +49,7 @@ public class DataPackage extends AbstractDataPackage{
         return dl;
     }
 
-    public DataPackage updateFromBeacon(Beacon beacon) {
+    public BT04Package updateFromBeacon(Beacon beacon) {
         this.setBluetoothAddress(beacon.getBluetoothAddress());
         this.setName(beacon.getBluetoothName());
         this.setRssi(beacon.getRssi());
