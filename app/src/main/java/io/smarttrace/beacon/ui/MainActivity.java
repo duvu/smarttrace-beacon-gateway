@@ -193,9 +193,9 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         BT04PackageList = data.getBT04PackageList();
         adapter.setDataPackageList(BT04PackageList);
         Location location = data.getLocation();
-        //for (int i = 0; i < BT04PackageList.size(); i++) {
-        //    Logger.i("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.getAsync(i).SN +" Temperature:" + (BT04PackageList.getAsync(i).Temperature != - 1000 ? BT04PackageList.getAsync(i).Temperature : "--") +"℃  Humidity:" + (BT04PackageList.getAsync(i).Humidity != -1000 ? BT04PackageList.getAsync(i).Humidity : "--") + "% Battery:"+BT04PackageList.getAsync(i).Battery+"%");
-        //}
+        for (int i = 0; i < BT04PackageList.size(); i++) {
+            Logger.i("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.get(i).getSerialNumber() +" Temperature:" + BT04PackageList.get(i).getTemperature() +"℃  Humidity:" + BT04PackageList.get(i).getHumidity() + "% Battery:"+BT04PackageList.get(i).getBatteryLevel()+"%");
+        }
     }
 
     private void registerEventBus() {

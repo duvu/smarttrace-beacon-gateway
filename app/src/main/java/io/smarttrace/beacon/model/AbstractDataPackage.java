@@ -1,5 +1,7 @@
 package io.smarttrace.beacon.model;
 
+import java.util.Date;
+
 /**
  * Created by beou on 3/23/18.
  */
@@ -54,6 +56,14 @@ public abstract class AbstractDataPackage {
 
     public Long getTimestamp() {
         return timestamp;
+    }
+
+    public String getTimeString() {
+        if (timestamp > 0) {
+            Date dt = new Date(timestamp);
+
+        }
+        return "";
     }
 
     public int getBatteryLevel() {

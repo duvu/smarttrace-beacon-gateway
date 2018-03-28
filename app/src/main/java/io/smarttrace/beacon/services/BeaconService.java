@@ -71,8 +71,6 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-import static io.smarttrace.beacon.AppConfig.UPDATE_INTERVAL;
-
 public class BeaconService extends Service implements BeaconConsumer, BootstrapNotifier{
     private static final String CHANNEL_ID = "MySmarttraceChannelId";
 
@@ -89,6 +87,8 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private GeneralLocationListener2 towerLocationListener;
     private GeneralLocationListener2 passiveLocationListener;
     private TelephonyManager telephonyManager;
+
+    private boolean isDataExisted = false;
 
     private final IBinder binder = new DataBinder();
 
@@ -140,7 +140,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     }
 
     private void setAlarmForNextPoint() {
-        Logger.i("[### Waiting for next point in " + AppConfig.UPDATE_INTERVAL + " milliseconds] ...");
+        Logger.i("[### Waiting for next point in " + getInterval() + " milliseconds] ...");
         Intent intent = new Intent(this, BeaconService.class);
         PendingIntent pendingIntent = PendingIntent.getService(this, 0, intent, 0);
         nextPointAlarmManager.cancel(pendingIntent);
@@ -148,13 +148,21 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         if (Systems.isDozing(this)) {
             setExactAndAllowWhileIdle(pendingIntent);
         } else {
-            nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + AppConfig.UPDATE_INTERVAL, pendingIntent);
+            nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + getInterval(), pendingIntent);
         }
     }
 
     @TargetApi(Build.VERSION_CODES.M)
     private void setExactAndAllowWhileIdle(PendingIntent pendingIntent) {
-        nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + AppConfig.UPDATE_INTERVAL, pendingIntent);
+        nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + getInterval(), pendingIntent);
+    }
+
+    private long getInterval() {
+        if (!isDataExisted || AppConfig.DEBUG_ENABLED) {
+            return AppConfig.UPDATE_INTERVAL_START;
+        } else {
+            return AppConfig.UPDATE_INTERVAL;
+        }
     }
 
     private void startBLEScan() {
@@ -194,11 +202,11 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
                         ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
 
             if (gpsLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                gpsLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, UPDATE_INTERVAL, AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE, gpsLocationListener);
+                gpsLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, getInterval(), AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE, gpsLocationListener);
             }
 
             if (towerLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                towerLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, UPDATE_INTERVAL / 4, AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE, towerLocationListener);
+                towerLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, getInterval() / 4, AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE, towerLocationListener);
             }
         }
     }
@@ -246,17 +254,24 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
 //            Logger.d("Tower - Mcc: " + tower.getMcc());
 //            Logger.d("Tower - Mnc: " + tower.getMnc());
 //        }
-//
+
+            isDataExisted = true;
             List<BT04Package> BT04PackageList = getDataPackageList();
             BroadcastEvent event = new BroadcastEvent();
             event.setBT04PackageList(getDataPackageList());
             event.setLocation(lastKnownLocation);
             event.setGatewayId(getGatewayId());
             event.setCellTowerList(cellTowerList);
-//
-//            //old protocol
+
+            for (BT04Package bt04: BT04PackageList) {
+                Notification notification = NotificationUtil.createNotification(CHANNEL_ID,
+                        bt04.getSerialNumber() + "(" + bt04.getModelStringShort() + ")",
+                        "Temperature: " + bt04.getTemperature() + "Humidity: " + bt04.getHumidity() + "Distance: " + bt04.getDistanceString());
+                NotificationUtil.notify(Integer.parseInt(bt04.getSerialNumber()), notification);
+            }
+            //old protocol
 //            List<String> stringList = DataUtil.formatData1(event);
-//
+
 //            for (String str : stringList) {
 //                Logger.d("[Http-Old]: " + str);
 //                Http.getIntance().post(AppConfig.BACKEND_URL_BT04, str, new Callback() {
@@ -323,20 +338,10 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
                         BT04Package bt04 = deviceMap.get(beacon.getBluetoothAddress());
                         if (bt04 == null) {
                             bt04 = BT04Package.fromBeacon(beacon);
+                        } else {
+                            bt04.updateFromBeacon(beacon);
                         }
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
-
-
-                        Notification notification = NotificationUtil.createNotification(CHANNEL_ID, bt04.getSerialNumber() + "Temperature: " + bt04.getTemperature() + "Humidity: " + bt04.getHumidity());
-                        NotificationUtil.notify(Integer.parseInt(bt04.getSerialNumber()), notification);
-
-//                        if (bt04 != null) {
-//                            //update
-//                            bt04.updateFromBeacon(beacon);
-//                            deviceMap.put(beacon.getBluetoothAddress(), bt04);
-//                        } else {
-//                            deviceMap.put(beacon.getBluetoothAddress(), BT04Package.fromBeacon(beacon));
-//                        }
                     }
                 }
             }
@@ -377,8 +382,12 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         List<CellTower> cellTowerList = new ArrayList<>();
 
         String networkOperator = telephonyManager.getNetworkOperator();
-        int mcc = Integer.parseInt(networkOperator.substring(0, 3));
-        int mnc = Integer.parseInt(networkOperator.substring(3));
+        int mcc = 0;
+        int mnc = 0;
+        if (networkOperator != null && networkOperator.length() >=3) {
+            mcc = Integer.parseInt(networkOperator.substring(0, 3));
+            mnc = Integer.parseInt(networkOperator.substring(3));
+        }
 
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             List<NeighboringCellInfo> neighboringCellInfoList = telephonyManager.getNeighboringCellInfo();

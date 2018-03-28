@@ -62,11 +62,11 @@ public class NotificationUtil {
                 //.addAction(R.drawable.objectbox_notification, context.getString(R.string.shutdown), shudownPendingIntent)
                 .setGroup(GROUP_KEY_SMARTTRACE_IO)
                 .setOngoing(true)
-                .setSound(Uri.parse("android.resource://"+context.getPackageName()+"/"+R.raw.mute_sound))
+                //.setSound(Uri.parse("android.resource://"+context.getPackageName()+"/"+R.raw.mute_sound))
                 .build();
     }
 
-    public static Notification createNotification(String channelId, String text) {
+    public static Notification createNotification(String channelId, String title, String text) {
         createNotificationChannel(channelId);
 
         Intent shudownIntent = new Intent(context, ShutdownReceiver.class);
@@ -78,13 +78,10 @@ public class NotificationUtil {
                 .setSmallIcon(R.drawable.notification)  // the status icon
                 .setTicker(context.getText(R.string.smarttrace_status_text))  // the status text
                 .setWhen(System.currentTimeMillis())  // the time stamp
-                .setContentTitle(context.getText(R.string.local_service_label))  // the label of the entry
+                .setContentTitle(title)  // the label of the entry
                 .setContentText(text)  // the contents of the entry
-                //.setContentIntent(contentIntent)  // The intent to send when the entry is clicked
-                //.addAction(R.drawable.objectbox_notification, context.getString(R.string.shutdown), shudownPendingIntent)
                 .setGroup(GROUP_KEY_SMARTTRACE_IO)
                 .setOngoing(true)
-                .setSound(Uri.parse("android.resource://"+context.getPackageName()+"/"+R.raw.mute_sound))
                 .build();
     }
 

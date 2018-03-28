@@ -22,8 +22,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import io.smarttrace.beacon.Logger;
 import io.smarttrace.beacon.R;
 import io.smarttrace.beacon.model.BT04Package;
+import io.smarttrace.beacon.net.DataUtil;
 
 /**
  * Created by beou on 3/9/18.
@@ -111,18 +113,19 @@ public class BeaconAdapter extends ArrayAdapter {
             else
                 strName = beaconData.getName();
 //            viewHolder.txtName.setText(strName);
-            viewHolder.txtMacAddress.setText(beaconData.getBluetoothAddress());
+            //viewHolder.txtMacAddress.setText(beaconData.getBluetoothAddress());
+            viewHolder.txtMacAddress.setText(DataUtil.timeOldPeriod(beaconData.getTimestamp()));
 
-//            if (beaconData.HardwareModel.equals("3901"))
-//                viewHolder.txtProtocol.setText("BT04 (v" + beaconData.Firmware + ")");
-//            else if (beaconData.HardwareModel.equals("3C01"))
-//                viewHolder.txtProtocol.setText("BT04B (v" + beaconData.Firmware + ")");
-//            else if (beaconData.HardwareModel.equals("3A01"))
-//                viewHolder.txtProtocol.setText("BT05 (v" + beaconData.Firmware + ")");
-//            else if (beaconData.HardwareModel.equals("3A04"))
-//                viewHolder.txtProtocol.setText("BT05B (v" + beaconData.Firmware + ")");
-//            else
-//                viewHolder.txtProtocol.setText(beaconData.HardwareModel + " (v" + beaconData.Firmware + ")");
+            if (beaconData.getModel().equals("3901"))
+                viewHolder.txtProtocol.setText("BT04 (v" + beaconData.getFirmware() + ")");
+            else if (beaconData.getModel().equals("3C01"))
+                viewHolder.txtProtocol.setText("BT04B (v" + beaconData.getFirmware() + ")");
+            else if (beaconData.getModel().equals("3A01"))
+                viewHolder.txtProtocol.setText("BT05 (v" + beaconData.getFirmware() + ")");
+            else if (beaconData.getModel().equals("3A04"))
+                viewHolder.txtProtocol.setText("BT05B (v" + beaconData.getFirmware() + ")");
+            else
+                viewHolder.txtProtocol.setText(beaconData.getModel() + " (v" + beaconData.getFirmware() + ")");
 
 
             String sn = beaconData.getSerialNumber();
@@ -147,8 +150,10 @@ public class BeaconAdapter extends ArrayAdapter {
             Date now = new Date();
             long TotalTime = (now.getTime() - beaconData.getTimestamp()) / (1000);
             if (TotalTime > 60) {
+                Logger.d("Switching dead");
                 convertView.setBackgroundColor(Color.parseColor("#AFCCCCCC"));
             } else {
+                Logger.d("Switching live");
                 convertView.setBackgroundColor(Color.TRANSPARENT);
             }
 
@@ -231,6 +236,7 @@ public class BeaconAdapter extends ArrayAdapter {
     }
 
     public void setDataPackageList(List<BT04Package> dataPackageList) {
+        Logger.d("[BeaconAdapter] + ...setDataPackageList()");
         if (dataPackageList != null) {
             Collections.sort(dataPackageList, new Comparator<BT04Package>() {
                 @Override

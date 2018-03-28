@@ -11,7 +11,7 @@ import android.util.Log;
 public class Logger {
 
     public static void d(String message) {
-        if (AppConfig.LOG_DEBUG_ENABLED)
+        if (AppConfig.DEBUG_ENABLED)
             Log.d(AppConfig.TAG, message);
     }
 

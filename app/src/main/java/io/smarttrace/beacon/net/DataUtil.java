@@ -91,6 +91,13 @@ public class DataUtil {
         return sb.toString();
     }
 
+    public static String timeOldPeriod(long timestamp) {
+        long now = (new Date()).getTime();
+        long period = (now - timestamp) /1000;
+
+        return period + "seconds";
+    }
+
     private static String formatDate(Date date, String format) {
         if (TextUtils.isEmpty(format)) {
             format = "yyyy/MM/dd HH:mm:ss";

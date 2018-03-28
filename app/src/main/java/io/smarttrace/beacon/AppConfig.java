@@ -20,16 +20,18 @@ public class AppConfig {
      * 3、Lambertian degree
      * 4、Liege degree
      */
+
+    public static final boolean DEBUG_ENABLED = false;
     public static int TemperatureUnit = 0;
     static final String TAG = "Smarttrace-Beacon";
     public static final String BACKEND_URL = "https://smarttrace.com.au/web/vf/rest";
     public static final String BACKEND_URL_BT04_NEW = "https://smarttrace.com.au/bt04";
     public static final String BACKEND_URL_BT04 = "http://smarttrace.com.au:8080/data";
-    static final boolean LOG_DEBUG_ENABLED = true;
     // max "age" in ms of last location (default 120000).
     public static final long LAST_LOCATION_MAX_AGE = 30 * MILLISECONDS_PER_SECOND;
     // the minimum time interval for GPS notifications, in milliseconds (default 60000).
-    public static final long UPDATE_INTERVAL = 10 * MILLISECONDS_PER_SECOND;
+    public static final long UPDATE_INTERVAL = 300 * MILLISECONDS_PER_SECOND;
+    public static final long UPDATE_INTERVAL_START = 30 * MILLISECONDS_PER_SECOND;
     public static final long UPDATE_PERIOD = 10 * MILLISECONDS_PER_SECOND;
     // the minimum distance interval for GPS notifications, in meters (default 20)
     public static final float LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE = 20;

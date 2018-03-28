@@ -3,6 +3,9 @@ package io.smarttrace.beacon.model;
 import org.altbeacon.beacon.Beacon;
 
 import java.util.Date;
+import java.util.Locale;
+
+import io.smarttrace.beacon.R;
 
 /**
  * Created by beou on 3/21/18.
@@ -101,12 +104,49 @@ public class BT04Package extends AbstractDataPackage{
         return distance;
     }
 
+    public String getDistanceString() {
+        String units = "m";
+        String r = "1";
+        if (distance > 1) {
+            r = String.format(Locale.US, "%.0f", distance);
+        }
+        return r + units;
+    }
+
     public void setDistance(Double distance) {
         this.distance = distance;
     }
 
     public String getModel() {
         return model;
+    }
+
+    public String getModelString() {
+        if (getModel().equals("3901"))
+            return ("BT04 (v" + getFirmware() + ")");
+        else if (getModel().equals("3C01"))
+            return ("BT04B (v" + getFirmware() + ")");
+        else if (getModel().equals("3A01"))
+            return ("BT05 (v" + getFirmware() + ")");
+        else if (getModel().equals("3A04"))
+            return ("BT05B (v" + getFirmware() + ")");
+        else
+            return (getModel() + " (v" + getFirmware() + ")");
+
+    }
+
+    public String getModelStringShort() {
+        if (getModel().equals("3901"))
+            return ("BT04");
+        else if (getModel().equals("3C01"))
+            return ("BT04B");
+        else if (getModel().equals("3A01"))
+            return ("BT05");
+        else if (getModel().equals("3A04"))
+            return ("BT05B");
+        else
+            return (getModel() + " (v" + getFirmware() + ")");
+
     }
 
     public void setModel(String model) {
