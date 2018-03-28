@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import io.smarttrace.beacon.AppConfig;
 import io.smarttrace.beacon.model.BT04Package;
 import io.smarttrace.beacon.model.BroadcastEvent;
 import io.smarttrace.beacon.model.CellTower;
@@ -75,6 +76,12 @@ public class DataUtil {
             sb.append(location.getAltitude()).append(SEP);
             sb.append(location.getAccuracy()).append(SEP);
             sb.append(location.getSpeed()).append(SEP).append(N);
+        } else {
+            sb.append(0).append(SEP);
+            sb.append(0).append(SEP);
+            sb.append(0).append(SEP);
+            sb.append(0).append(SEP);
+            sb.append(0).append(SEP).append(N);
         }
 
         for (BT04Package BT04Package : BT04PackageList) {
@@ -98,12 +105,30 @@ public class DataUtil {
         return period + "seconds";
     }
 
+
+    public static String formatDate(long timestamp, String format, TimeZone tz) {
+        Date date = new Date(timestamp);
+        return formatDate(date, format, tz);
+    }
+
+    public static String formatDate(long timestamp, String format, String tz) {
+        Date date = new Date(timestamp);
+        return formatDate(date, format, TimeZone.getTimeZone(tz));
+    }
+
     private static String formatDate(Date date, String format) {
+        return formatDate(date, format, null);
+    }
+
+    private static String formatDate(Date date, String format, TimeZone tz) {
         if (TextUtils.isEmpty(format)) {
             format = "yyyy/MM/dd HH:mm:ss";
         }
+        if (tz == null) {
+            tz = TimeZone.getTimeZone(AppConfig.DEFAULT_TIMEZONE_STR);
+        }
         SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.US);
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        sdf.setTimeZone(tz);
         return sdf.format(date);
     }
 }

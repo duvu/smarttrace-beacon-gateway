@@ -1,6 +1,9 @@
 package io.smarttrace.beacon.ui;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.annotation.TargetApi;
 import android.content.Intent;
 import android.location.Location;
 import android.os.Build;
@@ -15,6 +18,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -32,6 +36,7 @@ import io.smarttrace.beacon.R;
 import io.smarttrace.beacon.model.BT04Package;
 import io.smarttrace.beacon.model.BroadcastEvent;
 import io.smarttrace.beacon.model.ExitEvent;
+import io.smarttrace.beacon.model.UpdateEvent;
 import io.smarttrace.beacon.services.BeaconService;
 
 public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -46,6 +51,10 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
     List<BT04Package> BT04PackageList;
     BeaconAdapter adapter;
+
+    private View mProgressView;
+    ListView deviceListView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,62 +62,60 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle(R.string.app_title);
 
         requestBluetoothPermission();
 
         Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
         startService(intent1);
 
+        mProgressView = findViewById(R.id.login_progress);
 
-        ListView deviceListView = (ListView) findViewById(R.id.device_listview);
-        //BT04PackageList = advancedDevice != null ? advancedDevice.getBT04PackageList() : null;
+        deviceListView = (ListView) findViewById(R.id.device_listview);
         adapter = new BeaconAdapter(this, R.layout.control_scan_device_list, BT04PackageList);
         deviceListView.setAdapter(adapter);
 
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
+//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+//                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+//        drawer.addDrawerListener(toggle);
+//        toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
+//        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+//        navigationView.setNavigationItemSelectedListener(this);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, getText(R.string.creating_shipment), Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+//        fab.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Snackbar.make(view, getText(R.string.creating_shipment), Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
+//            }
+//        });
 
 
         //--Toolbar
-        final EditText edtSearch = toolbar.findViewById(R.id.edt_search_beacon);
-        edtSearch.setVisibility(View.GONE);
-        edtSearch.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (!hasFocus) {
-                    edtSearch.setVisibility(View.GONE);
-                } else {
-                    edtSearch.setVisibility(View.VISIBLE);
-                }
-            }
-        });
-        ImageButton btnSearch = (ImageButton) toolbar.findViewById(R.id.btn_search_beacon);
-        btnSearch.setOnClickListener(new View.OnClickListener() {
+
+//        ImageButton btnSearch = (ImageButton) toolbar.findViewById(R.id.btn_search_beacon);
+//        btnSearch.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                EventBus.getDefault().post(new UpdateEvent());
+//            }
+//        });
+
+        Button btnScanNow = findViewById(R.id.btn_scan_now);
+        btnScanNow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (edtSearch.getVisibility() == View.GONE) {
-                    edtSearch.setVisibility(View.VISIBLE);
-                } else {
-                    //do search/filter
-                }
+                showProgress(true);
+                EventBus.getDefault().post(new UpdateEvent());
             }
         });
+
+        showProgress(true);
+
         registerEventBus();
     }
 
@@ -194,8 +201,9 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         adapter.setDataPackageList(BT04PackageList);
         Location location = data.getLocation();
         for (int i = 0; i < BT04PackageList.size(); i++) {
-            Logger.i("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.get(i).getSerialNumber() +" Temperature:" + BT04PackageList.get(i).getTemperature() +"℃  Humidity:" + BT04PackageList.get(i).getHumidity() + "% Battery:"+BT04PackageList.get(i).getBatteryLevel()+"%");
+            //Logger.i("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.get(i).getSerialNumber() +" Temperature:" + BT04PackageList.get(i).getTemperature() +"℃  Humidity:" + BT04PackageList.get(i).getHumidity() + "% Battery:"+BT04PackageList.get(i).getBatteryLevel()+"%");
         }
+        showProgress(false);
     }
 
     private void registerEventBus() {
@@ -207,6 +215,45 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             EventBus.getDefault().unregister(this);
         } catch (Throwable t){
             //this may crash if registration did not go through. just be safe
+        }
+    }
+
+
+    //--
+    /**
+     * Shows the progress UI and hides the login form.
+     */
+
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
+    private void showProgress(final boolean show) {
+        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
+        // for very easy animations. If available, use these APIs to fade-in
+        // the progress spinner.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
+            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
+
+            deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
+            deviceListView.animate().setDuration(shortAnimTime).alpha(
+                    show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
+                }
+            });
+
+            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
+            mProgressView.animate().setDuration(shortAnimTime).alpha(
+                    show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
+                }
+            });
+        } else {
+            // The ViewPropertyAnimator APIs are not available, so simply show
+            // and hide the relevant UI components.
+            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
+            deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
 }

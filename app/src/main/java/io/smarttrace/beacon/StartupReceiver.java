@@ -14,9 +14,13 @@ public class StartupReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Logger.i("[StartupReceiver] starting ...");
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Intent serviceIntent = new Intent(context, MainActivity.class);
-            serviceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(serviceIntent);
+            Intent service1 = new Intent(context, BeaconService.class);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(service1);
+            } else {
+                context.startService(service1);
+            }
         }
     }
 }

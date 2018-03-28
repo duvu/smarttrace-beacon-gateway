@@ -80,8 +80,9 @@ public class NotificationUtil {
                 .setWhen(System.currentTimeMillis())  // the time stamp
                 .setContentTitle(title)  // the label of the entry
                 .setContentText(text)  // the contents of the entry
+                .setColorized(true)
+                .setColor(context.getResources().getColor(R.color.colorPrimaryDark))
                 .setGroup(GROUP_KEY_SMARTTRACE_IO)
-                .setOngoing(true)
                 .build();
     }
 

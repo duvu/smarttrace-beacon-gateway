@@ -5,6 +5,7 @@ import org.altbeacon.beacon.Beacon;
 import java.util.Date;
 import java.util.Locale;
 
+import io.smarttrace.beacon.AppContants;
 import io.smarttrace.beacon.R;
 
 /**
@@ -87,6 +88,9 @@ public class BT04Package extends AbstractDataPackage{
     public Double getTemperature() {
         return temperature;
     }
+    public String getTemperatureString() {
+        return temperature + AppContants.DEGREE_CELSIUS;
+    }
 
     public void setTemperature(Double temperature) {
         this.temperature = temperature;
@@ -106,11 +110,7 @@ public class BT04Package extends AbstractDataPackage{
 
     public String getDistanceString() {
         String units = "m";
-        String r = "1";
-        if (distance > 1) {
-            r = String.format(Locale.US, "%.0f", distance);
-        }
-        return r + units;
+        return String.format(Locale.US, "%.1f", distance + 0.1) + units;
     }
 
     public void setDistance(Double distance) {

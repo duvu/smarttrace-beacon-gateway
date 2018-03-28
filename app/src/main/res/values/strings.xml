@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SmarttraceIO</string>
+    <string name="app_name">SmartTrace</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -19,10 +19,10 @@
     <string name="permission_rationale">"Contacts permissions are needed for providing email
         completions."
     </string>
-    <string name="smarttrace_io">SmarttraceIO</string>
+    <string name="smarttrace_notification">SmartTrace</string>
     <string name="local_service_label">Beacon Gateway</string>
-    <string name="channel_name">Smarttrace Notification</string>
-    <string name="channel_description">Smarttrace Notification Description</string>
+    <string name="channel_name">SmartTrace Notification</string>
+    <string name="channel_description">SmartTrace Notification Description</string>
 
     <string name="lan_1">(Factory Special Edition)</string>
     <string name="lan_2">Message</string>
@@ -168,7 +168,7 @@
     <string name="lan_142">Travel Records</string>
     <string name="lan_143">Temperature</string>
     <string name="lan_144">Humidity</string>
-    <string name="lan_145">Model</string>
+    <string name="model">Model</string>
     <string name="lan_146">Default</string>
     <string name="lan_147">Distance</string>
     <string name="lan_148">RSSI</string>
@@ -372,7 +372,12 @@
     <string name="txt_search">Search</string>
     <string name="logout">Logout</string>
     <string name="distance_around">around</string>
+    <string name="distance">Dist </string>
     <string name="creating_shipment">A New Shipment was created</string>
     <string name="shutdown">Shutdown</string>
-    <string name="smarttrace_status_text">Smarttrace Status Text</string>
+    <string name="smarttrace_status_text">SmartTrace Beacon Reading</string>
+    <string name="scan_now">Scan Now</string>
+    <string name="scanned_time">Time: </string>
+    <string name="beacon_number">Beacon #</string>
+    <string name="app_title">SmartTrace Beacon Uploader</string>
 </resources>

@@ -6,6 +6,7 @@ import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -35,6 +36,9 @@ import android.telephony.NeighboringCellInfo;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
@@ -49,9 +53,12 @@ import org.greenrobot.eventbus.Subscribe;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.objectbox.Box;
 import io.smarttrace.beacon.AppConfig;
@@ -59,11 +66,13 @@ import io.smarttrace.beacon.Logger;
 import io.smarttrace.beacon.MyApplication;
 import io.smarttrace.beacon.R;
 import io.smarttrace.beacon.Systems;
+import io.smarttrace.beacon.model.AbstractDataPackage;
 import io.smarttrace.beacon.model.BT04Package;
 import io.smarttrace.beacon.model.BroadcastEvent;
 import io.smarttrace.beacon.model.CellTower;
 import io.smarttrace.beacon.model.DataLogger;
 import io.smarttrace.beacon.model.ExitEvent;
+import io.smarttrace.beacon.model.UpdateEvent;
 import io.smarttrace.beacon.net.DataUtil;
 import io.smarttrace.beacon.net.Http;
 import io.smarttrace.beacon.ui.MainActivity;
@@ -128,11 +137,11 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        handle();
+        startHandle();
         return START_STICKY;
     }
 
-    private void handle() {
+    private void startHandle() {
         Logger.i("[starting scan ble and location] ...");
         startGpsManager();
         startBLEScan();
@@ -166,6 +175,9 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     }
 
     private void startBLEScan() {
+        if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
+            BluetoothAdapter.getDefaultAdapter().enable();
+        }
         beaconManager.setBackgroundMode(false);
         syncSettingsToService();
     }
@@ -248,27 +260,13 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private void broadcastData() {
         Logger.d("broadcasting data");
         List<CellTower> cellTowerList = getAllCellInfo();
-//        for (CellTower tower: cellTowerList) {
-//            Logger.d("Tower - Cid: " + tower.getCid());
-//            Logger.d("Tower - Lac: " + tower.getLac());
-//            Logger.d("Tower - Mcc: " + tower.getMcc());
-//            Logger.d("Tower - Mnc: " + tower.getMnc());
-//        }
+        BroadcastEvent event = new BroadcastEvent();
+        event.setBT04PackageList(getDataPackageList());
+        event.setLocation(lastKnownLocation);
+        event.setGatewayId(getGatewayId());
+        event.setCellTowerList(cellTowerList);
 
-            isDataExisted = true;
-            List<BT04Package> BT04PackageList = getDataPackageList();
-            BroadcastEvent event = new BroadcastEvent();
-            event.setBT04PackageList(getDataPackageList());
-            event.setLocation(lastKnownLocation);
-            event.setGatewayId(getGatewayId());
-            event.setCellTowerList(cellTowerList);
 
-            for (BT04Package bt04: BT04PackageList) {
-                Notification notification = NotificationUtil.createNotification(CHANNEL_ID,
-                        bt04.getSerialNumber() + "(" + bt04.getModelStringShort() + ")",
-                        "Temperature: " + bt04.getTemperature() + "Humidity: " + bt04.getHumidity() + "Distance: " + bt04.getDistanceString());
-                NotificationUtil.notify(Integer.parseInt(bt04.getSerialNumber()), notification);
-            }
             //old protocol
 //            List<String> stringList = DataUtil.formatData1(event);
 
@@ -306,6 +304,13 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     }
 
     private List<BT04Package> getDataPackageList() {
+        long now = (new Date()).getTime();
+        for (Map.Entry entry : deviceMap.entrySet()) {
+            BT04Package data = (BT04Package) entry.getValue();
+            if (now - data.getTimestamp() > 10 * 60 * 1000) {
+                deviceMap.remove(entry.getKey());
+            }
+        }
         return new ArrayList<>(deviceMap.values());
     }
 
@@ -325,7 +330,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private void startForeground() {
         Notification notification = NotificationUtil.createNotification(CHANNEL_ID);
         notification.contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
-        startForeground(R.string.smarttrace_io, notification);
+        startForeground(R.string.smarttrace_notification, notification);
     }
 
     @Override
@@ -342,8 +347,15 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
                             bt04.updateFromBeacon(beacon);
                         }
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
+
+                        isDataExisted = true;
+                        Notification notification = NotificationUtil.createNotification(CHANNEL_ID,
+                                "Beacon #" + bt04.getSerialNumber(),
+                                "Temp: " + bt04.getTemperatureString() + " Distance: " + bt04.getDistanceString());
+                        NotificationUtil.notify(Integer.parseInt(bt04.getSerialNumber()), notification);
                     }
                 }
+                // check and remove
             }
 
         });
@@ -464,6 +476,15 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         stopForeground(true);
         stopSelf();
     }
+
+    @Subscribe
+    public void onUpdateEvent(UpdateEvent updateEvent) {
+        stopBLEScan(false);
+        stopGpsManager();
+        stopAbsoluteTimer();
+        startHandle();
+    }
+
     @Override
     public void didEnterRegion(Region region) {
         //Logger.d("[+] didEnterRegion");
