@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="io.smarttrace.beacon">
+    package="au.com.smarttrace.beacon">
 
     <!-- To auto-complete the email text field in the login form with the user's emails -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -25,7 +25,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".ui.MainActivity"
+            android:name="au.com.smarttrace.beacon.ui.MainActivity"
             android:label="@string/app_name"
             android:launchMode="singleInstance"
             android:theme="@style/AppTheme.NoActionBar">
@@ -36,11 +36,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.LoginActivity"
+            android:name="au.com.smarttrace.beacon.ui.LoginActivity"
             android:label="@string/title_activity_login" />
 
         <receiver
-            android:name=".StartupReceiver"
+            android:name="au.com.smarttrace.beacon.StartupReceiver"
             android:enabled="true"
             android:exported="true"
             android:label="RestartServiceWhenStopped">
@@ -52,16 +52,16 @@
         </receiver>
 
         <activity
-            android:name=".ui.SettingsActivity"
+            android:name="au.com.smarttrace.beacon.ui.SettingsActivity"
             android:label="@string/title_activity_settings" />
 
         <service
-            android:name=".services.BeaconService"
+            android:name="au.com.smarttrace.beacon.services.BeaconService"
             android:enabled="true"
             android:exported="true" />
 
         <receiver
-            android:name=".ShutdownReceiver"
+            android:name="au.com.smarttrace.beacon.ShutdownReceiver"
             android:enabled="true"
             android:exported="true"></receiver>
     </application>
