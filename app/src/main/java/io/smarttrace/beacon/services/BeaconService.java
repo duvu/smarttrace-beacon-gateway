@@ -305,10 +305,12 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
 
     private List<BT04Package> getDataPackageList() {
         long now = (new Date()).getTime();
-        for (Map.Entry entry : deviceMap.entrySet()) {
+        Iterator it = deviceMap.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry entry = (Map.Entry) it.next();
             BT04Package data = (BT04Package) entry.getValue();
             if (now - data.getTimestamp() > 10 * 60 * 1000) {
-                deviceMap.remove(entry.getKey());
+                it.remove();
             }
         }
         return new ArrayList<>(deviceMap.values());
