@@ -21,7 +21,7 @@ public class AppConfig {
      * 4、Liege degree
      */
 
-    public static final boolean DEBUG_ENABLED = false;
+    public static final boolean DEBUG_ENABLED = true;
     public static int TemperatureUnit = 0;
     static final String TAG = "Smarttrace-Beacon";
     public static final String BACKEND_URL = "https://smarttrace.com.au/web/vf/rest";

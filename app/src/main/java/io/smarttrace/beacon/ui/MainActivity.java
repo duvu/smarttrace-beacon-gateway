@@ -25,6 +25,8 @@ import android.widget.ListView;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 
+import com.zxing.activity.CaptureActivity;
+
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -36,6 +38,7 @@ import io.smarttrace.beacon.R;
 import io.smarttrace.beacon.model.BT04Package;
 import io.smarttrace.beacon.model.BroadcastEvent;
 import io.smarttrace.beacon.model.ExitEvent;
+import io.smarttrace.beacon.model.ProbeBeacon;
 import io.smarttrace.beacon.model.UpdateEvent;
 import io.smarttrace.beacon.services.BeaconService;
 
@@ -44,16 +47,21 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.INTERNET,
             Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.CAMERA
     };
 
     List<BT04Package> BT04PackageList;
     BeaconAdapter adapter;
 
     private View mProgressView;
+    private View mMainView;
     ListView deviceListView;
+
+    EditText edtSerialNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,56 +77,32 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
         startService(intent1);
 
-        mProgressView = findViewById(R.id.login_progress);
-
-        deviceListView = (ListView) findViewById(R.id.device_listview);
-        adapter = new BeaconAdapter(this, R.layout.control_scan_device_list, BT04PackageList);
-        deviceListView.setAdapter(adapter);
-
-
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-//                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-//        drawer.addDrawerListener(toggle);
-//        toggle.syncState();
-
-//        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-//        navigationView.setNavigationItemSelectedListener(this);
-
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, getText(R.string.creating_shipment), Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
-
-
-        //--Toolbar
-
-//        ImageButton btnSearch = (ImageButton) toolbar.findViewById(R.id.btn_search_beacon);
-//        btnSearch.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                EventBus.getDefault().post(new UpdateEvent());
-//            }
-//        });
-
-        Button btnScanNow = findViewById(R.id.btn_scan_now);
-        btnScanNow.setOnClickListener(new View.OnClickListener() {
+        ImageButton startScanner = findViewById(R.id.btn_start_barcode);
+        startScanner.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showProgress(true);
-                EventBus.getDefault().post(new UpdateEvent());
+                Intent openCameraIntent = new Intent(MainActivity.this, CaptureActivity.class);
+                startActivityForResult(openCameraIntent, 0);
             }
         });
 
-        showProgress(true);
-
+        edtSerialNumber = findViewById(R.id.edt_serial_number);
+        mProgressView = findViewById(R.id.login_progress);
+        mMainView = findViewById(R.id.main_screen);
         registerEventBus();
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 0 && data != null) {
+            showProgress(true);
+            Bundle bundle = data.getExtras();
+            String serialNumber = bundle.getString("result");
+            edtSerialNumber.setText(serialNumber);
+            edtSerialNumber.setEnabled(false);
+            EventBus.getDefault().post(new ProbeBeacon(serialNumber));
+        }
+    }
 
     @Override
     public void onBackPressed() {
@@ -232,12 +216,12 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
-            deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
-            deviceListView.animate().setDuration(shortAnimTime).alpha(
+            mMainView.setVisibility(show ? View.GONE : View.VISIBLE);
+            mMainView.animate().setDuration(shortAnimTime).alpha(
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
+                    mMainView.setVisibility(show ? View.GONE : View.VISIBLE);
                 }
             });
 
@@ -253,7 +237,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             // The ViewPropertyAnimator APIs are not available, so simply show
             // and hide the relevant UI components.
             mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
+            mMainView.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
 }

@@ -72,6 +72,8 @@ import io.smarttrace.beacon.model.BroadcastEvent;
 import io.smarttrace.beacon.model.CellTower;
 import io.smarttrace.beacon.model.DataLogger;
 import io.smarttrace.beacon.model.ExitEvent;
+import io.smarttrace.beacon.model.ProbeBeacon;
+import io.smarttrace.beacon.model.ProbeBeaconSuccess;
 import io.smarttrace.beacon.model.UpdateEvent;
 import io.smarttrace.beacon.net.DataUtil;
 import io.smarttrace.beacon.net.Http;
@@ -266,41 +268,22 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         event.setGatewayId(getGatewayId());
         event.setCellTowerList(cellTowerList);
 
-
-            //old protocol
-//            List<String> stringList = DataUtil.formatData1(event);
-
-//            for (String str : stringList) {
-//                Logger.d("[Http-Old]: " + str);
-//                Http.getIntance().post(AppConfig.BACKEND_URL_BT04, str, new Callback() {
-//                    @Override
-//                    public void onFailure(Call call, IOException e) {
-//                        Logger.d("[Http-Old] failed " + e.getMessage());
-//                    }
-//
-//                    @Override
-//                    public void onResponse(Call call, Response response) throws IOException {
-//                        Logger.d("[Http-Old] success");
-//                    }
-//                });
+//        //send data bundle - new protocol
+//        Logger.d(DataUtil.formatData(event));
+//        Http.getIntance().post(AppConfig.BACKEND_URL_BT04_NEW, DataUtil.formatData(event), new Callback() {
+//            @Override
+//            public void onFailure(Call call, IOException e) {
+//                Logger.d("[Http] failed " + e.getMessage());
 //            }
-
-            //send data bundle - new protocol
-            Logger.d(DataUtil.formatData(event));
-            Http.getIntance().post(AppConfig.BACKEND_URL_BT04_NEW, DataUtil.formatData(event), new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Logger.d("[Http] failed " + e.getMessage());
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    Logger.d("[Http] success " + response.toString());
-                }
-            });
-
-            EventBus.getDefault().removeStickyEvent(BroadcastEvent.class);
-            EventBus.getDefault().postSticky(event);
+//
+//            @Override
+//            public void onResponse(Call call, Response response) throws IOException {
+//                Logger.d("[Http] success " + response.toString());
+//            }
+//        });
+//
+//        EventBus.getDefault().removeStickyEvent(BroadcastEvent.class);
+//        EventBus.getDefault().postSticky(event);
     }
 
     private List<BT04Package> getDataPackageList() {
@@ -351,10 +334,10 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
 
                         isDataExisted = true;
-                        Notification notification = NotificationUtil.createNotification(CHANNEL_ID,
-                                "Beacon #" + bt04.getSerialNumber(),
-                                "Temp: " + bt04.getTemperatureString() + " Distance: " + bt04.getDistanceString());
-                        NotificationUtil.notify(Integer.parseInt(bt04.getSerialNumber()), notification);
+                        //Notification notification = NotificationUtil.createNotification(CHANNEL_ID,
+                        //        "Beacon #" + bt04.getSerialNumber(),
+                        //        "Temp: " + bt04.getTemperatureString() + " Distance: " + bt04.getDistanceString());
+                        //NotificationUtil.notify(Integer.parseInt(bt04.getSerialNumber()), notification);
                     }
                 }
                 // check and remove
@@ -471,6 +454,30 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         } catch (Throwable t){
             //this may crash if registration did not go through. just be safe
         }
+    }
+
+    @Subscribe
+    public void onProbeBeacon(ProbeBeacon proble) {
+        //1. check on deviceMap
+        //2. start new scan
+        boolean found = false;
+        Iterator it = deviceMap.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry entry = (Map.Entry) it.next();
+            BT04Package data = (BT04Package) entry.getValue();
+            if (data.getSerialNumber().equalsIgnoreCase(proble.getSerialNumber())) {
+                found = true;
+
+                break;
+            }
+        }
+        //--
+        if (found) {
+            EventBus.getDefault().post(new ProbeBeaconSuccess(true));
+        } else {
+
+        }
+
     }
 
     @Subscribe

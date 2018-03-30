@@ -4,7 +4,7 @@ apply plugin: 'io.objectbox'
 android {
     compileSdkVersion 26
     defaultConfig {
-        applicationId "au.com.smarttrace.beacon"
+        applicationId "au.com.smarttrace.userapp"
         minSdkVersion 18
         targetSdkVersion 26
         versionCode 18
@@ -18,7 +18,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '27.0.3'
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
@@ -36,14 +36,15 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
-    compile 'org.greenrobot:eventbus:3.1.1'
-    compile 'com.squareup.okhttp3:okhttp:3.10.0'
-    compile 'org.altbeacon:android-beacon-library:2+'
-    compile 'com.google.code.gson:gson:2.8.2'
-
-    compile 'com.google.guava:guava:24.1-android'
+    implementation 'org.greenrobot:eventbus:3.1.1'
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'org.altbeacon:android-beacon-library:2+'
+    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'com.google.android:flexbox:0.3.2'
+    implementation 'com.google.guava:guava:24.1-android'
+    implementation group: 'com.google.zxing', name: 'core', version: '3.3.2'
 
     // all below should be added automatically by the plugin
-    compile "io.objectbox:objectbox-android:$objectboxVersion"
+    implementation "io.objectbox:objectbox-android:$objectboxVersion"
     annotationProcessor "io.objectbox:objectbox-processor:$objectboxVersion"
 }
