@@ -18,35 +18,234 @@
             android:layout_centerInParent="true"
             android:layout_marginBottom="8dp"
             android:visibility="gone" />
-        <LinearLayout
-            android:id="@+id/layout_scan_now"
+        <ScrollView
+            android:id="@+id/main_screen"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center">
-            <Button
-                android:id="@+id/btn_scan_now"
-                android:text="@string/scan_now"
-                android:textAllCaps="true"
-                android:textSize="16sp"
-                android:layout_margin="@dimen/button_margin"
-                android:background="@color/colorPrimaryDark"
-                android:paddingLeft="@dimen/button_padding"
-                android:paddingRight="@dimen/button_padding"
-                android:textColor="@color/textColorPrimary"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-        <View
-            android:id="@+id/divider1"
-            android:layout_below="@+id/layout_scan_now"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"/>
-        <ListView
-            android:id="@+id/device_listview"
-            android:layout_below="@+id/divider1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="@dimen/activity_vertical_margin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:text="@string/txt_1"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                        <TextView
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:text="@string/txt_statement_switch_on"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_gravity="center_vertical"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content">
+                            <LinearLayout
+                                android:orientation="horizontal"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content">
+                                <TextView
+                                    android:text="@string/txt_statement_press_power_button_0"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" />
+                                <TextView
+                                    android:text="@string/txt_statement_press_power_button_1"
+                                    android:layout_marginLeft="5dp"
+                                    android:textAllCaps="true"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" />
+                                <TextView
+                                    android:text="@string/txt_statement_press_power_button_2"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content">
+                                <TextView
+                                    android:text="@string/txt_statement_press_power_button_3"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" />
+                                <TextView
+                                    android:text="@string/txt_statement_press_power_button_4"
+                                    android:layout_marginLeft="5dp"
+                                    android:textAllCaps="true"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" />
+                                <TextView
+                                    android:text="@string/txt_statement_press_power_button_5"
+                                    android:layout_marginLeft="5dp"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <ImageView
+                            android:layout_gravity="end"
+                            android:src="@drawable/bt04b"
+                            android:layout_width="150dp"
+                            android:layout_height="150dp" />
+                    </LinearLayout>
+                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:background="@color/colorPrimaryDark"/>
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="@dimen/activity_vertical_margin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:text="@string/txt_2"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                        <TextView
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:text="@string/txt_statement_scan_barcode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="fill_parent"
+                        android:layout_height="100dp">
+                        <TextView
+                            android:layout_weight=".5"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"/>
+                        <ImageButton
+                            android:id="@+id/btn_start_barcode"
+                            android:src="@drawable/bar_code_img"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_weight="1"
+                            android:background="@color/transparent"
+                            android:scaleType="fitCenter"
+                            android:adjustViewBounds="true"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"/>
+                        <TextView
+                            android:layout_weight=".5"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <TextView
+                        android:text="@string/txt_or"
+                        android:layout_gravity="center_horizontal"
+                        android:textAllCaps="true"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="fill_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_weight=".5"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"/>
+                        <EditText
+                            android:id="@+id/edt_serial_number"
+                            android:layout_gravity="center_horizontal"
+                            android:layout_weight="1"
+                            android:layout_width="0dp"
+                            android:hint="@string/txt_enter_serial_number"
+                            android:layout_height="wrap_content"/>
+                        <TextView
+                            android:layout_weight=".5"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <TextView
+                        android:text="@string/txt_reading_beacon_now"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:background="@color/colorPrimaryDark"/>
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:padding="@dimen/activity_vertical_margin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:text="@string/txt_3"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                        <TextView
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:text="@string/txt_start_shipment_for_the_beacon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <Button
+                        android:id="@+id/btn_start_shipment"
+                        android:text="@string/txt_start_shipment"
+                        android:background="@color/colorPrimaryDark"
+                        android:layout_gravity="center_horizontal"
+                        android:textColor="@color/textColorPrimary"
+                        android:paddingStart="@dimen/button_padding"
+                        android:paddingEnd="@dimen/button_padding"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                    <TextView
+                        android:text="@string/txt_start_shipment_now"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:background="@color/colorPrimaryDark"/>
+                <LinearLayout
+                    android:padding="@dimen/activity_vertical_margin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView
+                        android:text="@string/that_all"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
     </RelativeLayout>
 
 </android.support.constraint.ConstraintLayout>
