@@ -327,7 +327,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     private void startForeground() {
         Notification notification = NotificationUtil.createNotification(CHANNEL_ID);
         notification.contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
-        startForeground(R.string.smarttrace_notification, notification);
+        startForeground(AppConfig.SMARTTRACE_NOTIFICATION_ID, notification);
     }
 
     @Override

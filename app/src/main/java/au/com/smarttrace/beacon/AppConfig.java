@@ -39,6 +39,7 @@ public class AppConfig {
     public static String DEFAULT_TIMEZONE_STR = "GMT";
 
     public static String GATEWAY_ID = "";
+    public static final int SMARTTRACE_NOTIFICATION_ID = 190584;
 
     private Context context;
 
