@@ -2,9 +2,11 @@ package au.com.smarttrace.beacon.ui;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.LoaderManager.LoaderCallbacks;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
@@ -31,6 +33,7 @@ import java.util.List;
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
+import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.Http;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
 
@@ -53,6 +56,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         mPasswordView = (EditText) findViewById(R.id.password);
@@ -66,6 +70,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 return false;
             }
         });
+
+        //-- load stored username-password
+        String username = SharedPref.getUserName();
+        String password = SharedPref.getPassword();
+        mEmailView.setText(username);
+        mPasswordView.setText(password);
 
         Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
@@ -85,9 +95,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * errors are presented and no actual login attempt is made.
      */
     private void attemptLogin() {
-
-        Logger.d("[LoginActivity] ...");
-
         if (mAuthTask != null) {
             return;
         }
@@ -110,8 +117,15 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             cancel = true;
         }
 
-        email = (TextUtils.isEmpty(email) ? "2@smarttrace.com.au" : email);
-        password = (TextUtils.isEmpty(password) ? "music4ears" : password);
+        if (AppConfig.DEBUG_ENABLED) {
+            email = (TextUtils.isEmpty(email) ? "2@smarttrace.com.au" : email);
+            password = (TextUtils.isEmpty(password) ? "music4ears" : password);
+        }
+
+        //stored username-password
+        SharedPref.saveUserName(email);
+        SharedPref.savePassword(password);
+
         // Check for a valid email address.
         if (TextUtils.isEmpty(email)) {
             mEmailView.setError(getString(R.string.error_field_required));
@@ -240,6 +254,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * Represents an asynchronous login/registration task used to authenticate
      * the user.
      */
+    @SuppressLint("StaticFieldLeak")
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mEmail;
@@ -262,6 +277,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 //-- start store login data
                 // get more data and store
                 storeUserData(response);
+                //-- move to main
+                moveToMain();
+
             } catch (IOException e) {}
 
             return true;
@@ -286,8 +304,16 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             showProgress(false);
         }
 
-        private void storeUserData(LoginResponse data) {
+        private void moveToMain() {
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            startActivity(intent);
 
+        }
+        private void storeUserData(LoginResponse data) {
+            SharedPref.saveToken(data.getResponse().getToken());
+            SharedPref.saveExpiredStr(data.getResponse().getExpired());
+            SharedPref.saveTokenInstance(data.getResponse().getInstance());
         }
     }
 }

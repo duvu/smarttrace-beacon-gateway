@@ -382,22 +382,30 @@
     <string name="app_title">SmartTrace Shipment Launcher</string>
     <string name="txt_1">1.</string>
     <string name="txt_statement_switch_on">Switch on the Beacon</string>
+    <string name="txt_statement_press_power_button">Press the POWER button for 6 secs util GREEN light appears</string>
     <string name="txt_statement_press_power_button_0">Press the</string>
     <string name="txt_statement_press_power_button_1">POWER</string>
     <string name="txt_statement_press_power_button_2">button for</string>
     <string name="txt_statement_press_power_button_3">6 secs util</string>
     <string name="txt_statement_press_power_button_4">green</string>
-    <string name="txt_statement_press_power_button_5">light appears</string>
+    <string name="txt_statement_press_power_button_5">light</string>
+    <string name="txt_statement_press_power_button_6">appears</string>
 
     <string name="txt_2">2.</string>
     <string name="txt_statement_scan_barcode">Scan the barcode of the Beacon</string>
     <string name="txt_reading_beacon_now">Reading beacon now ...</string>
     <string name="txt_3">3.</string>
     <string name="txt_start_shipment_for_the_beacon">Start a shipment for the Beacon</string>
-    <string name="that_all">That\'s all. Now attach both the beacon and this phone to the load</string>
+    <string name="that_all">That\'s all. The system will generate a shipment when a beacon and phone travel outside the start location</string>
     <string name="txt_start_shipment_now">Start shipment now ...</string>
     <string name="txt_start_shipment">Start Shipment</string>
     <string name="txt_or">Or</string>
     <string name="txt_enter_serial_number">Enter serial number</string>
+    <string name="txt_statement_switch_on_phone">Switch on the Phone</string>
+    <string name="txt_place_phone_and_beacon">Place Phone and the Beacon on load</string>
+
+    <string name="title_activity_fullscreen">FullscreenActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
 
 </resources>

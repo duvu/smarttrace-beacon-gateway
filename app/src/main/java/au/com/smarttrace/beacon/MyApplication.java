@@ -22,6 +22,9 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         AppConfig.populateSetting(MyApplication.this);
+
+        SharedPref.init(getApplicationContext());
+
         //-- init database
         boxStore = MyObjectBox.builder().androidContext(MyApplication.this).build();
 

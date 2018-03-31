@@ -411,43 +411,45 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
             }
         } else {
             List<CellInfo> cellInfos = telephonyManager.getAllCellInfo();
-            Logger.d("CellinfosList: " + cellInfos.size());
-            for (CellInfo info: cellInfos) {
-                CellTower cellTower = new CellTower();
+            if (cellInfos != null) {
+                Logger.d("CellinfosList: " + cellInfos.size());
+                for (CellInfo info : cellInfos) {
+                    CellTower cellTower = new CellTower();
 
-                if (info instanceof CellInfoGsm) {
-                    CellSignalStrengthGsm gsm = ((CellInfoGsm) info).getCellSignalStrength();
-                    CellIdentityGsm identityGsm = ((CellInfoGsm) info).getCellIdentity();
-                    cellTower.setLac(identityGsm.getLac());
-                    cellTower.setCid(identityGsm.getCid());
-                    cellTower.setMcc(identityGsm.getMcc());
-                    cellTower.setMnc(identityGsm.getMnc());
-                    cellTower.setRxlev(gsm.getAsuLevel());
-                    cellTowerList.add(cellTower);
+                    if (info instanceof CellInfoGsm) {
+                        CellSignalStrengthGsm gsm = ((CellInfoGsm) info).getCellSignalStrength();
+                        CellIdentityGsm identityGsm = ((CellInfoGsm) info).getCellIdentity();
+                        cellTower.setLac(identityGsm.getLac());
+                        cellTower.setCid(identityGsm.getCid());
+                        cellTower.setMcc(identityGsm.getMcc());
+                        cellTower.setMnc(identityGsm.getMnc());
+                        cellTower.setRxlev(gsm.getAsuLevel());
+                        cellTowerList.add(cellTower);
 
-                } else if (info instanceof CellInfoLte) {
-                    CellSignalStrengthLte lte = ((CellInfoLte) info).getCellSignalStrength();
-                    CellIdentityLte identityLte = ((CellInfoLte) info).getCellIdentity();
-                    cellTower.setLac(identityLte.getTac());
-                    cellTower.setCid(identityLte.getCi());
-                    cellTower.setMcc(identityLte.getMcc());
-                    cellTower.setMnc(identityLte.getMnc());
-                    cellTower.setRxlev(lte.getAsuLevel());
-                    cellTowerList.add(cellTower);
-                } else if (info instanceof CellInfoWcdma) {
-                    CellSignalStrengthWcdma wcdma = ((CellInfoWcdma) info).getCellSignalStrength();
-                    CellIdentityWcdma identityWcdma = ((CellInfoWcdma) info).getCellIdentity();
+                    } else if (info instanceof CellInfoLte) {
+                        CellSignalStrengthLte lte = ((CellInfoLte) info).getCellSignalStrength();
+                        CellIdentityLte identityLte = ((CellInfoLte) info).getCellIdentity();
+                        cellTower.setLac(identityLte.getTac());
+                        cellTower.setCid(identityLte.getCi());
+                        cellTower.setMcc(identityLte.getMcc());
+                        cellTower.setMnc(identityLte.getMnc());
+                        cellTower.setRxlev(lte.getAsuLevel());
+                        cellTowerList.add(cellTower);
+                    } else if (info instanceof CellInfoWcdma) {
+                        CellSignalStrengthWcdma wcdma = ((CellInfoWcdma) info).getCellSignalStrength();
+                        CellIdentityWcdma identityWcdma = ((CellInfoWcdma) info).getCellIdentity();
 
-                    cellTower.setLac(identityWcdma.getLac());
-                    cellTower.setCid(identityWcdma.getCid());
-                    cellTower.setMnc(identityWcdma.getMnc());
-                    cellTower.setMcc(identityWcdma.getMcc());
-                    cellTower.setRxlev(wcdma.getAsuLevel());
-                    cellTowerList.add(cellTower);
-                } else if (info instanceof CellInfoCdma) {
-                    CellSignalStrengthCdma cdma = ((CellInfoCdma) info).getCellSignalStrength();
-                    CellIdentityCdma identityCdma = ((CellInfoCdma) info).getCellIdentity();
-                    //
+                        cellTower.setLac(identityWcdma.getLac());
+                        cellTower.setCid(identityWcdma.getCid());
+                        cellTower.setMnc(identityWcdma.getMnc());
+                        cellTower.setMcc(identityWcdma.getMcc());
+                        cellTower.setRxlev(wcdma.getAsuLevel());
+                        cellTowerList.add(cellTower);
+                    } else if (info instanceof CellInfoCdma) {
+                        CellSignalStrengthCdma cdma = ((CellInfoCdma) info).getCellSignalStrength();
+                        CellIdentityCdma identityCdma = ((CellInfoCdma) info).getCellIdentity();
+                        //
+                    }
                 }
             }
         }

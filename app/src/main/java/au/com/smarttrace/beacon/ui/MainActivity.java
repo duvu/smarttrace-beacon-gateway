@@ -5,18 +5,29 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ListView;
+import android.widget.TextView;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 
@@ -28,6 +39,7 @@ import java.util.List;
 
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
+import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.model.BT04Package;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
@@ -44,11 +56,9 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             Manifest.permission.BLUETOOTH_ADMIN
     };
 
-    List<BT04Package> BT04PackageList;
-    BeaconAdapter adapter;
-
     private View mProgressView;
-    ListView deviceListView;
+    private View mMainScreenView;
+    private ImageButton mImageButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,60 +67,38 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle(R.string.app_title);
-
         requestBluetoothPermission();
 
         Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
         startService(intent1);
 
+        TextView txt2Content = findViewById(R.id.txt_2_content);
+        //- Press the POWER button for 6 secs util green light appears
+        String textStr = getString(R.string.txt_statement_press_power_button);
+        SpannableString text = new SpannableString(textStr);
+
+        text.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.textColorWarn)), 0, textStr.length(), 0);
+        text.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorPrimaryDark)), 39, 45, 0);
+        text.setSpan(new RelativeSizeSpan(1.1f), 0, textStr.length(), 0);
+        text.setSpan(new StyleSpan(Typeface.BOLD), 10, 15, 0);
+        text.setSpan(new StyleSpan(Typeface.BOLD), 39, 45, 0);
+
+        txt2Content.setText(text, TextView.BufferType.SPANNABLE);
+
         mProgressView = findViewById(R.id.login_progress);
-
-        deviceListView = (ListView) findViewById(R.id.device_listview);
-        adapter = new BeaconAdapter(this, R.layout.control_scan_device_list, BT04PackageList);
-        deviceListView.setAdapter(adapter);
-
-
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-//                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-//        drawer.addDrawerListener(toggle);
-//        toggle.syncState();
-
-//        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-//        navigationView.setNavigationItemSelectedListener(this);
-
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, getText(R.string.creating_shipment), Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
-
-
-        //--Toolbar
-
-//        ImageButton btnSearch = (ImageButton) toolbar.findViewById(R.id.btn_search_beacon);
-//        btnSearch.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                EventBus.getDefault().post(new UpdateEvent());
-//            }
-//        });
-
-        Button btnScanNow = findViewById(R.id.btn_scan_now);
-        btnScanNow.setOnClickListener(new View.OnClickListener() {
+        mMainScreenView = findViewById(R.id.main_screen);
+        mImageButton = findViewById(R.id.btn_logout);
+        mImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                showProgress(true);
-                EventBus.getDefault().post(new UpdateEvent());
+            public void onClick(View view) {
+
+                //TODO: clean saved user, password
+                SharedPref.clear();
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                startActivity(intent);
             }
         });
-
-        showProgress(true);
-
         registerEventBus();
     }
 
@@ -190,13 +178,10 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(BroadcastEvent data) {
         Logger.d("[MainActivity] onUpdateScan" + data.getBT04PackageList().size());
-        //update data
-        //advancedDevice = data;
-        BT04PackageList = data.getBT04PackageList();
-        adapter.setDataPackageList(BT04PackageList);
+        List<BT04Package> BT04PackageList = data.getBT04PackageList();
         Location location = data.getLocation();
         for (int i = 0; i < BT04PackageList.size(); i++) {
-            //Logger.i("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.get(i).getSerialNumber() +" Temperature:" + BT04PackageList.get(i).getTemperature() +"℃  Humidity:" + BT04PackageList.get(i).getHumidity() + "% Battery:"+BT04PackageList.get(i).getBatteryLevel()+"%");
+            Logger.d("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.get(i).getSerialNumber() +" Temperature:" + BT04PackageList.get(i).getTemperature() +"℃  Humidity:" + BT04PackageList.get(i).getHumidity() + "% Battery:"+BT04PackageList.get(i).getBatteryLevel()+"%");
         }
         showProgress(false);
     }
@@ -227,12 +212,12 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
-            deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
-            deviceListView.animate().setDuration(shortAnimTime).alpha(
+            mMainScreenView.setVisibility(show ? View.GONE : View.VISIBLE);
+            mMainScreenView.animate().setDuration(shortAnimTime).alpha(
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
-                    deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
+                    mMainScreenView.setVisibility(show ? View.GONE : View.VISIBLE);
                 }
             });
 
@@ -248,7 +233,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             // The ViewPropertyAnimator APIs are not available, so simply show
             // and hide the relevant UI components.
             mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            deviceListView.setVisibility(show ? View.GONE : View.VISIBLE);
+            mMainScreenView.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
 }

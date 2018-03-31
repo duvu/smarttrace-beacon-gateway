@@ -5,4 +5,7 @@
     <color name="colorAccent">#a4d2c5</color>
     <color name="transparent">#00000000</color>
     <color name="textColorPrimary">#ffffff</color>
+    <color name="textColorWarn">#fc0303</color>
+
+    <color name="black_overlay">#66000000</color>
 </resources>
