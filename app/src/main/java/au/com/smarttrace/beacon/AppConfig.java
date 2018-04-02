@@ -32,7 +32,7 @@ public class AppConfig {
     public static final long DEVICE_AGE = 10 * 60 * MILLISECONDS_PER_SECOND; //only push to server if new data
 
     public static int MAX_DATA_PACKAGES = 10;
-    public static final boolean DEBUG_ENABLED = true;
+    public static final boolean DEBUG_ENABLED = false;
     public static int TemperatureUnit = 0;
 
     public static String WEB_SERVICE_URL = "https://smarttrace.com.au/web/vf/rest";

@@ -216,7 +216,7 @@ public class BeaconService extends Service implements BeaconConsumer {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Logger.d("Service Started");
+        Logger.d("##Service Started");
 
         boolean startFromNotification = intent.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION, false);
         if (startFromNotification) {
@@ -416,8 +416,8 @@ public class BeaconService extends Service implements BeaconConsumer {
     }
 
     private void checkAndCreateShipment(List<BT04Package> dataList) {
-        for (BT04Package data: dataList) {
-            if (data.getReadingCount() == 2 && locatedAtStartLocations() && !data.isHasShipment()) {
+        for (final BT04Package data: dataList) {
+            if ((data.getReadingCount() == 2 && locatedAtStartLocations() && !data.isHasShipment()) || data.isForedCreateNew()) {
                 WebService.createNewAutoSthipment(data.getSerialNumberString(), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
@@ -427,6 +427,7 @@ public class BeaconService extends Service implements BeaconConsumer {
 
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
+                        data.setForedCreateNew(false);
                         Logger.d("Success to create shipment");
                     }
                 });
@@ -720,6 +721,15 @@ public class BeaconService extends Service implements BeaconConsumer {
             }
         }
         return false;
+    }
+
+    public void wipeAllDataOut() {
+        Iterator it = deviceMap.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry entry = (Map.Entry) it.next();
+            BT04Package data = (BT04Package) entry.getValue();
+            data.setForedCreateNew(true);
+        }
     }
 
     // EventBus

@@ -13,11 +13,15 @@ public class StartupReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Logger.i("[StartupReceiver] starting ...");
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            Intent service1 = new Intent(context, BeaconService.class);
+
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(service1);
+                Intent activity = new Intent(context, BeaconService.class);
+                activity.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
+                context.startForegroundService(activity);
+                //BootstrapingService.enqueueWork(context, activity);
             } else {
+                Intent service1 = new Intent(context, BeaconService.class);
                 service1.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
                 context.startService(service1);
             }

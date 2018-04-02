@@ -21,6 +21,7 @@ public class MyApplication extends Application {
 
     public void onCreate() {
         super.onCreate();
+        Logger.d("Application Started!");
         AppConfig.populateSetting(MyApplication.this);
 
         SharedPref.init(getApplicationContext());

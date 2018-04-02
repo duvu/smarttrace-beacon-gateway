@@ -30,12 +30,14 @@ import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 
+import org.altbeacon.beacon.Beacon;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
@@ -69,6 +71,8 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     private View mProgressView;
     private View mMainScreenView;
     private ImageButton mImageButton;
+
+    private Button mWipeOutToStartShipmentButton;
 
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -126,7 +130,22 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
                 startActivity(intent);
             }
         });
+
+        mWipeOutToStartShipmentButton = findViewById(R.id.wipe_out_to_start_shipment);
+        mWipeOutToStartShipmentButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Logger.d("wiping out to start new shipment");
+                if (mBound) {
+                    mService.wipeAllDataOut();
+                }
+            }
+        });
         registerEventBus();
+
+        if (getIntent().getBooleanExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, false)) {
+            finish();
+        }
     }
 
     @Override

@@ -23,6 +23,7 @@ public class BT04Package extends AbstractDataPackage{
 
     private long readingCount;
     private boolean hasShipment;
+    private boolean foredCreateNew;
 
     public static BT04Package fromBeacon(Beacon beacon) {
         BT04Package dl = new BT04Package();
@@ -56,6 +57,7 @@ public class BT04Package extends AbstractDataPackage{
         dl.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
         dl.readingCount = 0;
         dl.hasShipment = false;
+        dl.foredCreateNew = false;
         return dl;
     }
 
@@ -203,5 +205,13 @@ public class BT04Package extends AbstractDataPackage{
 
     public void setHasShipment(boolean hasShipment) {
         this.hasShipment = hasShipment;
+    }
+
+    public boolean isForedCreateNew() {
+        return foredCreateNew;
+    }
+
+    public void setForedCreateNew(boolean foredCreateNew) {
+        this.foredCreateNew = foredCreateNew;
     }
 }
