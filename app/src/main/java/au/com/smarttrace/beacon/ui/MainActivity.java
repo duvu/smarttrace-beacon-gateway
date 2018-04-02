@@ -42,14 +42,14 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
 
-import au.com.smarttrace.beacon.LocationUtils;
+import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.model.BT04Package;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
-import au.com.smarttrace.beacon.services.BeaconService;
+import au.com.smarttrace.beacon.service.BeaconService;
 
 public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -317,7 +317,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         public void onReceive(Context context, Intent intent) {
             Location location = intent.getParcelableExtra(BeaconService.EXTRA_LOCATION);
             if (location != null) {
-                Toast.makeText(MainActivity.this, LocationUtils.getLocationText(location),
+                Toast.makeText(MainActivity.this, ServiceUtils.getLocationText(location),
                         Toast.LENGTH_SHORT).show();
             }
         }

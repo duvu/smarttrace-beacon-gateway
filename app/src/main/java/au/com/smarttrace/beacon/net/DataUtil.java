@@ -3,6 +3,7 @@ package au.com.smarttrace.beacon.net;
 import android.location.Location;
 import android.text.TextUtils;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -96,6 +97,17 @@ public class DataUtil {
             sb.append(BT04Package.getModel()).append(SEP).append(N);
         }
         return sb.toString();
+    }
+
+    public static Date getUserDate(final String strDate, final TimeZone timeZone) {
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
+        sdf.setTimeZone(timeZone);
+        try {
+            return sdf.parse(strDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static String timeOldPeriod(long timestamp) {

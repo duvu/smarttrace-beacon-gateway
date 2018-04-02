@@ -4,7 +4,7 @@ package au.com.smarttrace.beacon.net.model;
  * Created by beou on 3/21/18.
  */
 
-public class LoginBody extends BaseBody {
+public class LoginBody {
     private String token;
     private String expired;
     private String instance;

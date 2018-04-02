@@ -1,11 +1,8 @@
 package au.com.smarttrace.beacon.net.model;
 
-/**
- * Created by beou on 3/21/18.
- */
-
-public abstract class CommonResponse {
+public class UserResponse {
     private Status status;
+    UserBody response;
 
     public Status getStatus() {
         return status;
@@ -15,6 +12,11 @@ public abstract class CommonResponse {
         this.status = status;
     }
 
-    public abstract <T extends Object> T getResponse();
-    public abstract <T extends Object> void setResponse(T response);
+    public UserBody getResponse() {
+        return response;
+    }
+
+    public void setResponse(UserBody response) {
+        this.response = response;
+    }
 }

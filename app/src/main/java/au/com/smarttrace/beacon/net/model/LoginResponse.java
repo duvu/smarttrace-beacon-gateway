@@ -13,7 +13,7 @@ public class LoginResponse extends CommonResponse {
     }
 
     @Override
-    public void setResponse(BaseBody response) {
+    public void setResponse(Object response) {
         this.response = (LoginBody) response;
     }
 }

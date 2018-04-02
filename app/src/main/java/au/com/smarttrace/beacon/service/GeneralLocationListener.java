@@ -1,4 +1,4 @@
-package au.com.smarttrace.beacon.services;
+package au.com.smarttrace.beacon.service;
 
 import android.location.Location;
 import android.location.LocationListener;
@@ -10,16 +10,16 @@ import au.com.smarttrace.beacon.Logger;
  * Created by beou on 3/7/18.
  */
 
-public class GeneralLocationListener2 implements LocationListener {
+public class GeneralLocationListener implements LocationListener {
     private static BeaconService loggingService;
 
-    public GeneralLocationListener2(BeaconService activity) {
+    public GeneralLocationListener(BeaconService activity) {
         loggingService = activity;
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        loggingService.onNewLocation(location);
+        loggingService.onUpdateLocation(location);
     }
 
     @Override

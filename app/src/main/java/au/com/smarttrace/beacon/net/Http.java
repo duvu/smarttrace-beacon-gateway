@@ -31,7 +31,7 @@ public class Http {
         return http;
     }
 
-    public Http() {
+    private Http() {
         client = new OkHttpClient();
         gson = new Gson();
     }
@@ -81,6 +81,7 @@ public class Http {
     }
 
     public void get(String url, Callback callback) {
+        Logger.d("[Http] - get-async: " + url);
         Request request = new Request.Builder()
                 .url(url)
                 .get()

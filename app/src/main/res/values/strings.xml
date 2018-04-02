@@ -410,5 +410,6 @@
     <string name="location_updated">Location Updated: %1$s</string>
     <string name="launch_activity">Launch Activity</string>
     <string name="cancel_service">Cancel Service</string>
+    <string name="wipe_old_data_for_new_shipment">Wipe old data</string>
 
 </resources>

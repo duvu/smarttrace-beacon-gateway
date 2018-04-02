@@ -21,6 +21,9 @@ public class BT04Package extends AbstractDataPackage{
     private String firmware;
     private String serialNumber;
 
+    private long readingCount;
+    private boolean hasShipment;
+
     public static BT04Package fromBeacon(Beacon beacon) {
         BT04Package dl = new BT04Package();
         dl.setBluetoothAddress(beacon.getBluetoothAddress());
@@ -51,6 +54,8 @@ public class BT04Package extends AbstractDataPackage{
         }
         dl.firmware = beacon.getIdentifier(1).toHexString();
         dl.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
+        dl.readingCount = 0;
+        dl.hasShipment = false;
         return dl;
     }
 
@@ -83,6 +88,7 @@ public class BT04Package extends AbstractDataPackage{
         }
         this.firmware = beacon.getIdentifier(1).toHexString();
         this.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
+        this.readingCount++;
         return this;
     }
 
@@ -181,5 +187,21 @@ public class BT04Package extends AbstractDataPackage{
     }
     public void setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
+    }
+
+    public long getReadingCount() {
+        return readingCount;
+    }
+
+    public void setReadingCount(long readingCount) {
+        this.readingCount = readingCount;
+    }
+
+    public boolean isHasShipment() {
+        return hasShipment;
+    }
+
+    public void setHasShipment(boolean hasShipment) {
+        this.hasShipment = hasShipment;
     }
 }

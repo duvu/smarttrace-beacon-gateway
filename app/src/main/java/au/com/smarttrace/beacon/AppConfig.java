@@ -26,6 +26,10 @@ public class AppConfig {
      private static final String KEY_PLAY_SERVICE_AVAILABILITY  = "key_play_service_availability";
 
     public static final String TAG = "Smarttrace-Beacon";
+    //ensure update startLocations for 1hours. default value is 12.
+    public static final int COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS = 24;
+    public static final long DEVICE_MAX_AGE = 110 * 60 * MILLISECONDS_PER_SECOND; //2hours
+    public static final long DEVICE_AGE = 10 * 60 * MILLISECONDS_PER_SECOND; //only push to server if new data
 
     public static int MAX_DATA_PACKAGES = 10;
     public static final boolean DEBUG_ENABLED = true;
