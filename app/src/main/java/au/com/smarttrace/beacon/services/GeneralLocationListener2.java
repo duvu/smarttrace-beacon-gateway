@@ -11,17 +11,15 @@ import au.com.smarttrace.beacon.Logger;
  */
 
 public class GeneralLocationListener2 implements LocationListener {
-    private static String name;
     private static BeaconService loggingService;
 
-    public GeneralLocationListener2(BeaconService activity, String name1) {
+    public GeneralLocationListener2(BeaconService activity) {
         loggingService = activity;
-        name = name1;
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        loggingService.onLocationChanged(location);
+        loggingService.onNewLocation(location);
     }
 
     @Override

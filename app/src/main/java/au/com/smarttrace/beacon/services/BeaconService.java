@@ -2,23 +2,34 @@ package au.com.smarttrace.beacon.services;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
@@ -36,14 +47,20 @@ import android.telephony.NeighboringCellInfo;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.service.ScanJobScheduler;
-import org.altbeacon.beacon.startup.BootstrapNotifier;
-import org.altbeacon.beacon.startup.RegionBootstrap;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
@@ -56,8 +73,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import io.objectbox.Box;
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.LocationUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.MyApplication;
 import au.com.smarttrace.beacon.R;
@@ -71,76 +88,176 @@ import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.Http;
 import au.com.smarttrace.beacon.ui.MainActivity;
+import io.objectbox.Box;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-public class BeaconService extends Service implements BeaconConsumer, BootstrapNotifier{
-    private static final String CHANNEL_ID = "MySmarttraceChannelId";
+public class BeaconService extends Service implements BeaconConsumer {
+    private static final String PACKAGE_NAME    = "au.com.smarttrace.beacon";
+    private static final String CHANNEL_ID      = "channel_01";
 
-    private BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
-    private RegionBootstrap regionBootstrap;
+    private static final String EXTRA_STARTED_FROM_NOTIFICATION = PACKAGE_NAME + ".started_from_notification";
+
+    public static final String ACTION_BROADCAST        = PACKAGE_NAME + ".broadcast";
+    public static final String EXTRA_LOCATION          = PACKAGE_NAME + ".location";
+
+    private boolean mChangingConfiguration      = false;
+    private NotificationManager mNotificationManager;
+
+    private LocationRequest mLocationRequest;
+    private FusedLocationProviderClient mFusedLocationClient;
+    private LocationCallback mLocationCallback;
+    private Handler mServiceHandler;
+
+    private Location mLocation;
+
+    // phone battery
+    private float mBatteryLevel = 0.0f;
+    private BroadcastReceiver mBatteryLevelReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent == null) {
+                mBatteryLevel = 0f;
+            } else {
+                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+                int scal = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 0);
+                mBatteryLevel = level / (float) scal;
+            }
+        }
+    };
+
+    private BeaconManager mBeaconManager = BeaconManager.getInstanceForApplication(this);
+
     AlarmManager nextPointAlarmManager;
-    Location lastKnownLocation;
     Map<String, BT04Package> deviceMap = new HashMap<>();
 
     private LocationManager gpsLocationManager;
     private LocationManager passiveLocationManager;
     private LocationManager towerLocationManager;
-    private GeneralLocationListener2 gpsLocationListener;
-    private GeneralLocationListener2 towerLocationListener;
-    private GeneralLocationListener2 passiveLocationListener;
-    private TelephonyManager telephonyManager;
+    private GeneralLocationListener2 locationListener;
+
+    private TelephonyManager mTelephonyManager;
 
     private boolean isDataExisted = false;
 
-    private final IBinder binder = new DataBinder();
+    private final IBinder mBinder = new LocalBinder();
 
-    private Region myRegion = new Region("myRangingUniqueId", null, null, null);
+
 
     Box<DataLogger> dataLoggerBox;
     private final Handler handler = new Handler();
     public BeaconService() {
     }
-    @Override
-    public IBinder onBind(Intent intent) {
-        return binder;
-    }
+
 
     @Override
     public void onCreate() {
         Logger.d("[BeaconService] onCreated");
         nextPointAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-
-        regionBootstrap = new RegionBootstrap(this, myRegion);
-        beaconManager.bind(this);
+        mBeaconManager.bind(this);
         dataLoggerBox = ((MyApplication) getApplication()).getBoxStore().boxFor(DataLogger.class);
 
-        NotificationUtil.init(this.getApplicationContext());
-        startForeground();
+        if (LocationUtils.isGooglePlayServicesAvailable(this)) {
+            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+            mLocationCallback = new LocationCallback() {
+              @Override
+              public void onLocationResult(LocationResult locationResult) {
+                  super.onLocationResult(locationResult);
+                  onNewLocation(locationResult.getLastLocation());
+              }
+            };
+            createLocationRequest();
+            getLastLocation();
+        }
+
+
+        HandlerThread handlerThread = new HandlerThread(AppConfig.TAG);
+        handlerThread.start();
+        mServiceHandler = new Handler(handlerThread.getLooper());
+        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        // Android O requires a Notification Channel
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.app_name);
+            // Create the channel for the notification
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_DEFAULT);
+
+            //set the notification-channel for the Notification Manager
+            mNotificationManager.createNotificationChannel(channel);
+        }
         registerEventBus();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Logger.d("Service Started");
+
+        boolean startFromNotification = intent.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION, false);
+        if (startFromNotification) {
+            removeLocationUpdates();
+            stopSelf();
+        }
+
+        requestUpdateData();
+        return START_NOT_STICKY;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mChangingConfiguration = true;
+    }
+    @Override
+    public IBinder onBind(Intent intent) {
+        Logger.d("onBind");
+        stopForeground(true);
+        mChangingConfiguration = false;
+        return mBinder;
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        // Called when a client returns to the foreground and binds once again with this service. The
+        // service should cease to be a foreground service when that happends.
+        stopForeground(true);
+        mChangingConfiguration = false;
+        super.onRebind(intent);
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Logger.i("onUnbind");
+
+        // Called when the last client unibinds from this service. If this method is called due to a
+        // configuration change in MainActivity, we do nothing. Otherwise, we make this service a foreground service.
+        if (!mChangingConfiguration && LocationUtils.requestingLocationUpdates(this)) {
+            Logger.d("Starting foreground service");
+            startForeground(AppConfig.NOTIFICATION_ID, getNotification());
+        }
+        return true;
     }
 
     @Override
     public void onDestroy() {
         Logger.i("Destroying by OS");
+        mServiceHandler.removeCallbacksAndMessages(null);
         stopGpsManager();
         stopBLEScan(true);
         unregisterEventBus();
         super.onDestroy();
     }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        startHandle();
-        return START_STICKY;
-    }
 
-    private void startHandle() {
+
+    private void requestUpdateData() {
         Logger.i("[starting scan ble and location] ...");
-        startGpsManager();
+
+        LocationUtils.setRequestingLocationUpdates(this, true);
+        requestLocationUpdates();
         startBLEScan();
-        startAbsoluteTimer();
+
+        //startAbsoluteTimer();
     }
 
     private void setAlarmForNextPoint() {
@@ -165,7 +282,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         if (!isDataExisted || AppConfig.DEBUG_ENABLED) {
             return AppConfig.UPDATE_INTERVAL_START;
         } else {
-            return AppConfig.UPDATE_INTERVAL;
+            return AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS;
         }
     }
 
@@ -173,57 +290,73 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
             BluetoothAdapter.getDefaultAdapter().enable();
         }
-        beaconManager.setBackgroundMode(false);
+        mBeaconManager.setBackgroundMode(false);
         syncSettingsToService();
     }
 
     private void stopBLEScan(boolean exit) {
         if (exit) {
-            beaconManager.unbind(this);
+            mBeaconManager.unbind(this);
         } else {
-            beaconManager.setBackgroundMode(true);
+            mBeaconManager.setBackgroundMode(true);
         }
     }
 
     private void syncSettingsToService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            ScanJobScheduler.getInstance().applySettingsToScheduledJob(this, beaconManager);
+            ScanJobScheduler.getInstance().applySettingsToScheduledJob(this, mBeaconManager);
         }
     }
 
-    private void startGpsManager() {
+    private void requestLocationUpdates() {
 
-        if (gpsLocationListener == null) {
-            gpsLocationListener = new GeneralLocationListener2(this, "GPS");
-        }
 
-        if (towerLocationListener == null) {
-            towerLocationListener = new GeneralLocationListener2(this, "CELL");
-        }
+        if (LocationUtils.isGooglePlayServicesAvailable(this)) {
+            try {
+                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+            } catch (SecurityException unlikely) {
+                LocationUtils.setRequestingLocationUpdates(this, false);
+                Logger.e("Lost location permission. Could not request update", unlikely);
+            }
+        } else {
 
-        gpsLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        towerLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                        ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
-
-            if (gpsLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                gpsLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, getInterval(), AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE, gpsLocationListener);
+            if (locationListener == null) {
+                locationListener = new GeneralLocationListener2(this);
             }
 
-            if (towerLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                towerLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, getInterval() / 4, AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE, towerLocationListener);
+            gpsLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            towerLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                    (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                            ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
+
+                if (gpsLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    gpsLocationManager.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER,
+                            AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS,
+                            AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE,
+                            locationListener);
+                }
+
+                if (towerLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                    towerLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                            AppConfig.FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS,
+                            AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE,
+                            locationListener);
+                }
             }
         }
     }
 
     private void stopGpsManager() {
-        if (towerLocationListener != null) {
-            towerLocationManager.removeUpdates(towerLocationListener);
+        if (LocationUtils.isGooglePlayServicesAvailable(this)) {
+            removeLocationUpdates();
         }
-        if (gpsLocationListener != null) {
-            gpsLocationManager.removeUpdates(gpsLocationListener);
+
+        if (locationListener != null) {
+            gpsLocationManager.removeUpdates(locationListener);
+            towerLocationManager.removeUpdates(locationListener);
         }
     }
 
@@ -257,29 +390,9 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         List<CellTower> cellTowerList = getAllCellInfo();
         BroadcastEvent event = new BroadcastEvent();
         event.setBT04PackageList(getDataPackageList());
-        event.setLocation(lastKnownLocation);
+        event.setLocation(mLocation);
         event.setGatewayId(getGatewayId());
         event.setCellTowerList(cellTowerList);
-
-
-            //old protocol
-//            List<String> stringList = DataUtil.formatData1(event);
-
-//            for (String str : stringList) {
-//                Logger.d("[Http-Old]: " + str);
-//                Http.getIntance().post(AppConfig.BACKEND_URL_BT04, str, new Callback() {
-//                    @Override
-//                    public void onFailure(Call call, IOException e) {
-//                        Logger.d("[Http-Old] failed " + e.getMessage());
-//                    }
-//
-//                    @Override
-//                    public void onResponse(Call call, Response response) throws IOException {
-//                        Logger.d("[Http-Old] success");
-//                    }
-//                });
-//            }
-
             //send data bundle - new protocol
             Logger.d(DataUtil.formatData(event));
             Http.getIntance().post(AppConfig.BACKEND_URL_BT04_NEW, DataUtil.formatData(event), new Callback() {
@@ -311,28 +424,9 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         return new ArrayList<>(deviceMap.values());
     }
 
-    public void onLocationChanged(Location newLocation) {
-        Logger.i("[BeaconService] updating location ..." + newLocation.getLatitude() + "/" + newLocation.getLongitude());
-        if (lastKnownLocation == null) {
-            lastKnownLocation = newLocation;
-        } else {
-            if (newLocation.getTime() - lastKnownLocation.getTime() > AppConfig.LAST_LOCATION_MAX_AGE) {
-                lastKnownLocation = newLocation;
-            } else if (newLocation.hasAccuracy() && newLocation.getAccuracy() < lastKnownLocation.getAccuracy()) {
-                lastKnownLocation = newLocation;
-            }
-        }
-    }
-
-    private void startForeground() {
-        Notification notification = NotificationUtil.createNotification(CHANNEL_ID);
-        notification.contentIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
-        startForeground(AppConfig.SMARTTRACE_NOTIFICATION_ID, notification);
-    }
-
     @Override
     public void onBeaconServiceConnect() {
-        beaconManager.addRangeNotifier(new RangeNotifier() {
+        mBeaconManager.addRangeNotifier(new RangeNotifier() {
             @Override
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
                 if (beacons.size() > 0) {
@@ -357,7 +451,8 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
 
         });
         try {
-            beaconManager.startRangingBeaconsInRegion(myRegion);
+            Region myRegion = new Region("ranging_unique_id", null, null, null);
+            mBeaconManager.startRangingBeaconsInRegion(myRegion);
         } catch (RemoteException e) {   }
 
     }
@@ -365,18 +460,18 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     @SuppressLint("MissingPermission")
     private String getGatewayId() {
         if (TextUtils.isEmpty(AppConfig.GATEWAY_ID)) {
-            if (telephonyManager == null) {
-                telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            if (mTelephonyManager == null) {
+                mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (telephonyManager.getPhoneType() ==  TelephonyManager.PHONE_TYPE_CDMA) {
-                    AppConfig.GATEWAY_ID = telephonyManager.getMeid();
+                if (mTelephonyManager.getPhoneType() ==  TelephonyManager.PHONE_TYPE_CDMA) {
+                    AppConfig.GATEWAY_ID = mTelephonyManager.getMeid();
                 } else {
                     // GSM
-                    AppConfig.GATEWAY_ID = telephonyManager.getImei();
+                    AppConfig.GATEWAY_ID = mTelephonyManager.getImei();
                 }
             } else {
-                AppConfig.GATEWAY_ID = telephonyManager.getDeviceId();
+                AppConfig.GATEWAY_ID = mTelephonyManager.getDeviceId();
             }
         }
         return AppConfig.GATEWAY_ID;
@@ -385,12 +480,12 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
     @SuppressLint("MissingPermission")
     private List<CellTower> getAllCellInfo() {
         Logger.d("getAllCellInfo");
-        if (telephonyManager == null) {
-            telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        if (mTelephonyManager == null) {
+            mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         }
         List<CellTower> cellTowerList = new ArrayList<>();
 
-        String networkOperator = telephonyManager.getNetworkOperator();
+        String networkOperator = mTelephonyManager.getNetworkOperator();
         int mcc = 0;
         int mnc = 0;
         if (networkOperator != null && networkOperator.length() >=3) {
@@ -399,7 +494,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         }
 
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            List<NeighboringCellInfo> neighboringCellInfoList = telephonyManager.getNeighboringCellInfo();
+            List<NeighboringCellInfo> neighboringCellInfoList = mTelephonyManager.getNeighboringCellInfo();
             for (NeighboringCellInfo info : neighboringCellInfoList) {
                 CellTower cellTower = new CellTower();
                 cellTower.setLac(info.getLac());
@@ -410,7 +505,7 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
                 cellTowerList.add(cellTower);
             }
         } else {
-            List<CellInfo> cellInfos = telephonyManager.getAllCellInfo();
+            List<CellInfo> cellInfos = mTelephonyManager.getAllCellInfo();
             if (cellInfos != null) {
                 Logger.d("CellinfosList: " + cellInfos.size());
                 for (CellInfo info : cellInfos) {
@@ -456,6 +551,113 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         return cellTowerList;
     }
 
+    /**
+     * Sets the location request parameters.
+     */
+    private void createLocationRequest() {
+        mLocationRequest = LocationRequest.create();
+        mLocationRequest.setInterval(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setFastestInterval(AppConfig.FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
+
+    private void getLastLocation() {
+        try {
+            mFusedLocationClient.getLastLocation()
+                    .addOnCompleteListener(new OnCompleteListener<Location>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Location> task) {
+                            if (task.isSuccessful() && task.getResult() != null) {
+                                mLocation = task.getResult();
+                            } else {
+                                Logger.d("Failed to get location.");
+                            }
+                        }
+                    });
+        } catch (SecurityException unlikely) {
+            Logger.d("Lost location permission." + unlikely);
+        }
+    }
+
+    public void onNewLocation(Location location) {
+        Logger.d("New Location" + location);
+        if (mLocation == null) {
+            mLocation = location;
+        } else {
+            if (location.getTime() - mLocation.getTime() > AppConfig.LAST_LOCATION_MAX_AGE) {
+                mLocation = location;
+            } else if (location.hasAccuracy() && location.getAccuracy() < mLocation.getAccuracy()) {
+                mLocation = location;
+            }
+        }
+
+        //Notify anyone listening for broadcasting about the new location
+        Intent intent = new Intent(ACTION_BROADCAST);
+        intent.putExtra(EXTRA_LOCATION, location);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+
+        if (serviceIsRunningInForeground(this)) {
+            mNotificationManager.notify(AppConfig.NOTIFICATION_ID, getNotification());
+        }
+    }
+    /**
+     * Removes location updates. Note that in this sample we merely log the
+     * {@link SecurityException}.
+     */
+    public void removeLocationUpdates() {
+        Logger.d("Removing location updates");
+        try {
+            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+            LocationUtils.setRequestingLocationUpdates(this, false);
+            stopSelf();
+        } catch (SecurityException unlikely) {
+            LocationUtils.setRequestingLocationUpdates(this, true);
+            Logger.d("Lost location permission. Could not remove updates. " + unlikely);
+        }
+    }
+
+    private Notification getNotification() {
+        Intent intent = new Intent(this, BeaconService.class);
+        CharSequence text = LocationUtils.getLocationText(mLocation);
+
+        // Extra to help us figure out if we arrived in onStartCommand via the notification or not
+        intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION, true);
+
+        // The PendingIntent that leads to a call to onStartCommand() in this service
+        PendingIntent servicePendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        // The PendingIntent to launch activity
+        PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+                .addAction(R.drawable.ic_launch, getString(R.string.launch_activity), activityPendingIntent)
+                .addAction(R.drawable.ic_cancel, getString(R.string.cancel_service), servicePendingIntent)
+                .setContentText(text)
+                .setContentTitle(LocationUtils.getLocationTitle(this))
+                .setOngoing(true)
+                .setPriority(Notification.PRIORITY_HIGH)
+                .setSmallIcon(R.drawable.notification)
+                .setTicker(text)
+                .setWhen(System.currentTimeMillis());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            builder.setChannelId(CHANNEL_ID);
+        }
+        return builder.build();
+    }
+
+    // Return true if this is a foreground service
+    public boolean serviceIsRunningInForeground(Context context) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo serviceInfo : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (getClass().getName().equals(serviceInfo.service.getClassName())) {
+                if (serviceInfo.foreground) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     // EventBus
     private void registerEventBus() {
@@ -481,26 +683,11 @@ public class BeaconService extends Service implements BeaconConsumer, BootstrapN
         stopBLEScan(false);
         stopGpsManager();
         stopAbsoluteTimer();
-        startHandle();
+        requestUpdateData();
     }
 
-    @Override
-    public void didEnterRegion(Region region) {
-        //Logger.d("[+] didEnterRegion");
-    }
-
-    @Override
-    public void didExitRegion(Region region) {
-        //Logger.d("[+] didExitRegion");
-    }
-
-    @Override
-    public void didDetermineStateForRegion(int i, Region region) {
-        //Logger.d("[+] didDetermineStateForRegion");
-    }
-
-    //-- class DataBinder --
-    public class DataBinder extends Binder {
+    //-- class LocalBinder --
+    public class LocalBinder extends Binder {
         public BeaconService getService() {
             return BeaconService.this;
         }

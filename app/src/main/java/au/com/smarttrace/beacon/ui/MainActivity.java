@@ -4,30 +4,35 @@ import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.Toolbar;
-import android.text.Html;
 import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 
@@ -37,16 +42,17 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
 
+import au.com.smarttrace.beacon.LocationUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.model.BT04Package;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
-import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.services.BeaconService;
 
 public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
+
     private static final String[] INITIAL_PERMS={
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -56,18 +62,41 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             Manifest.permission.BLUETOOTH_ADMIN
     };
 
+    private MyReceiver myReceiver;
+    private BeaconService mService = null;
+    private boolean mBound = false;
+
     private View mProgressView;
     private View mMainScreenView;
     private ImageButton mImageButton;
 
+    private final ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            BeaconService.LocalBinder binder = (BeaconService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mBound = false;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        requestBluetoothPermission();
+        if (!checkPermissions()) {
+            requestPermissions();
+        }
 
         Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
         startService(intent1);
@@ -91,8 +120,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         mImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                //TODO: clean saved user, password
                 SharedPref.clear();
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
@@ -102,6 +129,32 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         registerEventBus();
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver, new IntentFilter(BeaconService.ACTION_BROADCAST));
+    }
+
+    @Override
+    protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        if (mBound) {
+            unbindService(mConnection);
+        }
+        super.onStop();
+    }
 
     @Override
     public void onBackPressed() {
@@ -168,8 +221,27 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+    /**
+     * Returns the current state of the permissions needed.
+     * Manifest.permission.ACCESS_FINE_LOCATION,
+     Manifest.permission.ACCESS_COARSE_LOCATION,
+     Manifest.permission.WRITE_EXTERNAL_STORAGE,
+     Manifest.permission.READ_PHONE_STATE,
+     Manifest.permission.BLUETOOTH,
+     Manifest.permission.BLUETOOTH_ADMIN
+     */
+    private boolean checkPermissions() {
+        return (
+                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) &&
+                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) &&
+                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) &&
+                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) &&
+                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) &&
+                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN)
 
-    private void requestBluetoothPermission() {
+        );
+    }
+    private void requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(INITIAL_PERMS, 1);
         }
@@ -234,6 +306,20 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
             // and hide the relevant UI components.
             mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
             mMainScreenView.setVisibility(show ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    /**
+     * Receiver for broadcasts sent by {@link BeaconService}.
+     */
+    private class MyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Location location = intent.getParcelableExtra(BeaconService.EXTRA_LOCATION);
+            if (location != null) {
+                Toast.makeText(MainActivity.this, LocationUtils.getLocationText(location),
+                        Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }

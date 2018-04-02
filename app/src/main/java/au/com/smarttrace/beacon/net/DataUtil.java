@@ -125,7 +125,7 @@ public class DataUtil {
             format = "yyyy/MM/dd HH:mm:ss";
         }
         if (tz == null) {
-            tz = TimeZone.getTimeZone(AppConfig.DEFAULT_TIMEZONE_STR);
+            tz = TimeZone.getTimeZone(AppConfig.TIMEZONE_STR);
         }
         SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.US);
         sdf.setTimeZone(tz);

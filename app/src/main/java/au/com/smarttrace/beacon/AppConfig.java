@@ -1,45 +1,57 @@
 package au.com.smarttrace.beacon;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
 /**
  * Created by beou on 3/7/18.
+ *
+ * Temperature unit
+ * 0、Degrees Celsius
+ * 1、Fahrenheit
+ * 2、Kelvin
+ * 3、Lambertian degree
+ * 4、Liege degree
  */
 
 public class AppConfig {
 
     // Milliseconds per second
     private static final int MILLISECONDS_PER_SECOND = 1000;
+
+    // private static final String KEY_*
+     private static final String KEY_WEB_SERVICE_URL            = "key_web_service_url";
+     private static final String KEY_BACKEND_URL_BT04_NEW       = "key_backend_url_bt04_new";
+     private static final String KEY_PLAY_SERVICE_AVAILABILITY  = "key_play_service_availability";
+
+    public static final String TAG = "Smarttrace-Beacon";
+
     public static int MAX_DATA_PACKAGES = 10;
-
-    /**
-     * Temperature unit
-     * 0、Degrees Celsius
-     * 1、Fahrenheit
-     * 2、Kelvin
-     * 3、Lambertian degree
-     * 4、Liege degree
-     */
-
-    public static final boolean DEBUG_ENABLED = false;
+    public static final boolean DEBUG_ENABLED = true;
     public static int TemperatureUnit = 0;
-    static final String TAG = "Smarttrace-Beacon";
-    public static final String BACKEND_URL = "https://smarttrace.com.au/web/vf/rest";
-    public static final String BACKEND_URL_BT04_NEW = "https://smarttrace.com.au/bt04";
-    public static final String BACKEND_URL_BT04 = "http://smarttrace.com.au:8080/data";
+
+    public static String WEB_SERVICE_URL = "https://smarttrace.com.au/web/vf/rest";
+    public static String BACKEND_URL_BT04_NEW = "https://smarttrace.com.au/bt04";
+    //public static String BACKEND_URL_BT04 = "http://smarttrace.com.au:8080/data";
+
     // max "age" in ms of last location (default 120000).
     public static final long LAST_LOCATION_MAX_AGE = 30 * MILLISECONDS_PER_SECOND;
     // the minimum time interval for GPS notifications, in milliseconds (default 60000).
-    public static final long UPDATE_INTERVAL = 300 * MILLISECONDS_PER_SECOND;
+    public static final long UPDATE_INTERVAL_IN_MILLISECONDS = (DEBUG_ENABLED ? 10 : 300) * MILLISECONDS_PER_SECOND;
+    public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
+
+
     public static final long UPDATE_INTERVAL_START = 20 * MILLISECONDS_PER_SECOND;
     public static final long UPDATE_PERIOD = 10 * MILLISECONDS_PER_SECOND;
-    // the minimum distance interval for GPS notifications, in meters (default 20)
-    public static final float LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE = 20;
 
-    public static String DEFAULT_TIMEZONE_STR = "GMT";
+    // the minimum distance interval for GPS notifications, in meters (default 20)
+    public static final float LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE = 0;
+
+    public static String TIMEZONE_STR = "GMT";
 
     public static String GATEWAY_ID = "";
-    public static final int SMARTTRACE_NOTIFICATION_ID = 190584;
+    public static final int NOTIFICATION_ID = 190584999;
 
     private Context context;
 
@@ -47,5 +59,14 @@ public class AppConfig {
         //GATEWAY_ID = "356024089973101";
 //        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 //        GATEWAY_ID = telephonyManager != null ? telephonyManager.getDeviceId() : null;
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+    }
+
+    public static void setPlayServiceAvailability(Context context, boolean avail) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(KEY_PLAY_SERVICE_AVAILABILITY, avail).apply();
+    }
+    public static boolean getPlayServiceAvailability(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(KEY_PLAY_SERVICE_AVAILABILITY, false);
     }
 }

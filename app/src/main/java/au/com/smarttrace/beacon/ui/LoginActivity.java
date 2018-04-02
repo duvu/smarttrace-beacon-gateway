@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import au.com.smarttrace.beacon.AppConfig;
-import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.Http;
@@ -268,7 +267,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         @Override
         protected Boolean doInBackground(Void... params) {
 
-            String url = AppConfig.BACKEND_URL + "/login?email=" + mEmail + "&password="+mPassword;
+            String url = AppConfig.WEB_SERVICE_URL + "/login?email=" + mEmail + "&password="+mPassword;
             try {
                 LoginResponse response = Http.getIntance().get(url, LoginResponse.class);
                 if (response.getStatus().getCode() != 0) {
