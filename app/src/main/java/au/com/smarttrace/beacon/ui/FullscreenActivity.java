@@ -214,7 +214,10 @@ public class FullscreenActivity extends AppCompatActivity {
                 //-- start store login data
                 // get more data and store
                 storeUserData(response);
-            } catch (IOException e) {}
+            } catch (IOException e) {
+                moveToLogin();
+                finish();
+            }
 
             return true;
         }
@@ -228,6 +231,7 @@ public class FullscreenActivity extends AppCompatActivity {
                 finish();
             } else {
                 moveToLogin();
+                finish();
             }
         }
 

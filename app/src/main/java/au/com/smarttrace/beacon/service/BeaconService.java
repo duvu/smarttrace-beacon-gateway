@@ -52,6 +52,7 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.crash.FirebaseCrash;
 import com.google.gson.Gson;
 
 import org.altbeacon.beacon.Beacon;
@@ -92,6 +93,7 @@ import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.net.model.LocationBody;
 import au.com.smarttrace.beacon.net.model.LocationResponse;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
+import au.com.smarttrace.beacon.net.model.UserBody;
 import au.com.smarttrace.beacon.net.model.UserResponse;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import io.objectbox.Box;
@@ -448,12 +450,25 @@ public class BeaconService extends Service implements BeaconConsumer {
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.body() != null) {
                     DeviceResponse deviceResponse = gson.fromJson(response.body().string(), DeviceResponse.class);
-                    String lastReadingTimeISO = deviceResponse.getResponse().getLastReadingTimeISO();
-                    Date parsedDate = DataUtil.getUserDate(lastReadingTimeISO, userTimezone);
-                    if (parsedDate != null) {
-                        if ((now.getTime() - parsedDate.getTime())  < 120 * 60 * 1000) {
-                            //update deviceMap
-                            deviceMap.get(data.getBluetoothAddress()).setHasShipment(true);
+                    String lastReadingTimeISO = null;
+                    String lastShipmentStatus = null;
+                    if (deviceResponse.getResponse() != null) {
+                        lastReadingTimeISO = deviceResponse.getResponse().getLastReadingTimeISO();
+                        lastShipmentStatus = deviceResponse.getResponse().getShipmentStatus();
+                    }
+
+
+                    if (lastShipmentStatus == null) {
+                        deviceMap.get(data.getBluetoothAddress()).setHasShipment(false);
+                    } else if (lastShipmentStatus.equalsIgnoreCase("Ended")) {
+                        deviceMap.get(data.getBluetoothAddress()).setHasShipment(false);
+                    } else {
+                        Date parsedDate = DataUtil.getUserDate(lastReadingTimeISO, userTimezone);
+                        if (parsedDate != null) {
+                            if ((now.getTime() - parsedDate.getTime()) < AppConfig.DEVICE_MAX_AGE) {
+                                //update deviceMap
+                                deviceMap.get(data.getBluetoothAddress()).setHasShipment(true);
+                            }
                         }
                     }
                 }
@@ -800,22 +815,26 @@ public class BeaconService extends Service implements BeaconConsumer {
         WebService.login(SharedPref.getUserName(), SharedPref.getPassword(), new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-
+                FirebaseCrash.log("Not able to login");
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.body() != null) {
                     LoginResponse data = gson.fromJson(response.body().string(), LoginResponse.class);
-                    SharedPref.saveToken(data.getResponse().getToken());
-                    SharedPref.saveExpiredStr(data.getResponse().getExpired());
-                    SharedPref.saveTokenInstance(data.getResponse().getInstance());
+                    if (data.getResponse() != null) {
+                        SharedPref.saveToken(data.getResponse().getToken());
+                        SharedPref.saveExpiredStr(data.getResponse().getExpired());
+                        SharedPref.saveTokenInstance(data.getResponse().getInstance());
+                    }
                 }
             }
         });
     }
 
     private void getUserTimezone() {
+        //
+        FirebaseCrash.log("[FirebaseCrash] + getTimezone");
         WebService.getUser(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -826,7 +845,17 @@ public class BeaconService extends Service implements BeaconConsumer {
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.body() != null) {
                     UserResponse userResponse = gson.fromJson(response.body().string(), UserResponse.class);
-                    String tzId = userResponse.getResponse().getTimeZone();
+                    UserBody body = null;
+                    if (userResponse != null) {
+                        body = userResponse.getResponse();
+                    }
+
+                    String tzId = null;
+                    if (body != null) {
+                        tzId = body.getTimeZone();
+                    }
+
+                    if (TextUtils.isEmpty(tzId)) tzId = "GMT";
                     userTimezone = TimeZone.getTimeZone(tzId);
                     SharedPref.saveUserTimezone(tzId);
                 }

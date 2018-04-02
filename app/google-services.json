@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "221311899273",
+    "firebase_url": "https://smarttracebeacon.firebaseio.com",
+    "project_id": "smarttracebeacon",
+    "storage_bucket": "smarttracebeacon.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:221311899273:android:c4d46a71adb57e35",
+        "android_client_info": {
+          "package_name": "au.com.smarttrace.beacon"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "221311899273-sfhnm328qeh009thihuibll2drhq6at4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "au.com.smarttrace.beacon",
+            "certificate_hash": "52910564b8c80abc39e494f686cad3f9aa13d0b6"
+          }
+        },
+        {
+          "client_id": "221311899273-ig103kqcoqgja6ns4a7i8t5hc2tad1vk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2-QHesS7l4S7lF6tbn8pW1ZLzp7y09sk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "221311899273-ig103kqcoqgja6ns4a7i8t5hc2tad1vk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

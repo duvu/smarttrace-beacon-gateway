@@ -70,7 +70,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
     private View mProgressView;
     private View mMainScreenView;
-    private ImageButton mImageButton;
+    //private ImageButton mImageButton;
 
     private Button mWipeOutToStartShipmentButton;
 
@@ -112,35 +112,36 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         text.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.textColorWarn)), 0, textStr.length(), 0);
         text.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorPrimaryDark)), 39, 45, 0);
-        text.setSpan(new RelativeSizeSpan(1.1f), 0, textStr.length(), 0);
+        //text.setSpan(new RelativeSizeSpan(1.1f), 0, textStr.length(), 0);
         text.setSpan(new StyleSpan(Typeface.BOLD), 10, 15, 0);
         text.setSpan(new StyleSpan(Typeface.BOLD), 39, 45, 0);
 
         txt2Content.setText(text, TextView.BufferType.SPANNABLE);
+        //txt2Content.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(R.drawable.bt04b), null, null, null);
 
-        mProgressView = findViewById(R.id.login_progress);
+        mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
-        mImageButton = findViewById(R.id.btn_logout);
-        mImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                SharedPref.clear();
-                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                startActivity(intent);
-            }
-        });
-
-        mWipeOutToStartShipmentButton = findViewById(R.id.wipe_out_to_start_shipment);
-        mWipeOutToStartShipmentButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Logger.d("wiping out to start new shipment");
-                if (mBound) {
-                    mService.wipeAllDataOut();
-                }
-            }
-        });
+//        mImageButton = findViewById(R.id.btn_logout);
+//        mImageButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                SharedPref.clear();
+//                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+//                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//                startActivity(intent);
+//            }
+//        });
+//
+//        mWipeOutToStartShipmentButton = findViewById(R.id.wipe_out_to_start_shipment);
+//        mWipeOutToStartShipmentButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Logger.d("wiping out to start new shipment");
+//                if (mBound) {
+//                    mService.wipeAllDataOut();
+//                }
+//            }
+//        });
         registerEventBus();
 
         if (getIntent().getBooleanExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, false)) {
@@ -200,9 +201,21 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
+        if (id == R.id.action_logout) {
+            SharedPref.clear();
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            startActivity(intent);
+            return true;
+        }
+
+        if (id == R.id.action_create_shipment) {
+            Logger.d("wiping out to start new shipment");
+            if (mBound) {
+                mService.wipeAllDataOut();
+            }
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }

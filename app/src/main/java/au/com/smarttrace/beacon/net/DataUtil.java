@@ -100,8 +100,11 @@ public class DataUtil {
     }
 
     public static Date getUserDate(final String strDate, final TimeZone timeZone) {
+        if (TextUtils.isEmpty(strDate)) return null;
         final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
-        sdf.setTimeZone(timeZone);
+        if (timeZone != null) {
+            sdf.setTimeZone(timeZone);
+        } else sdf.setTimeZone(TimeZone.getDefault());
         try {
             return sdf.parse(strDate);
         } catch (ParseException e) {

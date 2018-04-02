@@ -383,21 +383,14 @@
     <string name="txt_1">1.</string>
     <string name="txt_statement_switch_on">Switch on the Beacon</string>
     <string name="txt_statement_press_power_button">Press the POWER button for 6 secs util GREEN light appears</string>
-    <string name="txt_statement_press_power_button_0">Press the</string>
-    <string name="txt_statement_press_power_button_1">POWER</string>
-    <string name="txt_statement_press_power_button_2">button for</string>
-    <string name="txt_statement_press_power_button_3">6 secs util</string>
-    <string name="txt_statement_press_power_button_4">green</string>
-    <string name="txt_statement_press_power_button_5">light</string>
-    <string name="txt_statement_press_power_button_6">appears</string>
 
     <string name="txt_2">2.</string>
     <string name="txt_statement_scan_barcode">Scan the barcode of the Beacon</string>
-    <string name="txt_reading_beacon_now">Reading beacon now ...</string>
+    <string name="txt_reading_beacon_now">Reading beacon now …</string>
     <string name="txt_3">3.</string>
-    <string name="txt_start_shipment_for_the_beacon">Start a shipment for the Beacon</string>
-    <string name="that_all">That\'s all. The system will generate a shipment when a beacon and phone travel outside the start location</string>
-    <string name="txt_start_shipment_now">Start shipment now ...</string>
+    <string name="txt_start_shipment_for_the_beacon">Keep some distance between them so the heat of phone does not effect the Beacon temperature</string>
+    <string name="txt_note_content">A New Shipment is created for a Beacon when the Phone receives 2 consecutive reading at a valid Start Location, provided the previous shipment has not received any readings within the last hour.</string>
+    <string name="txt_start_shipment_now">Start shipment now …</string>
     <string name="txt_start_shipment">Start Shipment</string>
     <string name="txt_or">Or</string>
     <string name="txt_enter_serial_number">Enter serial number</string>
@@ -411,5 +404,10 @@
     <string name="launch_activity">Launch Activity</string>
     <string name="cancel_service">Cancel Service</string>
     <string name="wipe_old_data_for_new_shipment">Wipe out to start new Shipment</string>
+    <string name="action_logout">Logout</string>
+    <string name="action_create_shipment">New Manual Shipment</string>
+    <string name="txt_no_need_to_have_this_app_open">No need to have this App open</string>
+    <string name="note">Note.</string>
+    <string name="txt_note_title">Beacons broadcast every 5 minutes.</string>
 
 </resources>
