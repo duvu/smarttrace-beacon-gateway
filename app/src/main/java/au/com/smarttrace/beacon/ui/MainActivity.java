@@ -70,9 +70,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
     private View mProgressView;
     private View mMainScreenView;
-    //private ImageButton mImageButton;
-
-    private Button mWipeOutToStartShipmentButton;
 
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -121,27 +118,6 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
-//        mImageButton = findViewById(R.id.btn_logout);
-//        mImageButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                SharedPref.clear();
-//                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-//                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-//                startActivity(intent);
-//            }
-//        });
-//
-//        mWipeOutToStartShipmentButton = findViewById(R.id.wipe_out_to_start_shipment);
-//        mWipeOutToStartShipmentButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Logger.d("wiping out to start new shipment");
-//                if (mBound) {
-//                    mService.wipeAllDataOut();
-//                }
-//            }
-//        });
         registerEventBus();
 
         if (getIntent().getBooleanExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, false)) {

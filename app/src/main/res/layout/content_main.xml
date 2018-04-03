@@ -39,12 +39,12 @@
                         android:layout_height="wrap_content">
                         <TextView
                             android:text="@string/txt_1"
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textStyle="bold"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
                         <TextView
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textStyle="bold"
                             android:text="@string/txt_statement_switch_on_phone"
                             android:layout_width="wrap_content"
@@ -54,7 +54,7 @@
                         <TextView />
                         <TextView
                             android:text="@string/txt_no_need_to_have_this_app_open"
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textColor="@color/textColorWarn"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
@@ -75,12 +75,12 @@
                         android:layout_height="wrap_content">
                         <TextView
                             android:text="@string/txt_2"
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textStyle="bold"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
                         <TextView
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textStyle="bold"
                             android:text="@string/txt_statement_switch_on"
                             android:layout_width="wrap_content"
@@ -98,7 +98,7 @@
                             <TextView
                                 android:id="@+id/txt_2_content"
                                 android:layout_gravity="center_vertical"
-                                android:textSize="18sp"
+                                android:textSize="15sp"
                                 android:layout_weight="1"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"/>
@@ -126,12 +126,12 @@
                         android:layout_height="wrap_content">
                         <TextView
                             android:text="@string/txt_3"
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textStyle="bold"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
                         <TextView
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textStyle="bold"
                             android:text="@string/txt_place_phone_and_beacon"
                             android:layout_width="wrap_content"
@@ -141,7 +141,7 @@
                         <TextView />
                         <TextView
                             android:text="@string/txt_start_shipment_for_the_beacon"
-                            android:textSize="18sp"
+                            android:textSize="15sp"
                             android:textColor="@color/textColorWarn"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
@@ -159,12 +159,12 @@
                     <TextView
                         android:textColor="@color/textColorWarn"
                         android:text="@string/note"
-                        android:textSize="18sp"
+                        android:textSize="15sp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                     <TextView
                         android:text="@string/txt_note_title"
-                        android:textSize="18sp"
+                        android:textSize="15sp"
                         android:textColor="@color/textColorGray"
                         android:layout_marginTop="@dimen/activity_vertical_margin"
                         android:layout_marginBottom="@dimen/activity_vertical_margin"
@@ -173,7 +173,7 @@
                         android:layout_height="wrap_content" />
                     <TextView
                         android:text="@string/txt_note_content"
-                        android:textSize="18sp"
+                        android:textSize="15sp"
                         android:textColor="@color/textColorGray"
                         android:layout_gravity="start"
                         android:layout_width="wrap_content"

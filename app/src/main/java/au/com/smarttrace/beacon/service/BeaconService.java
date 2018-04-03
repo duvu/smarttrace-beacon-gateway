@@ -162,6 +162,7 @@ public class BeaconService extends Service implements BeaconConsumer {
     private final Gson gson = new Gson();
 
     private int timesOfDataUpdated = 0;
+    private boolean hasGoogleClient = false;
 
     Box<DataLogger> dataLoggerBox;
     private final Handler handler = new Handler();
@@ -190,6 +191,10 @@ public class BeaconService extends Service implements BeaconConsumer {
               }
             };
             createLocationRequest();
+        }
+
+        if (mFusedLocationClient != null && mLocationCallback != null && mLocationRequest != null) {
+            hasGoogleClient = true;
             getLastLocation();
         }
 
@@ -318,7 +323,7 @@ public class BeaconService extends Service implements BeaconConsumer {
     private void requestLocationUpdates() {
 
 
-        if (ServiceUtils.isGooglePlayServicesAvailable(this)) {
+        if (hasGoogleClient) {
             try {
                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
             } catch (SecurityException unlikely) {
