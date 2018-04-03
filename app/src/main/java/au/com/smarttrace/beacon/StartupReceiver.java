@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Build;
 
 import au.com.smarttrace.beacon.service.BeaconService;
+import au.com.smarttrace.beacon.ui.SplashActivity;
 
 public class StartupReceiver extends BroadcastReceiver {
 
@@ -13,12 +14,10 @@ public class StartupReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Logger.i("[StartupReceiver] starting ...");
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Intent activity = new Intent(context, BeaconService.class);
+                Intent activity = new Intent(context, SplashActivity.class);
                 activity.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
-                context.startForegroundService(activity);
+                context.startActivity(activity);
                 //BootstrapingService.enqueueWork(context, activity);
             } else {
                 Intent service1 = new Intent(context, BeaconService.class);

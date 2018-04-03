@@ -382,20 +382,20 @@
     <string name="app_title">SmartTrace Shipment Launcher</string>
     <string name="txt_1">1.</string>
     <string name="txt_statement_switch_on">Switch on the Beacon</string>
-    <string name="txt_statement_press_power_button">Press the POWER button for 6 secs util GREEN light appears</string>
+    <string name="txt_statement_press_power_button">Press the POWER button for 6 secs until GREEN light appears</string>
 
     <string name="txt_2">2.</string>
     <string name="txt_statement_scan_barcode">Scan the barcode of the Beacon</string>
     <string name="txt_reading_beacon_now">Reading beacon now …</string>
     <string name="txt_3">3.</string>
-    <string name="txt_start_shipment_for_the_beacon">Keep some distance between them so the heat of phone does not effect the Beacon temperature</string>
-    <string name="txt_note_content">A New Shipment is created for a Beacon when the Phone receives 2 consecutive reading at a valid Start Location, provided the previous shipment has not received any readings within the last hour.</string>
+    <string name="txt_start_shipment_for_the_beacon">Keep some distance between them so the heat of Phone does not effect the Beacon temperature</string>
+    <string name="txt_note_content">A New Shipment is created for a Beacon when the Phone receives 2 consecutive reading at a valid Start Location.</string>
     <string name="txt_start_shipment_now">Start shipment now …</string>
     <string name="txt_start_shipment">Start Shipment</string>
     <string name="txt_or">Or</string>
     <string name="txt_enter_serial_number">Enter serial number</string>
     <string name="txt_statement_switch_on_phone">Switch on the Phone</string>
-    <string name="txt_place_phone_and_beacon">Place Phone and the Beacon on load</string>
+    <string name="txt_place_phone_and_beacon">Place the Phone and Beacon on load</string>
 
     <string name="title_activity_fullscreen">FullscreenActivity</string>
     <string name="dummy_button">Dummy Button</string>

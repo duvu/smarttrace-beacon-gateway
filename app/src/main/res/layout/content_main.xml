@@ -22,149 +22,174 @@
             android:id="@+id/main_screen"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <TableLayout
+                <LinearLayout
                     android:orientation="vertical"
-                    android:padding="@dimen/activity_vertical_margin"
+                    android:layout_marginLeft="@dimen/activity_vertical_margin"
+                    android:layout_marginRight="@dimen/activity_vertical_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
+                    android:layout_marginBottom="@dimen/activity_vertical_margin"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-                    <TableRow
+                    <LinearLayout
                         android:orientation="horizontal"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
                         <TextView
                             android:text="@string/txt_1"
-                            android:textSize="15sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:layout_width="wrap_content"
+                            android:layout_width="13dp"
                             android:layout_height="wrap_content" />
                         <TextView
-                            android:textSize="15sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
                             android:text="@string/txt_statement_switch_on_phone"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
-                    </TableRow>
-                    <TableRow>
-                        <TextView />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView android:layout_height="wrap_content"
+                            android:layout_width="13dp" />
                         <TextView
                             android:text="@string/txt_no_need_to_have_this_app_open"
-                            android:textSize="15sp"
+                            android:textSize="14sp"
                             android:textColor="@color/textColorWarn"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"/>
-                    </TableRow>
-                </TableLayout>
+                    </LinearLayout>
+                </LinearLayout>
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="3dp"
                     android:background="@color/colorPrimaryDark"/>
-                <TableLayout
-                    android:padding="@dimen/activity_vertical_margin"
-                    android:layout_width="wrap_content"
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_marginLeft="@dimen/activity_vertical_margin"
+                    android:layout_marginRight="@dimen/activity_vertical_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
+                    android:layout_marginBottom="@dimen/activity_vertical_margin"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-                    <TableRow
+                    <LinearLayout
                         android:orientation="horizontal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content">
                         <TextView
                             android:text="@string/txt_2"
-                            android:textSize="15sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:layout_width="wrap_content"
+                            android:layout_width="13dp"
                             android:layout_height="wrap_content" />
                         <TextView
-                            android:textSize="15sp"
+                            android:textSize="14sp"
                             android:textStyle="bold"
                             android:text="@string/txt_statement_switch_on"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content" />
-                    </TableRow>
-                    <TableRow
+                    </LinearLayout>
+                    <LinearLayout
+                        android:orientation="horizontal"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-                        <TextView />
+                        <TextView android:layout_height="wrap_content"
+                            android:layout_width="13dp" />
                         <LinearLayout
                             android:orientation="horizontal"
                             android:layout_height="wrap_content"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             tools:ignore="UseCompoundDrawables">
                             <TextView
                                 android:id="@+id/txt_2_content"
+                                android:textSize="14sp"
                                 android:layout_gravity="center_vertical"
-                                android:textSize="15sp"
                                 android:layout_weight="1"
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"/>
                             <ImageView
                                 android:src="@drawable/bt04b"
-                                android:layout_width="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:adjustViewBounds="true"
-                                android:scaleType="fitStart"
-                                android:layout_weight="0.6"
+                                android:scaleType="fitEnd"
                                 tools:ignore="ContentDescription" />
                         </LinearLayout>
-                    </TableRow>
-                </TableLayout>
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="3dp"
-                    android:background="@color/colorPrimaryDark"/>
-                <TableLayout
-                    android:padding="@dimen/activity_vertical_margin"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                        <TextView
-                            android:text="@string/txt_3"
-                            android:textSize="15sp"
-                            android:textStyle="bold"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                        <TextView
-                            android:textSize="15sp"
-                            android:textStyle="bold"
-                            android:text="@string/txt_place_phone_and_beacon"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </TableRow>
-                    <TableRow>
-                        <TextView />
-                        <TextView
-                            android:text="@string/txt_start_shipment_for_the_beacon"
-                            android:textSize="15sp"
-                            android:textColor="@color/textColorWarn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </TableRow>
-                </TableLayout>
+                    </LinearLayout>
+                </LinearLayout>
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="3dp"
                     android:background="@color/colorPrimaryDark"/>
                 <LinearLayout
                     android:orientation="vertical"
-                    android:padding="@dimen/activity_vertical_margin"
+                    android:layout_marginLeft="@dimen/activity_vertical_margin"
+                    android:layout_marginRight="@dimen/activity_vertical_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
+                    android:layout_marginBottom="@dimen/activity_vertical_margin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:text="@string/txt_3"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                        <TextView
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:text="@string/txt_place_phone_and_beacon"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:orientation="horizontal"
+                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent">
+                        <TextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="13dp"/>
+                        <TextView
+                            android:text="@string/txt_start_shipment_for_the_beacon"
+                            android:textSize="14sp"
+                            android:textColor="@color/textColorWarn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                </LinearLayout>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="3dp"
+                    android:background="@color/colorPrimaryDark"/>
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_marginLeft="@dimen/activity_vertical_margin"
+                    android:layout_marginRight="@dimen/activity_vertical_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
+                    android:layout_marginBottom="@dimen/activity_vertical_margin"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
                     <TextView
                         android:textColor="@color/textColorWarn"
                         android:text="@string/note"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                     <TextView
                         android:text="@string/txt_note_title"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textColor="@color/textColorGray"
                         android:layout_marginTop="@dimen/activity_vertical_margin"
                         android:layout_marginBottom="@dimen/activity_vertical_margin"
@@ -173,7 +198,7 @@
                         android:layout_height="wrap_content" />
                     <TextView
                         android:text="@string/txt_note_content"
-                        android:textSize="15sp"
+                        android:textSize="14sp"
                         android:textColor="@color/textColorGray"
                         android:layout_gravity="start"
                         android:layout_width="wrap_content"

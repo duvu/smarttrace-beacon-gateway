@@ -1,13 +1,8 @@
 package au.com.smarttrace.beacon.ui;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.AsyncTask;
-import android.os.Build;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,10 +10,6 @@ import android.os.Handler;
 import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.common.GooglePlayServicesUtil;
 
 import java.io.IOException;
 
@@ -32,7 +23,7 @@ import au.com.smarttrace.beacon.net.model.LoginResponse;
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
  */
-public class FullscreenActivity extends AppCompatActivity {
+public class SplashActivity extends AppCompatActivity {
     private static final boolean AUTO_HIDE = true;
     private UserLoginTask mAuthTask = null;
     /**
@@ -130,13 +121,13 @@ public class FullscreenActivity extends AppCompatActivity {
     }
 
     private void moveToMain() {
-        Intent intent = new Intent(FullscreenActivity.this, MainActivity.class);
+        Intent intent = new Intent(SplashActivity.this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         startActivity(intent);
     }
 
     private void moveToLogin() {
-        Intent intent = new Intent(FullscreenActivity.this, LoginActivity.class);
+        Intent intent = new Intent(SplashActivity.this, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         startActivity(intent);
     }

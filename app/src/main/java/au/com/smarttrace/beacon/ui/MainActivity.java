@@ -15,6 +15,7 @@ import android.graphics.Typeface;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -71,6 +72,8 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     private View mProgressView;
     private View mMainScreenView;
 
+    private final Handler mHandler = new Handler();
+
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -121,7 +124,16 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         registerEventBus();
 
         if (getIntent().getBooleanExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, false)) {
-            finish();
+            //--
+            Logger.i("[-A-] Started on-boot");
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    //-- unbind service and finish this activity
+                    unbindService(mConnection);
+                    finish();
+                }
+            }, 1000);
         }
     }
 
