@@ -2,7 +2,7 @@ package au.com.smarttrace.beacon.net.model;
 
 public class DeviceResponse {
     private Status status;
-    DeviceBody response;
+    Device response;
 
     public Status getStatus() {
         return status;
@@ -12,11 +12,11 @@ public class DeviceResponse {
         this.status = status;
     }
 
-    public DeviceBody getResponse() {
+    public Device getResponse() {
         return response;
     }
 
-    public void setResponse(DeviceBody response) {
+    public void setResponse(Device response) {
         this.response = response;
     }
 }

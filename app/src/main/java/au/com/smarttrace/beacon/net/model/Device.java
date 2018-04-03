@@ -1,9 +1,9 @@
 package au.com.smarttrace.beacon.net.model;
 
-public class DeviceBody {
-    String lastReadingTimeISO;
-    long lastShipmentId;
-    String shipmentStatus;
+public class Device {
+    private String lastReadingTimeISO;
+    private long lastShipmentId;
+    private String shipmentStatus;
 
     public String getLastReadingTimeISO() {
         return lastReadingTimeISO;

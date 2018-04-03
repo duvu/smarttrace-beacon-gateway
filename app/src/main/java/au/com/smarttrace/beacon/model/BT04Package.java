@@ -22,16 +22,19 @@ public class BT04Package extends AbstractDataPackage{
     private String serialNumber;
 
     private long readingCount;
-    private boolean hasShipment;
+    private boolean shouldCreateShipment;
     private boolean foredCreateNew;
+    private long readingAge;
 
     public static BT04Package fromBeacon(Beacon beacon) {
         BT04Package dl = new BT04Package();
+        long now = (new Date()).getTime();
         dl.setBluetoothAddress(beacon.getBluetoothAddress());
         dl.setName(beacon.getBluetoothName());
         dl.setRssi(beacon.getRssi());
         dl.setType(beacon.getBeaconTypeCode());
-        dl.setTimestamp((new Date()).getTime());
+        dl.setTimestamp(now);
+        dl.readingAge = 0L;
         dl.setBatteryLevel(beacon.getTxPower());
         dl.distance = beacon.getDistance();
         if (beacon.getDataFields().size() > 2) {
@@ -56,17 +59,22 @@ public class BT04Package extends AbstractDataPackage{
         dl.firmware = beacon.getIdentifier(1).toHexString();
         dl.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
         dl.readingCount = 0;
-        dl.hasShipment = false;
+        dl.shouldCreateShipment = true;
         dl.foredCreateNew = false;
         return dl;
     }
 
     public BT04Package updateFromBeacon(Beacon beacon) {
+        long now = (new Date()).getTime();
         this.setBluetoothAddress(beacon.getBluetoothAddress());
         this.setName(beacon.getBluetoothName());
         this.setRssi(beacon.getRssi());
         this.setType(beacon.getBeaconTypeCode());
-        this.setTimestamp((new Date()).getTime());
+
+        this.readingAge = now - this.getTimestamp();
+
+        //-- update timestamp
+        this.setTimestamp(now);
         this.setBatteryLevel(beacon.getTxPower());
         this.distance = beacon.getDistance();
         if (beacon.getDataFields().size() > 2) {
@@ -91,6 +99,7 @@ public class BT04Package extends AbstractDataPackage{
         this.firmware = beacon.getIdentifier(1).toHexString();
         this.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
         this.readingCount++;
+
         return this;
     }
 
@@ -199,12 +208,12 @@ public class BT04Package extends AbstractDataPackage{
         this.readingCount = readingCount;
     }
 
-    public boolean isHasShipment() {
-        return hasShipment;
+    public boolean isShouldCreateShipment() {
+        return shouldCreateShipment;
     }
 
-    public void setHasShipment(boolean hasShipment) {
-        this.hasShipment = hasShipment;
+    public void setShouldCreateShipment(boolean shouldCreateShipment) {
+        this.shouldCreateShipment = shouldCreateShipment;
     }
 
     public boolean isForedCreateNew() {
@@ -213,5 +222,13 @@ public class BT04Package extends AbstractDataPackage{
 
     public void setForedCreateNew(boolean foredCreateNew) {
         this.foredCreateNew = foredCreateNew;
+    }
+
+    public long getReadingAge() {
+        return readingAge;
+    }
+
+    public void setReadingAge(long readingAge) {
+        this.readingAge = readingAge;
     }
 }

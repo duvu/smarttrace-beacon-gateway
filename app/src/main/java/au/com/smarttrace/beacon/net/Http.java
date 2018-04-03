@@ -38,7 +38,6 @@ public class Http {
 
     //-- Sync
     public <T> T get(String url, Class<T> clazz) throws IOException, ParsingException {
-        Logger.d("[Http] - get-sync: " + url);
         Request request = new Request.Builder()
                 .url(url)
                 .get()
@@ -54,7 +53,6 @@ public class Http {
     }
 
     public <T> T post(String url, String data, Class<T> clazz) throws IOException {
-        Logger.d("[Http] - post-sync: " + url);
         MediaType mediaType = getMediaType(data);
         RequestBody body = RequestBody.create(mediaType, data);
         Request request = new Request.Builder()
@@ -81,7 +79,6 @@ public class Http {
     }
 
     public void get(String url, Callback callback) {
-        Logger.d("[Http] - get-async: " + url);
         Request request = new Request.Builder()
                 .url(url)
                 .get()

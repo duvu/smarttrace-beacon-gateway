@@ -7,6 +7,8 @@ import java.io.IOException;
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.SharedPref;
+import au.com.smarttrace.beacon.net.model.Device;
+import au.com.smarttrace.beacon.net.model.DeviceResponse;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
@@ -36,10 +38,22 @@ public class WebService {
     }
 
     public static void getDevice(String imei, Callback callback) {
-        String urlSb = AppConfig.WEB_SERVICE_URL + "/getDevice/" + SharedPref.getToken() +
-                "?imei=" + imei;
-
+        String urlSb = AppConfig.WEB_SERVICE_URL + "/getDevice/" + SharedPref.getToken() + "?imei=" + imei;
         Http.getIntance().get(urlSb, callback);
+    }
+
+    public static Device getDevice(String imei) {
+        String urlSb = AppConfig.WEB_SERVICE_URL + "/getDevice/" + SharedPref.getToken() + "?imei=" + imei;
+
+        try {
+            DeviceResponse res = Http.getIntance().get(urlSb, DeviceResponse.class);
+            if (res != null) {
+                return res.getResponse();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static void createNewAutoSthipment(String deviceId, Callback callback) {

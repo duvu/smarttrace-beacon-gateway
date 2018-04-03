@@ -2,7 +2,6 @@ package au.com.smarttrace.beacon.service;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
-import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -88,7 +87,7 @@ import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.Http;
 import au.com.smarttrace.beacon.net.WebService;
-import au.com.smarttrace.beacon.net.model.DeviceResponse;
+import au.com.smarttrace.beacon.net.model.Device;
 import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.net.model.LocationBody;
 import au.com.smarttrace.beacon.net.model.LocationResponse;
@@ -411,7 +410,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         while (it.hasNext()) {
             Map.Entry entry = (Map.Entry) it.next();
             BT04Package data = (BT04Package) entry.getValue();
-            if (now - data.getTimestamp() > AppConfig.DEVICE_MAX_AGE) {
+            if (now - data.getTimestamp() >= AppConfig.DEVICE_MAX_AGE) {
                 it.remove();
             } else {
                 checkHasShipment(data);
@@ -421,7 +420,9 @@ public class BeaconService extends Service implements BeaconConsumer {
 
     private void checkAndCreateShipment(List<BT04Package> dataList) {
         for (final BT04Package data: dataList) {
-            if ((data.getReadingCount() == 2 && locatedAtStartLocations() && !data.isHasShipment()) || data.isForedCreateNew()) {
+            if ((data.getReadingAge() <= AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS*2 && data.getReadingCount() >= 2 && locatedAtStartLocations() && data.isShouldCreateShipment()) ||
+                    (data.isForedCreateNew() && locatedAtStartLocations())) {
+
                 WebService.createNewAutoSthipment(data.getSerialNumberString(), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
@@ -432,7 +433,8 @@ public class BeaconService extends Service implements BeaconConsumer {
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
                         data.setForedCreateNew(false);
-                        Logger.d("Success to create shipment");
+                        data.setShouldCreateShipment(false);
+                        Logger.d("[ShipmentCreated+] Success to create shipment");
                     }
                 });
             }
@@ -440,42 +442,34 @@ public class BeaconService extends Service implements BeaconConsumer {
     }
 
     private void checkHasShipment(final BT04Package data) {
-        Logger.d("checkDeviceHasShipmentAlread");
         final Date now = new Date();
-        WebService.getDevice(data.getSerialNumberString(), new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Logger.d("Failed to get device");
-            }
+        Device device = ServiceUtils.getDevice(data.getSerialNumberString());
+        if (device == null) {
+            // no device in cache.
+            Logger.d("[+] No cached device");
+        } else {
+            Logger.d("[+] got cached device");
+            String lastReadingTimeISO = device.getLastReadingTimeISO();
+            String lastShipmentStatus = device.getShipmentStatus();
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (response.body() != null) {
-                    DeviceResponse deviceResponse = gson.fromJson(response.body().string(), DeviceResponse.class);
-                    String lastReadingTimeISO = null;
-                    String lastShipmentStatus = null;
-                    if (deviceResponse.getResponse() != null) {
-                        lastReadingTimeISO = deviceResponse.getResponse().getLastReadingTimeISO();
-                        lastShipmentStatus = deviceResponse.getResponse().getShipmentStatus();
-                    }
-
-
-                    if (lastShipmentStatus == null) {
-                        deviceMap.get(data.getBluetoothAddress()).setHasShipment(false);
-                    } else if (lastShipmentStatus.equalsIgnoreCase("Ended")) {
-                        deviceMap.get(data.getBluetoothAddress()).setHasShipment(false);
+            if (lastShipmentStatus == null) {
+                deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(true);
+            } else if (lastShipmentStatus.equalsIgnoreCase("Ended")) {
+                deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(true);
+            } else {
+                Date parsedDate = DataUtil.getUserDate(lastReadingTimeISO, userTimezone);
+                if (parsedDate != null) {
+                    Logger.d("[+] shipment-age: " + (now.getTime() - parsedDate.getTime()));
+                    if ((now.getTime() - parsedDate.getTime()) <= AppConfig.SHIPMENT_MAX_AGE) {
+                        //--
                     } else {
-                        Date parsedDate = DataUtil.getUserDate(lastReadingTimeISO, userTimezone);
-                        if (parsedDate != null) {
-                            if ((now.getTime() - parsedDate.getTime()) < AppConfig.DEVICE_MAX_AGE) {
-                                //update deviceMap
-                                deviceMap.get(data.getBluetoothAddress()).setHasShipment(true);
-                            }
-                        }
+                        deviceMap.get(data.getBluetoothAddress()).setShouldCreateShipment(true);
                     }
+                } else {
+                    Logger.d("[+] error parsing date of shipment");
                 }
             }
-        });
+        }
     }
 
     private boolean locatedAtStartLocations() {
@@ -498,7 +492,7 @@ public class BeaconService extends Service implements BeaconConsumer {
             @Override
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
                 if (beacons.size() > 0) {
-                    Logger.d("[Bluetooth] +++");
+                    Logger.d("[BLE] " + beacons.size());
                     for (Beacon beacon : beacons) {
                         BT04Package bt04 = deviceMap.get(beacon.getBluetoothAddress());
                         if (bt04 == null) {
@@ -509,15 +503,15 @@ public class BeaconService extends Service implements BeaconConsumer {
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
                         hasValidBeaconData = true;
                     }
-                    //broadcastData();
                 }
             }
-
         });
         try {
             Region myRegion = new Region("ranging_unique_id", null, null, null);
             mBeaconManager.startRangingBeaconsInRegion(myRegion);
-        } catch (RemoteException e) {   }
+        } catch (RemoteException e) {
+            Logger.d("[BLE] error!");
+        }
 
     }
 
@@ -635,17 +629,17 @@ public class BeaconService extends Service implements BeaconConsumer {
                             if (task.isSuccessful() && task.getResult() != null) {
                                 mLocation = task.getResult();
                             } else {
-                                Logger.d("Failed to get location.");
+                                Logger.d("[GPS] Failed to get location.");
                             }
                         }
                     });
         } catch (SecurityException unlikely) {
-            Logger.d("Lost location permission." + unlikely);
+            Logger.d("[GPS] Lost location permission." + unlikely);
         }
     }
 
     public void onUpdateLocation(Location location) {
-        Logger.d("New Location" + location);
+        Logger.d("[GPS]" + location);
         if (mLocation == null) {
             mLocation = location;
         } else {
@@ -677,7 +671,7 @@ public class BeaconService extends Service implements BeaconConsumer {
      * {@link SecurityException}.
      */
     public void removeLocationUpdates() {
-        Logger.d("Removing location updates");
+        Logger.d("[GPS] Removing location updates");
 
         try {
             if (ServiceUtils.isGooglePlayServicesAvailable(this)) {
@@ -692,7 +686,7 @@ public class BeaconService extends Service implements BeaconConsumer {
             stopSelf();
         } catch (SecurityException unlikely) {
             ServiceUtils.setRequestingLocationUpdates(this, true);
-            Logger.d("Lost location permission. Could not remove updates. " + unlikely);
+            Logger.d("[GPS] Lost location permission. Could not remove updates. " + unlikely);
         }
 
     }

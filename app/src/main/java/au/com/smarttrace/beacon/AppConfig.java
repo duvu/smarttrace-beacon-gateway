@@ -28,7 +28,6 @@ public class AppConfig {
     public static final String TAG = "Smarttrace-Beacon";
     //ensure update startLocations for 1hours. default value is 12.
     public static final int COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS = 24;
-    public static final long DEVICE_MAX_AGE = 110 * 60 * MILLISECONDS_PER_SECOND; //2hours
 
     public static final boolean DEBUG_ENABLED = true;
     public static int TemperatureUnit = 0;
@@ -38,12 +37,11 @@ public class AppConfig {
 
     // max "age" in ms of last location (default 120000).
     public static final long LAST_LOCATION_MAX_AGE = 30 * MILLISECONDS_PER_SECOND;
-    // the minimum time interval for GPS notifications, in milliseconds (default 60000).
     public static final long UPDATE_INTERVAL_IN_MILLISECONDS = (DEBUG_ENABLED ? 10 : 300) * MILLISECONDS_PER_SECOND;
     public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
-
-
-    public static final long UPDATE_INTERVAL_START = 20 * MILLISECONDS_PER_SECOND;
+    public static final long DEVICE_MAX_AGE = 7 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
+    public static final long SHIPMENT_MAX_AGE = 12 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
+    public static final long DEVICE_CACHED_AGE = 3 * UPDATE_INTERVAL_IN_MILLISECONDS;
     public static final long UPDATE_PERIOD = 10 * MILLISECONDS_PER_SECOND;
 
     // the minimum distance interval for GPS notifications, in meters (default 20)
