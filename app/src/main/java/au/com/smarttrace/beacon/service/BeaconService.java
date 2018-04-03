@@ -141,8 +141,6 @@ public class BeaconService extends Service implements BeaconConsumer {
     };
 
     private BeaconManager mBeaconManager = BeaconManager.getInstanceForApplication(this);
-
-    AlarmManager nextPointAlarmManager;
     Map<String, BT04Package> deviceMap = new ConcurrentHashMap<>();
 
     private List<LocationBody> companyShipmentLocations = null;
@@ -165,7 +163,7 @@ public class BeaconService extends Service implements BeaconConsumer {
     private boolean hasGoogleClient = false;
 
     Box<DataLogger> dataLoggerBox;
-    private final Handler handler = new Handler();
+
     public BeaconService() {
     }
 
@@ -173,7 +171,6 @@ public class BeaconService extends Service implements BeaconConsumer {
     @Override
     public void onCreate() {
         Logger.d("[BeaconService] onCreated");
-        nextPointAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         mBeaconManager.setBackgroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS);
         mBeaconManager.setBackgroundScanPeriod(AppConfig.UPDATE_PERIOD);
         mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS);
@@ -224,7 +221,6 @@ public class BeaconService extends Service implements BeaconConsumer {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Logger.d("##Service Started");
-
         boolean startFromNotification = intent.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION, false);
         if (startFromNotification) {
             removeLocationUpdates();
@@ -282,6 +278,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         //stopGpsManager();
         removeLocationUpdates();
         stopBLEScan(true);
+
         unregisterEventBus();
         super.onDestroy();
     }

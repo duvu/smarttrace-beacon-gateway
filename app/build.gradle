@@ -46,6 +46,8 @@ dependencies {
     implementation 'com.google.android.gms:play-services-gcm:12.0.1'
     implementation 'com.google.firebase:firebase-crash:12.0.1'
 
+    implementation 'com.google.guava:guava:24.1-android'
+
     implementation "io.objectbox:objectbox-android:$objectboxVersion"
     annotationProcessor "io.objectbox:objectbox-processor:$objectboxVersion"
 }

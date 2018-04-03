@@ -1,19 +1,27 @@
 package au.com.smarttrace.beacon;
 
 import android.app.Application;
+import android.content.Intent;
+import android.os.Build;
 
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.Identifier;
+import org.altbeacon.beacon.Region;
+import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.model.MyObjectBox;
+import au.com.smarttrace.beacon.service.BeaconService;
 import io.objectbox.BoxStore;
 
 /**
  * Created by beou on 3/19/18.
  */
 
-public class MyApplication extends Application {
+public class MyApplication extends Application implements BootstrapNotifier {
+    private final String PACKAGE = "au.com.smarttrace.beacon";
+    private final String BOOTSTRAP_REGION = PACKAGE + ".bootstrap_region";
 
     // private BackgroundPowerSaver backgroundPowerSaver;
     private RegionBootstrap regionBootstrap;
@@ -48,8 +56,34 @@ public class MyApplication extends Application {
 //        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BeaconParser.EDDYSTONE_URL_LAYOUT)); //"s:0-1=feaa,m:2-2=10,p:3-3:-41,i:4-20v"));
 //        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(BeaconParser.URI_BEACON_LAYOUT)); //"m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24"));
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("s:0-1=cbff,m:2-2=11,i:3-4,i:5-5,i:6-9,p:10-10,d:11-11=04,d:12-13,d:14-15,d:16-18"));
+
+        Region region3901 = new Region(BOOTSTRAP_REGION, Identifier.fromInt(0x3901), null, null);
+        Region region3A01 = new Region(BOOTSTRAP_REGION, Identifier.fromInt(0x3A01), null, null);
+        Region region3C01 = new Region(BOOTSTRAP_REGION, Identifier.fromInt(0x3C01), null, null);
+        Region region3A04 = new Region(BOOTSTRAP_REGION, Identifier.fromInt(0x3A04), null, null);
+        regionBootstrap = new RegionBootstrap(this, region3901);
+        regionBootstrap.addRegion(region3A01);
+        regionBootstrap.addRegion(region3C01);
+        regionBootstrap.addRegion(region3A04);
     }
     public BoxStore getBoxStore() {
         return boxStore;
+    }
+
+    @Override
+    public void didEnterRegion(Region region) {
+        // check if service is running
+        // if not, start it.
+        Logger.d("Enter region ... " + region.getId1().toHexString());
+    }
+
+    @Override
+    public void didExitRegion(Region region) {
+        Logger.d("Exit region ..." + region.getId1().toHexString());
+    }
+
+    @Override
+    public void didDetermineStateForRegion(int i, Region region) {
+
     }
 }

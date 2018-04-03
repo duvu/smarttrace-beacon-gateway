@@ -29,16 +29,12 @@ public class AppConfig {
     //ensure update startLocations for 1hours. default value is 12.
     public static final int COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS = 24;
     public static final long DEVICE_MAX_AGE = 110 * 60 * MILLISECONDS_PER_SECOND; //2hours
-    public static final long DEVICE_AGE = 10 * 60 * MILLISECONDS_PER_SECOND; //only push to server if new data
-    public static final long MAX_SHIPMENT_AGE = 120 * 60 * MILLISECONDS_PER_SECOND;
 
-    public static int MAX_DATA_PACKAGES = 10;
-    public static final boolean DEBUG_ENABLED = false;
+    public static final boolean DEBUG_ENABLED = true;
     public static int TemperatureUnit = 0;
 
     public static String WEB_SERVICE_URL = "https://smarttrace.com.au/web/vf/rest";
     public static String BACKEND_URL_BT04_NEW = "https://smarttrace.com.au/bt04";
-    //public static String BACKEND_URL_BT04 = "http://smarttrace.com.au:8080/data";
 
     // max "age" in ms of last location (default 120000).
     public static final long LAST_LOCATION_MAX_AGE = 30 * MILLISECONDS_PER_SECOND;
