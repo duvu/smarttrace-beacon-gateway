@@ -397,7 +397,8 @@ public class BeaconService extends Service implements BeaconConsumer {
             Map.Entry entry = (Map.Entry) o;
             String key = (String)entry.getKey();
             BT04Package data = (BT04Package) entry.getValue();
-            if ((now - data.getTimestamp()) <= (AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS * 3)) {
+            if ((now - data.getTimestamp()) <= (AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS * 3) &&
+                    data.isShouldUpload()) {
                 dataList.add(data);
             }
         }
@@ -459,12 +460,15 @@ public class BeaconService extends Service implements BeaconConsumer {
             } else {
                 Date parsedDate = DataUtil.getUserDate(lastReadingTimeISO, userTimezone);
                 if (parsedDate != null) {
-                    Logger.d("[+] shipment-age: " + (now.getTime() - parsedDate.getTime()));
-                    if ((now.getTime() - parsedDate.getTime()) <= AppConfig.SHIPMENT_MAX_AGE) {
-                        //--
-                    } else {
+                    long shipment_age = (now.getTime() - parsedDate.getTime());
+                    Logger.d("[+] shipment-age: " + shipment_age);
+                    if (shipment_age <= AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS / 2) {
+                        deviceMap.get(data.getBluetoothAddress()).setShouldUpload(false);
+                    } else
+                    if (shipment_age >= AppConfig.SHIPMENT_MAX_AGE) {
                         deviceMap.get(data.getBluetoothAddress()).setShouldCreateShipment(true);
                     }
+
                 } else {
                     Logger.d("[+] error parsing date of shipment");
                 }

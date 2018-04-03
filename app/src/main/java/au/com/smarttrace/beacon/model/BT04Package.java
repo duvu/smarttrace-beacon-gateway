@@ -23,6 +23,7 @@ public class BT04Package extends AbstractDataPackage{
 
     private long readingCount;
     private boolean shouldCreateShipment;
+    private boolean shouldUpload;
     private boolean foredCreateNew;
     private long readingAge;
 
@@ -60,6 +61,7 @@ public class BT04Package extends AbstractDataPackage{
         dl.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
         dl.readingCount = 0;
         dl.shouldCreateShipment = true;
+        dl.shouldUpload = true;
         dl.foredCreateNew = false;
         return dl;
     }
@@ -99,7 +101,7 @@ public class BT04Package extends AbstractDataPackage{
         this.firmware = beacon.getIdentifier(1).toHexString();
         this.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
         this.readingCount++;
-
+        this.shouldUpload = true;
         return this;
     }
 
@@ -214,6 +216,14 @@ public class BT04Package extends AbstractDataPackage{
 
     public void setShouldCreateShipment(boolean shouldCreateShipment) {
         this.shouldCreateShipment = shouldCreateShipment;
+    }
+
+    public boolean isShouldUpload() {
+        return shouldUpload;
+    }
+
+    public void setShouldUpload(boolean shouldUpload) {
+        this.shouldUpload = shouldUpload;
     }
 
     public boolean isForedCreateNew() {

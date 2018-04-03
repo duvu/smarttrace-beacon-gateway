@@ -29,20 +29,21 @@ public class AppConfig {
     //ensure update startLocations for 1hours. default value is 12.
     public static final int COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS = 24;
 
-    public static final boolean DEBUG_ENABLED = true;
+    public static final boolean DEBUG_ENABLED = false;
     public static int TemperatureUnit = 0;
 
-    public static String WEB_SERVICE_URL = "https://smarttrace.com.au/web/vf/rest";
-    public static String BACKEND_URL_BT04_NEW = "https://smarttrace.com.au/bt04";
+    public static final String SMARTTRACE_URL                           = "https://smarttrace.com.au";
+    public static final String WEB_SERVICE_URL                          = SMARTTRACE_URL +"/web/vf/rest";
+    public static final String BACKEND_URL_BT04_NEW                     = SMARTTRACE_URL + "/bt04";
 
     // max "age" in ms of last location (default 120000).
-    public static final long LAST_LOCATION_MAX_AGE = 30 * MILLISECONDS_PER_SECOND;
-    public static final long UPDATE_INTERVAL_IN_MILLISECONDS = (DEBUG_ENABLED ? 10 : 300) * MILLISECONDS_PER_SECOND;
-    public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
-    public static final long DEVICE_MAX_AGE = 7 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
-    public static final long SHIPMENT_MAX_AGE = 12 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
-    public static final long DEVICE_CACHED_AGE = 3 * UPDATE_INTERVAL_IN_MILLISECONDS;
-    public static final long UPDATE_PERIOD = 10 * MILLISECONDS_PER_SECOND;
+    public static final long UPDATE_INTERVAL_IN_MILLISECONDS            = (DEBUG_ENABLED ? 10 : 300) * MILLISECONDS_PER_SECOND;
+    public static final long LAST_LOCATION_MAX_AGE                      = 30 * MILLISECONDS_PER_SECOND;
+    public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS    = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
+    public static final long DEVICE_MAX_AGE                             = 7 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
+    public static final long SHIPMENT_MAX_AGE                           = 12 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
+    public static final long DEVICE_CACHED_AGE                          = 3 * UPDATE_INTERVAL_IN_MILLISECONDS;
+    public static final long UPDATE_PERIOD                              = 10 * MILLISECONDS_PER_SECOND;
 
     // the minimum distance interval for GPS notifications, in meters (default 20)
     public static final float LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE = 0;
