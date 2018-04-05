@@ -191,19 +191,26 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_logout) {
             SharedPref.clear();
+            mService.stopSelf();
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             startActivity(intent);
             return true;
         }
 
-        if (id == R.id.action_create_shipment) {
-            Logger.d("wiping out to start new shipment");
-            if (mBound) {
-                mService.wipeAllDataOut();
-            }
-            return true;
-        }
+//        if (id == R.id.action_settings) {
+//            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+//            intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//            startActivity(intent);
+//            return true;
+//        }
+//
+//        if (id == R.id.action_create_shipment) {
+//            if (mBound) {
+//                mService.wipeAllDataOut();
+//            }
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -214,24 +221,12 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        /*if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else */
         if (id == R.id.nav_login) {
             startActivity(new Intent(this, LoginActivity.class));
         } else
         if (id == R.id.nav_manage) {
             startActivity(new Intent(this, SettingsActivity.class));
-            //overridePendingTransition(R.anim.hold, R.anim.fade_in);
-
         }
-        /*else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
-        }*/
         else if (id == R.id.nav_exit) {
             EventBus.getDefault().post(new ExitEvent());
             finish();
