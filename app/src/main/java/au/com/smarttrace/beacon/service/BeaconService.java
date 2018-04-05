@@ -230,7 +230,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         if (startFromBoot) {
             startForeground(NOTIFICATION_ID, getNotification());
         }
-
+        MyApplication.serviceStarted();
         requestUpdateData();
         return START_NOT_STICKY;
     }
@@ -278,6 +278,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         removeLocationUpdates();
         stopBLEScan(true);
 
+        MyApplication.serviceEnded();
         unregisterEventBus();
         super.onDestroy();
     }

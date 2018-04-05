@@ -46,7 +46,7 @@ public class AppConfig {
     public static final long UPDATE_PERIOD                              = 10 * MILLISECONDS_PER_SECOND;
 
     // the minimum distance interval for GPS notifications, in meters (default 20)
-    public static final float LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE = 0;
+    public static final float LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE = DEBUG_ENABLED ? 0 : 0;
 
     public static String TIMEZONE_STR = "GMT";
 
@@ -64,7 +64,7 @@ public class AppConfig {
     }
 
     public static void setPlayServiceAvailability(Context context, boolean avail) {
-        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(KEY_PLAY_SERVICE_AVAILABILITY, avail).apply();
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(KEY_PLAY_SERVICE_AVAILABILITY, avail).commit();
     }
     public static boolean getPlayServiceAvailability(Context context) {
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(KEY_PLAY_SERVICE_AVAILABILITY, false);

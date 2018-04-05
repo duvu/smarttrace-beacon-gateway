@@ -17,7 +17,6 @@ public class SharedPref {
     private static SharedPreferences sharedPreferences;
     private static SharedPreferences.Editor editor;
     public static void init(Context ctx) {
-        //ctx.getSharedPreferences(KEY_SMARTTRACE_IO_DATA, Context.MODE_PRIVATE);
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx);
         editor = sharedPreferences.edit();
     }
@@ -82,7 +81,7 @@ public class SharedPref {
     //11 save user_timezone
     public static void saveUserTimezone(String tz) {
         getEditor().putString(KEY_USER_TIMEZONE, tz);
-        getEditor().apply();
+        getEditor().commit();
     }
 
     public static String getUserTimezone() {

@@ -14,6 +14,7 @@ import android.view.View;
 import java.io.IOException;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.MyApplication;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.Http;
@@ -24,7 +25,6 @@ import au.com.smarttrace.beacon.net.model.LoginResponse;
  * status bar and navigation/system bar) with user interaction.
  */
 public class SplashActivity extends AppCompatActivity {
-    private static final boolean AUTO_HIDE = true;
     private UserLoginTask mAuthTask = null;
 
     private static final int UI_ANIMATION_DELAY = 100;
@@ -63,6 +63,11 @@ public class SplashActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         checkLogin();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
     @Override
@@ -121,13 +126,10 @@ public class SplashActivity extends AppCompatActivity {
                 }
                 //-- start store login data
                 // get more data and store
-                storeUserData(response);
+                return storeUserData(response);
             } catch (IOException e) {
-                moveToLogin();
-                finish();
+                return false;
             }
-
-            return true;
         }
 
         @Override
@@ -148,10 +150,20 @@ public class SplashActivity extends AppCompatActivity {
             mAuthTask = null;
         }
 
-        private void storeUserData(LoginResponse data) {
-            SharedPref.saveToken(data.getResponse().getToken());
-            SharedPref.saveExpiredStr(data.getResponse().getExpired());
-            SharedPref.saveTokenInstance(data.getResponse().getInstance());
+        private boolean storeUserData(LoginResponse data) {
+            if (data != null) {
+                if (data.getResponse() != null) {
+                    SharedPref.saveToken(data.getResponse().getToken());
+                    SharedPref.saveExpiredStr(data.getResponse().getExpired());
+                    SharedPref.saveTokenInstance(data.getResponse().getInstance());
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+
         }
     }
 }

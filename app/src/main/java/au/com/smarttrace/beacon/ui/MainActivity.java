@@ -45,6 +45,7 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
 
+import au.com.smarttrace.beacon.MyApplication;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
@@ -115,9 +116,7 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         //text.setSpan(new RelativeSizeSpan(1.1f), 0, textStr.length(), 0);
         text.setSpan(new StyleSpan(Typeface.BOLD), 10, 15, 0);
         text.setSpan(new StyleSpan(Typeface.BOLD), 39, 45, 0);
-
         txt2Content.setText(text, TextView.BufferType.SPANNABLE);
-        //txt2Content.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(R.drawable.bt04b), null, null, null);
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
@@ -141,18 +140,19 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     protected void onStart() {
         super.onStart();
         bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
-
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        MyApplication.activityStarted();
         LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver, new IntentFilter(BeaconService.ACTION_BROADCAST));
     }
 
     @Override
     protected void onPause() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
+        MyApplication.activityPaused();
         super.onPause();
     }
 

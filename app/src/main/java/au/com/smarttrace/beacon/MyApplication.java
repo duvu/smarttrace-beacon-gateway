@@ -13,6 +13,8 @@ import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.model.MyObjectBox;
 import au.com.smarttrace.beacon.service.BeaconService;
+import au.com.smarttrace.beacon.ui.MainActivity;
+import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
 
 /**
@@ -26,6 +28,33 @@ public class MyApplication extends Application implements BootstrapNotifier {
     // private BackgroundPowerSaver backgroundPowerSaver;
     private RegionBootstrap regionBootstrap;
     private BoxStore boxStore;
+    private static boolean activityVisible = false;
+    private static boolean serviceRunning = false;
+
+    public static boolean isActivityVisible() {
+        return activityVisible;
+    }
+
+    public static boolean isServiceRunning() {
+        return serviceRunning;
+    }
+
+    public static void activityStarted() {
+        activityVisible = true;
+    }
+
+    public static void activityPaused() {
+        activityVisible = false;
+    }
+
+    public static void serviceStarted() {
+        serviceRunning = true;
+    }
+
+    public static void serviceEnded() {
+        serviceRunning = false;
+    }
+
 
     public void onCreate() {
         super.onCreate();
@@ -74,12 +103,18 @@ public class MyApplication extends Application implements BootstrapNotifier {
     public void didEnterRegion(Region region) {
         // check if service is running
         // if not, start it.
-        Logger.d("Enter region ... " + region.getId1().toHexString());
+        Logger.i("Beacon enter region ... ");
+        if (!isActivityVisible() && !isServiceRunning()) {
+            //start activity
+            Intent i = new Intent(this, SplashActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            this.startActivity(i);
+        }
     }
 
     @Override
     public void didExitRegion(Region region) {
-        Logger.d("Exit region ..." + region.getId1().toHexString());
+        Logger.d("Exit region ...");
     }
 
     @Override

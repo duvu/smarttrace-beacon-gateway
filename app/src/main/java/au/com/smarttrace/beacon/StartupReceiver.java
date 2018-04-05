@@ -17,12 +17,19 @@ public class StartupReceiver extends BroadcastReceiver {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Intent activity = new Intent(context, SplashActivity.class);
                 activity.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
+                activity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(activity);
-                //BootstrapingService.enqueueWork(context, activity);
             } else {
-                Intent service1 = new Intent(context, BeaconService.class);
-                service1.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
-                context.startService(service1);
+//                Intent activity = new Intent(context, SplashActivity.class);
+//                activity.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
+//                activity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                context.startActivity(activity);
+
+
+                Intent i = new Intent(context, BeaconService.class);
+                i.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
+                context.startService(i);
+
             }
         }
     }
