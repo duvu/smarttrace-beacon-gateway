@@ -37,8 +37,8 @@ public class AppConfig {
     public static final String BACKEND_URL_BT04_NEW                     = SMARTTRACE_URL + "/bt04";
 
     // max "age" in ms of last location (default 120000).
-    public static final long UPDATE_INTERVAL_IN_MILLISECONDS            = (DEBUG_ENABLED ? 10 : 300) * MILLISECONDS_PER_SECOND;
-    public static final long LAST_LOCATION_MAX_AGE                      = 30 * MILLISECONDS_PER_SECOND;
+    public static final long UPDATE_INTERVAL_IN_MILLISECONDS            = (DEBUG_ENABLED ? 10 : 600) * MILLISECONDS_PER_SECOND;
+    public static final long LAST_LOCATION_MAX_AGE                      = 60 * MILLISECONDS_PER_SECOND;
     public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS    = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
     public static final long DEVICE_MAX_AGE                             = 7 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
     public static final long SHIPMENT_MAX_AGE                           = 12 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
