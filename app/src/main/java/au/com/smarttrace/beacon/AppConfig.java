@@ -40,8 +40,8 @@ public class AppConfig {
     public static final long UPDATE_INTERVAL_IN_MILLISECONDS            = (DEBUG_ENABLED ? 10 : 600) * MILLISECONDS_PER_SECOND;
     public static final long LAST_LOCATION_MAX_AGE                      = 60 * MILLISECONDS_PER_SECOND;
     public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS    = (UPDATE_INTERVAL_IN_MILLISECONDS / 4) * 3;
-    public static final long DEVICE_MAX_AGE                             = 7 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
-    public static final long SHIPMENT_MAX_AGE                           = 12 * UPDATE_INTERVAL_IN_MILLISECONDS; //1 hours
+    public static final long DEVICE_MAX_AGE                             = 6 * UPDATE_INTERVAL_IN_MILLISECONDS  + 10 * MILLISECONDS_PER_SECOND; //1 hours
+    public static final long SHIPMENT_MAX_AGE                           = 12 * UPDATE_INTERVAL_IN_MILLISECONDS + 10 * MILLISECONDS_PER_SECOND; //2 hours
     public static final long DEVICE_CACHED_AGE                          = 3 * UPDATE_INTERVAL_IN_MILLISECONDS;
     public static final long UPDATE_PERIOD                              = 10 * MILLISECONDS_PER_SECOND;
 

@@ -60,7 +60,7 @@ public class BT04Package extends AbstractDataPackage{
         dl.firmware = beacon.getIdentifier(1).toHexString();
         dl.serialNumber = beacon.getIdentifier(2).toHexString().substring(2);
         dl.readingCount = 0;
-        dl.shouldCreateShipment = true;
+        dl.shouldCreateShipment = false;
         dl.shouldUpload = true;
         dl.foredCreateNew = false;
         return dl;

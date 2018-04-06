@@ -408,6 +408,6 @@
     <string name="action_create_shipment">New Manual Shipment</string>
     <string name="txt_no_need_to_have_this_app_open">No need to have this App open</string>
     <string name="note">Note.</string>
-    <string name="txt_note_title">Beacons broadcast every 5 minutes.</string>
+    <string name="txt_note_title">Beacons upload data every 5 minutes.</string>
 
 </resources>

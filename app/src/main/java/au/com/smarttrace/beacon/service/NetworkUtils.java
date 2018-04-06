@@ -4,9 +4,9 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
-public class NetworkManager {
+public class NetworkUtils {
     ConnectivityManager connectivityManager;
-    public NetworkManager(Context context) {
+    public NetworkUtils(Context context) {
         connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 

@@ -85,16 +85,16 @@ public class DataUtil {
             sb.append(0).append(SEP).append(N);
         }
 
-        for (BT04Package BT04Package : BT04PackageList) {
-            sb.append(BT04Package.getSerialNumberString()).append(SEP);
-            sb.append(BT04Package.getName()).append(SEP);
-            sb.append(BT04Package.getTemperature()).append(SEP);
-            sb.append(BT04Package.getHumidity()).append(SEP);
-            sb.append(BT04Package.getRssi()).append(SEP);
-            sb.append(BT04Package.getDistance()).append(SEP);
-            sb.append(BT04Package.getBatteryLevel()).append(SEP);
-            sb.append(BT04Package.getTimestamp()).append(SEP);
-            sb.append(BT04Package.getModel()).append(SEP).append(N);
+        for (BT04Package data : BT04PackageList) {
+            sb.append(data.getSerialNumberString()).append(SEP);
+            sb.append(data.getName()).append(SEP);
+            sb.append(data.getTemperature()).append(SEP);
+            sb.append(data.getHumidity()).append(SEP);
+            sb.append(data.getRssi()).append(SEP);
+            sb.append(data.getDistance()).append(SEP);
+            sb.append(data.getBatteryLevel()).append(SEP);
+            sb.append(data.getTimestamp()).append(SEP);
+            sb.append(data.getModel()).append(SEP).append(N);
         }
         return sb.toString();
     }
