@@ -92,12 +92,63 @@ public class DataUtil {
             sb.append(data.getHumidity()).append(SEP);
             sb.append(data.getRssi()).append(SEP);
             sb.append(data.getDistance()).append(SEP);
-            sb.append(data.getBatteryLevel()).append(SEP);
+            sb.append(battPercentToVolt(data.getPhoneBatteryLevel()*100)).append(SEP);
             sb.append(data.getTimestamp()).append(SEP);
             sb.append(data.getModel()).append(SEP).append(N);
         }
         return sb.toString();
     }
+
+    private static float battPercentToVolt (float battLevel) {
+        //min 3194.3
+        //max 4200.0
+
+        if (battLevel <= 1) {
+            return 3194;
+        } else
+        if (battLevel <=2) {
+            return 3241;
+        } else
+        if (battLevel <= 3) {
+            return 3288;
+        } else if (battLevel <= 4) {
+            return 3336;
+        } else if (battLevel <= 5) {
+            return 3383;
+        } else if (battLevel <= 6) {
+            return 3430;
+        } else if (battLevel <= 7) {
+            return 3478;
+        } else if (battLevel <= 8) {
+            return 3525;
+        } else if (battLevel <= 9) {
+            return 3572;
+        } else if (battLevel <= 10) {
+            return 3620;
+        } else if (battLevel <= 20) {
+            return 3695;
+        } else if (battLevel <= 30) {
+            return 3770;
+        } else if (battLevel <= 40) {
+            return 3845;
+        } else if (battLevel <= 50) {
+            return 3895;
+        } else if (battLevel <= 60) {
+            return 3925;
+        } else if (battLevel <= 70) {
+            return 3975;
+        } else if (battLevel <= 80) {
+            return 4025;
+        } else if (battLevel <= 90) {
+            return 4075;
+        } else if (battLevel <= 95) {
+            return 4125;
+        } else {
+            return 4200;
+        }
+    }
+
+
 
     public static Date getUserDate(final String strDate, final TimeZone timeZone) {
         if (TextUtils.isEmpty(strDate)) return null;

@@ -21,6 +21,7 @@ public class BT04Package extends AbstractDataPackage{
     private String firmware;
     private String serialNumber;
 
+    private float phoneBatteryLevel;
     private long readingCount;
     private boolean shouldCreateShipment;
     private boolean shouldUpload;
@@ -200,6 +201,14 @@ public class BT04Package extends AbstractDataPackage{
     }
     public void setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
+    }
+
+    public float getPhoneBatteryLevel() {
+        return phoneBatteryLevel;
+    }
+
+    public void setPhoneBatteryLevel(float phoneBatteryLevel) {
+        this.phoneBatteryLevel = phoneBatteryLevel;
     }
 
     public long getReadingCount() {

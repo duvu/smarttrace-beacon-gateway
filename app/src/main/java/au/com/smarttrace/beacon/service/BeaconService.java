@@ -11,10 +11,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
 import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.Build;
@@ -135,7 +137,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent == null) {
-                mBatteryLevel = 0f;
+                mBatteryLevel = 0.0f;
             } else {
                 int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
                 int scal = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 0);
@@ -166,6 +168,8 @@ public class BeaconService extends Service implements BeaconConsumer {
     private int timesOfDataUpdated = 0;
     private boolean hasGoogleClient = false;
 
+    ConnectivityManager connectivityManager;
+
     Box<DataLogger> dataLoggerBox;
 
     public BeaconService() {
@@ -181,6 +185,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         mBeaconManager.bind(this);
 
         dataLoggerBox = ((MyApplication) getApplication()).getBoxStore().boxFor(DataLogger.class);
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
@@ -222,6 +227,12 @@ public class BeaconService extends Service implements BeaconConsumer {
             mNotificationManager.createNotificationChannel(channel);
         }
         registerEventBus();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
+        intentFilter.addAction(Intent.ACTION_BATTERY_LOW);
+        intentFilter.addAction(Intent.ACTION_BATTERY_OKAY);
+        //intentFilter.addAction(Inte);
+        registerReceiver(mBatteryLevelReceiver, intentFilter);
     }
 
     @Override
@@ -267,14 +278,12 @@ public class BeaconService extends Service implements BeaconConsumer {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Logger.i("onUnbind");
+        Logger.i("onUnbind: " + mChangingConfiguration);
 
         // Called when the last client unibinds from this service. If this method is called due to a
         // configuration change in MainActivity, we do nothing. Otherwise, we make this service a foreground service.
-        if (!mChangingConfiguration) {
-            Logger.i("Starting foreground service");
-            startForeground(NOTIFICATION_ID, getNotification());
-        }
+        Logger.i("Starting foreground service");
+        startForeground(NOTIFICATION_ID, getNotification());
         return true;
     }
 
@@ -527,6 +536,7 @@ public class BeaconService extends Service implements BeaconConsumer {
                         } else {
                             bt04.updateFromBeacon(beacon);
                         }
+                        bt04.setPhoneBatteryLevel(mBatteryLevel);
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
                     }
                 }
