@@ -135,7 +135,9 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     @Override
     protected void onStart() {
         super.onStart();
-        bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
+        if (!mBound) {
+            bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
+        }
     }
 
     @Override

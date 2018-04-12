@@ -410,5 +410,6 @@
     <string name="note">Note.</string>
     <string name="txt_note_title">Beacons upload data every 5 minutes.</string>
     <string name="action_beacons">Beacons</string>
+    <string name="pair">Pair</string>
 
 </resources>

@@ -13,6 +13,8 @@ public class SharedPref {
     private static final String KEY_SMARRTRACE_IO_TOKEN_INSTANCE = "smarttrace_io_token_instance";
 
     private static final String KEY_USER_TIMEZONE       = "user_timezone";
+    private static final String KEY_COMPANY_ID       = "company_id";
+    private static final String KEY_ONBOOT       = "application_on_boot";
 
     private static SharedPreferences sharedPreferences;
     private static SharedPreferences.Editor editor;
@@ -86,6 +88,24 @@ public class SharedPref {
 
     public static String getUserTimezone() {
         return sharedPreferences.getString(KEY_USER_TIMEZONE, "GMT");
+    }
+
+    //13. save companyId
+    public static void saveCompanyId(long id) {
+        getEditor().putLong(KEY_COMPANY_ID, id);
+        getEditor().commit();
+    }
+
+    public static long getCompanyId() {
+        return sharedPreferences.getLong(KEY_COMPANY_ID, 0);
+    }
+
+    public static void saveOnBoot(boolean onBoot) {
+        getEditor().putBoolean(KEY_ONBOOT, onBoot).commit();
+    }
+
+    public static boolean isOnBoot() {
+        return sharedPreferences.getBoolean(KEY_ONBOOT, false);
     }
 
     public static void clear() {

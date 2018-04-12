@@ -2,6 +2,8 @@ package au.com.smarttrace.beacon.net;
 
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 
 import au.com.smarttrace.beacon.AppConfig;
@@ -9,11 +11,13 @@ import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.model.Device;
 import au.com.smarttrace.beacon.net.model.DeviceResponse;
+import au.com.smarttrace.beacon.net.model.PairedRequest;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
 public class WebService {
+    private static final Gson gson = new Gson();
     public static void getLocations(int page, int size, String sortColumn, String sortOrder, Callback callback) {
         if (!TextUtils.isEmpty(SharedPref.getToken())) {
             String urlSb = AppConfig.WEB_SERVICE_URL + "/getLocations/" + SharedPref.getToken() +
@@ -71,5 +75,21 @@ public class WebService {
         }
         String urlSb = AppConfig.WEB_SERVICE_URL + "/getPairedBeacons/" + SharedPref.getToken() + "?phone="+imei;
         Http.getIntance().get(urlSb, callback);
+    }
+
+    public static void savePairedPhone(String pImei, String bSn, Callback callback) {
+        if (TextUtils.isEmpty(pImei) || TextUtils.isEmpty(bSn) || TextUtils.isEmpty(SharedPref.getToken())) {
+            return;
+        }
+        String urlSb = AppConfig.WEB_SERVICE_URL + "/savePairedPhone/" + SharedPref.getToken();
+        PairedRequest request = new PairedRequest();
+        request.setPairedPhoneIMEI(pImei);
+        request.setPairedBeaconID(bSn);
+        request.setCompany(SharedPref.getCompanyId());
+        request.setActive(true);
+        String postData = gson.toJson(request);
+        Logger.d("savedPairedPhone: " + postData);
+        Http.getIntance().post(urlSb, postData, callback);
+
     }
 }

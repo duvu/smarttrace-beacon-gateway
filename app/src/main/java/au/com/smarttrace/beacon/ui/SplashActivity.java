@@ -9,9 +9,13 @@ import android.os.Handler;
 import android.text.TextUtils;
 import android.view.View;
 
+import com.orhanobut.hawk.Hawk;
+
 import java.io.IOException;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.AppContants;
+import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.Http;

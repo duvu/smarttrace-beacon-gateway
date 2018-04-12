@@ -60,9 +60,6 @@ public class App extends Application implements BootstrapNotifier {
 
         SharedPref.init(getApplicationContext());
 
-        //-- init database
-        Hawk.init(this).build();
-
         BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
         // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
         // find a different type of beacon, you must specify the byte layout for that beacon's

@@ -7,15 +7,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 //import com.TZONE.Bluetooth.Utils.MeasuringDistance;
 //import com.TZONE.Bluetooth.Utils.StringUtil;
 //import com.TZONE.Bluetooth.Utils.TemperatureUnitUtil;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -23,10 +26,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.model.BT04Package;
 import au.com.smarttrace.beacon.net.DataUtil;
+import au.com.smarttrace.beacon.net.WebService;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 /**
  * Created by beou on 3/9/18.
@@ -92,11 +100,13 @@ public class BeaconAdapter extends ArrayAdapter {
             viewHolder.layoutTemperature = (LinearLayout) convertView.findViewById(R.id.layoutTemperature);
             viewHolder.txtTemperature = (TextView) convertView.findViewById(R.id.txtTemperature);
 //            viewHolder.txtHumidity = (TextView) convertView.findViewById(R.id.txtHumidity);
+            viewHolder.btnPair = (Button) convertView.findViewById(R.id.btn_pair);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        BT04Package beaconData = (BT04Package) getItem(position);
+
+        final BT04Package beaconData = (BT04Package) getItem(position);
         viewHolder.layoutTemperature.setVisibility(View.VISIBLE);
         viewHolder.layoutIbeacon.setVisibility(View.GONE);
         viewHolder.layoutEddystone.setVisibility(View.GONE);
@@ -215,6 +225,15 @@ public class BeaconAdapter extends ArrayAdapter {
                 viewHolder.txtTemperature.setTextColor(Color.parseColor("#808080"));
                 viewHolder.txtBattery.setTextColor(Color.parseColor("#808080"));
             }
+
+            viewHolder.btnPair.setEnabled(!beaconData.isPaired());
+            viewHolder.btnPair.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    //get webservice for pair
+                    doPair(AppConfig.GATEWAY_ID, beaconData.getSerialNumberString());
+                }
+            });
         }
         return convertView;
     }
@@ -243,6 +262,8 @@ public class BeaconAdapter extends ArrayAdapter {
         public LinearLayout layoutTemperature;
         public TextView txtTemperature;
 //        public TextView txtHumidity;
+
+        public Button btnPair;
     }
 
     public void setDataPackageList(List<BT04Package> dataPackageList) {
@@ -263,5 +284,20 @@ public class BeaconAdapter extends ArrayAdapter {
         String units = "m";
         distance+=0.1;
         return String.format(Locale.US, "%.1f", distance) + units;
+    }
+
+    private void doPair(String imei, String bSn) {
+        WebService.savePairedPhone(imei, bSn, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                //
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                //
+                Logger.d("Paired!" + response.body().string());
+            }
+        });
     }
 }

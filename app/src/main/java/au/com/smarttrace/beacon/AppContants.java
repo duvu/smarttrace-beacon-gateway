@@ -10,5 +10,5 @@ public class AppContants {
     public static final String DEGREE_FAHRENHEIT = "\u2109";
     public static final String DEGREE_KELVIN = "\u212A";
 
-    public static final String SHOULD_CREATE_SHIPMENT = "au.com.smarttrace.beacon.boot_completed_should_create_shipment";
+    public static final String SHOULD_CREATE_SHIPMENT_ONBOOT = "au.com.smarttrace.beacon.boot_completed_should_create_shipment";
 }

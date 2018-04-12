@@ -24,9 +24,11 @@ public class BT04Package extends AbstractDataPackage{
     private float phoneBatteryLevel;
     private long readingCount;
     private boolean shouldCreateShipment;
+    private boolean shouldCreateOnBoot;
     private boolean shouldUpload;
     private boolean foredCreateNew;
     private long readingAge;
+    private boolean isPaired;
 
     public static BT04Package fromBeacon(Beacon beacon) {
         BT04Package dl = new BT04Package();
@@ -64,6 +66,7 @@ public class BT04Package extends AbstractDataPackage{
         dl.shouldCreateShipment = false;
         dl.shouldUpload = true;
         dl.foredCreateNew = false;
+        dl.isPaired = false;
         return dl;
     }
 
@@ -227,6 +230,14 @@ public class BT04Package extends AbstractDataPackage{
         this.shouldCreateShipment = shouldCreateShipment;
     }
 
+    public boolean isShouldCreateOnBoot() {
+        return shouldCreateOnBoot;
+    }
+
+    public void setShouldCreateOnBoot(boolean shouldCreateOnBoot) {
+        this.shouldCreateOnBoot = shouldCreateOnBoot;
+    }
+
     public boolean isShouldUpload() {
         return shouldUpload;
     }
@@ -249,5 +260,13 @@ public class BT04Package extends AbstractDataPackage{
 
     public void setReadingAge(long readingAge) {
         this.readingAge = readingAge;
+    }
+
+    public boolean isPaired() {
+        return isPaired;
+    }
+
+    public void setPaired(boolean paired) {
+        isPaired = paired;
     }
 }

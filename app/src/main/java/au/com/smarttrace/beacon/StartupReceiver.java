@@ -17,7 +17,8 @@ public class StartupReceiver extends BroadcastReceiver {
         Logger.i("[StartupReceiver] starting ...");
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             // store flag
-            Hawk.put(AppContants.SHOULD_CREATE_SHIPMENT, true);
+            SharedPref.saveOnBoot(true);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Intent activity = new Intent(context, SplashActivity.class);
                 activity.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
