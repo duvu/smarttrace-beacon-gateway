@@ -65,7 +65,7 @@ public class ServiceUtils {
      * @param location  The {@link Location}.
      */
     public static String getLocationText(Location location) {
-        return location == null ? "Unknown location" :
+        return location == null ? "SmartTraceIO is running" :
                 "(" + location.getLatitude() + ", " + location.getLongitude() + ")";
     }
 

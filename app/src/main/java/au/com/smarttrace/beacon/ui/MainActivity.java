@@ -26,26 +26,22 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.Toolbar;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
-import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
 
-import org.altbeacon.beacon.Beacon;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
 
-import au.com.smarttrace.beacon.MyApplication;
+import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
@@ -145,14 +141,14 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
     @Override
     protected void onResume() {
         super.onResume();
-        MyApplication.activityStarted();
+        App.activityStarted();
         LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver, new IntentFilter(BeaconService.ACTION_BROADCAST));
     }
 
     @Override
     protected void onPause() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
-        MyApplication.activityPaused();
+        App.activityPaused();
         super.onPause();
     }
 
@@ -187,16 +183,35 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+        switch (id) {
+            case R.id.action_logout:
+                SharedPref.clear();
+                mService.stopSelf();
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                startActivity(intent);
+                return true;
+            case R.id.action_beacons:
+                Intent i = new Intent(MainActivity.this, BeaconListActivity.class);
+                startActivity(i);
+                return true;
+        }
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_logout) {
-            SharedPref.clear();
-            mService.stopSelf();
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-            startActivity(intent);
-            return true;
-        }
+//        if (id == R.id.action_logout) {
+//            SharedPref.clear();
+//            mService.stopSelf();
+//            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+//            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//            startActivity(intent);
+//            return true;
+//        }
+//
+//        if (id == R.id.action_beacons) {
+//            Intent i = new Intent(MainActivity.this, BeaconListActivity.class);
+//            startActivity(i);
+//            return true;
+//        }
 
 //        if (id == R.id.action_settings) {
 //            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);

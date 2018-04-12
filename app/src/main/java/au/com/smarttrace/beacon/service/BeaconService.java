@@ -45,7 +45,6 @@ import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.NeighboringCellInfo;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -57,6 +56,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.crash.FirebaseCrash;
 import com.google.gson.Gson;
+import com.orhanobut.hawk.Hawk;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -71,21 +71,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.AppContants;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.MyApplication;
+import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.model.BT04Package;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
-import au.com.smarttrace.beacon.model.DataLogger;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.net.DataUtil;
@@ -97,10 +99,10 @@ import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.net.model.LocationBody;
 import au.com.smarttrace.beacon.net.model.LocationResponse;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
+import au.com.smarttrace.beacon.net.model.PairedBeaconResponse;
 import au.com.smarttrace.beacon.net.model.UserBody;
 import au.com.smarttrace.beacon.net.model.UserResponse;
 import au.com.smarttrace.beacon.ui.MainActivity;
-import io.objectbox.Box;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
@@ -131,6 +133,8 @@ public class BeaconService extends Service implements BeaconConsumer {
 
     private FirebaseAnalytics mFirebaseAnalytics;
 
+    boolean _mShouldCreateOnBoot = false;
+
     // phone battery
     private float mBatteryLevel = 0.0f;
     private BroadcastReceiver mBatteryLevelReceiver = new BroadcastReceiver() {
@@ -148,6 +152,7 @@ public class BeaconService extends Service implements BeaconConsumer {
 
     private BeaconManager mBeaconManager = BeaconManager.getInstanceForApplication(this);
     Map<String, BT04Package> deviceMap = new ConcurrentHashMap<>();
+    Set<String> _paired_beacon = new HashSet<>();
 
     private List<LocationBody> companyShipmentLocations = null;
 
@@ -170,8 +175,6 @@ public class BeaconService extends Service implements BeaconConsumer {
 
     ConnectivityManager connectivityManager;
 
-    Box<DataLogger> dataLoggerBox;
-
     public BeaconService() {
     }
 
@@ -183,8 +186,6 @@ public class BeaconService extends Service implements BeaconConsumer {
         mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS);
         mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
         mBeaconManager.bind(this);
-
-        dataLoggerBox = ((MyApplication) getApplication()).getBoxStore().boxFor(DataLogger.class);
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
@@ -227,6 +228,7 @@ public class BeaconService extends Service implements BeaconConsumer {
             mNotificationManager.createNotificationChannel(channel);
         }
         registerEventBus();
+        NetworkUtils.init(this);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
         intentFilter.addAction(Intent.ACTION_BATTERY_LOW);
@@ -249,7 +251,7 @@ public class BeaconService extends Service implements BeaconConsumer {
             startForeground(NOTIFICATION_ID, getNotification());
         }
 
-        MyApplication.serviceStarted();
+        App.serviceStarted();
         requestUpdateData();
         return START_NOT_STICKY;
     }
@@ -294,7 +296,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         removeLocationUpdates();
         stopBLEScan(true);
 
-        MyApplication.serviceEnded();
+        App.serviceEnded();
         unregisterEventBus();
         super.onDestroy();
     }
@@ -383,8 +385,11 @@ public class BeaconService extends Service implements BeaconConsumer {
             event.setGatewayId(getGatewayId());
             event.setCellTowerList(cellTowerList);
             //send data bundle - new protocol
-            Logger.i(DataUtil.formatData(event));
-            Http.getIntance().post(AppConfig.BACKEND_URL_BT04_NEW, DataUtil.formatData(event), new Callback() {
+            //Logger.i(DataUtil.formatData(event));
+            Logger.i("NetworkConnected? : " + NetworkUtils.isConnected());
+            String dataForUpload = DataUtil.formatData(event);
+            //upload current data
+            Http.getIntance().post(AppConfig.BACKEND_URL_BT04_NEW, dataForUpload, new Callback() {
                 @Override
                 public void onFailure(Call call, IOException e) {
                     Logger.i("[Http] failed " + e.getMessage());
@@ -409,13 +414,36 @@ public class BeaconService extends Service implements BeaconConsumer {
             Map.Entry entry = (Map.Entry) o;
             String key = (String)entry.getKey();
             BT04Package data = (BT04Package) entry.getValue();
-            if (data.isShouldUpload() || data.isShouldCreateShipment()) {
+            if ((data.isShouldUpload() || data.isShouldCreateShipment()) && isPaired(data)) {
                 dataList.add(data);
                 deviceMap.get(data.getBluetoothAddress()).setShouldUpload(false); // to prevent repeat upload
             }
         }
 
         return dataList;
+    }
+
+    private boolean isPaired(BT04Package data) {
+        return true;
+    }
+
+    private void updatePairedList() {
+        WebService.getPairedBeacons(getGatewayId(), new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String strBody = response.body() != null ? response.body().string() : null;
+                if (!TextUtils.isEmpty(strBody)) {
+                    PairedBeaconResponse pbr = gson.fromJson(strBody, PairedBeaconResponse.class);
+                    Logger.d("Paired-Beacons: " + pbr.getResponse().size());
+                    _paired_beacon.addAll(pbr.getResponse());
+                }
+            }
+        });
     }
 
     private synchronized void refineDeviceMap() {
@@ -471,6 +499,10 @@ public class BeaconService extends Service implements BeaconConsumer {
                                     if (shipment_age >= AppConfig.SHIPMENT_MAX_AGE) {
                                         deviceMap.get(data.getBluetoothAddress()).setShouldCreateShipment(true);
                                     }
+
+//                                    if (shipment_age <= AppConfig.SHIPMENT_MIN_AGE) {
+//
+//                                    }
                                 } else {
                                     deviceMap.get(data.getBluetoothAddress()).setShouldCreateShipment(true);
                                     Logger.i("[+] error parsing date of shipment");
@@ -486,9 +518,10 @@ public class BeaconService extends Service implements BeaconConsumer {
     private void checkAndCreateShipment(List<BT04Package> dataList) {
         for (final BT04Package data: dataList) {
             Logger.i("[+" + data.getSerialNumber() +"] count: " + data.getReadingCount() + ", isStartLocation: " + isAtStartLocations() + ", isShouldCreate: " + data.isShouldCreateShipment() + "[+] foreCreate: " + data.isForedCreateNew());
-
             if ((data.getReadingCount() >= 2 && isAtStartLocations() && data.isShouldCreateShipment()) ||
-                    (data.isForedCreateNew() && isAtStartLocations())) {
+                    (data.isForedCreateNew() && isAtStartLocations()) ||
+                    _shouldCreateShipmentOnBoot() && isAtStartLocations()) {
+
                 WebService.createNewAutoSthipment(data.getSerialNumberString(), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
@@ -500,6 +533,7 @@ public class BeaconService extends Service implements BeaconConsumer {
                     public void onResponse(Call call, Response response) throws IOException {
                         deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(false);
                         deviceMap.get(data.getBluetoothAddress()).setShouldCreateShipment(false);
+                        _updateBootCompleted(); // not createShipment more
                         Logger.i("[ShipmentCreated+] " + data.getSerialNumber());
                     }
                 });
@@ -541,6 +575,7 @@ public class BeaconService extends Service implements BeaconConsumer {
                     }
                 }
                 refineDeviceMap(); //remove not update device from map
+                updatePairedList(); // update paired list from server
             }
         });
         try {
@@ -775,6 +810,15 @@ public class BeaconService extends Service implements BeaconConsumer {
             BT04Package data = (BT04Package) entry.getValue();
             data.setForedCreateNew(true);
         }
+    }
+
+    private boolean _shouldCreateShipmentOnBoot() {
+        _mShouldCreateOnBoot = Hawk.get(AppContants.SHOULD_CREATE_SHIPMENT, false);
+        return _mShouldCreateOnBoot;
+    }
+    private void _updateBootCompleted() {
+        _mShouldCreateOnBoot = false;
+        Hawk.put(AppContants.SHOULD_CREATE_SHIPMENT, _mShouldCreateOnBoot);
     }
 
     // EventBus

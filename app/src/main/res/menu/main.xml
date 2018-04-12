@@ -12,6 +12,11 @@
         android:orderInCategory="101"
         android:title="@string/action_settings"
         app:showAsAction="never" /-->
+    <item
+        android:id="@+id/action_beacons"
+        android:orderInCategory="101"
+        android:title="@string/action_beacons"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_logout"

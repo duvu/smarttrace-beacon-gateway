@@ -29,7 +29,7 @@ public class AppConfig {
     //ensure update startLocations for 1hours. default value is 12.
     public static final int COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS = 24;
 
-    public static final boolean DEBUG_ENABLED                           = false;
+    public static final boolean DEBUG_ENABLED                           = true;
     public static int TemperatureUnit = 0;
 
     public static final String SMARTTRACE_URL                           = "https://smarttrace.com.au";

@@ -24,4 +24,6 @@ public class NetworkUtils {
         NetworkInfo activeNetwork = connectivityManager.getActiveNetworkInfo();
         return activeNetwork != null && (activeNetwork.getType() == ConnectivityManager.TYPE_MOBILE);
     }
+
+
 }

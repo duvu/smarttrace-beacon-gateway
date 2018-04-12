@@ -2,7 +2,8 @@ package au.com.smarttrace.beacon;
 
 import android.app.Application;
 import android.content.Intent;
-import android.os.Build;
+
+import com.orhanobut.hawk.Hawk;
 
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
@@ -11,23 +12,19 @@ import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
-import au.com.smarttrace.beacon.model.MyObjectBox;
-import au.com.smarttrace.beacon.service.BeaconService;
-import au.com.smarttrace.beacon.ui.MainActivity;
 import au.com.smarttrace.beacon.ui.SplashActivity;
-import io.objectbox.BoxStore;
 
 /**
  * Created by beou on 3/19/18.
  */
 
-public class MyApplication extends Application implements BootstrapNotifier {
+public class App extends Application implements BootstrapNotifier {
     private final String PACKAGE = "au.com.smarttrace.beacon";
     private final String BOOTSTRAP_REGION = PACKAGE + ".bootstrap_region";
 
     // private BackgroundPowerSaver backgroundPowerSaver;
     private RegionBootstrap regionBootstrap;
-    private BoxStore boxStore;
+
     private static boolean activityVisible = false;
     private static boolean serviceRunning = false;
 
@@ -59,12 +56,12 @@ public class MyApplication extends Application implements BootstrapNotifier {
     public void onCreate() {
         super.onCreate();
         Logger.d("Application Started!");
-        AppConfig.populateSetting(MyApplication.this);
+        AppConfig.populateSetting(App.this);
 
         SharedPref.init(getApplicationContext());
 
         //-- init database
-        boxStore = MyObjectBox.builder().androidContext(MyApplication.this).build();
+        Hawk.init(this).build();
 
         BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
         // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
@@ -94,9 +91,6 @@ public class MyApplication extends Application implements BootstrapNotifier {
         regionBootstrap.addRegion(region3A01);
         regionBootstrap.addRegion(region3C01);
         regionBootstrap.addRegion(region3A04);
-    }
-    public BoxStore getBoxStore() {
-        return boxStore;
     }
 
     @Override

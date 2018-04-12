@@ -64,4 +64,12 @@ public class WebService {
             Http.getIntance().get(urlSb, callback);
         }
     }
+
+    public static void getPairedBeacons(String imei, Callback callback) {
+        if (TextUtils.isEmpty(imei) || TextUtils.isEmpty(SharedPref.getToken())) {
+            return;
+        }
+        String urlSb = AppConfig.WEB_SERVICE_URL + "/getPairedBeacons/" + SharedPref.getToken() + "?phone="+imei;
+        Http.getIntance().get(urlSb, callback);
+    }
 }
