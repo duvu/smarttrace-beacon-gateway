@@ -180,9 +180,9 @@ public class BeaconService extends Service implements BeaconConsumer {
     @Override
     public void onCreate() {
         Logger.i("[BeaconService] onCreated");
-        mBeaconManager.setBackgroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS);
+        mBeaconManager.setBackgroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS/4);
         mBeaconManager.setBackgroundScanPeriod(AppConfig.UPDATE_PERIOD);
-        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS);
+        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS/4);
         mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
         mBeaconManager.bind(this);
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -233,6 +233,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         intentFilter.addAction(Intent.ACTION_BATTERY_LOW);
         intentFilter.addAction(Intent.ACTION_BATTERY_OKAY);
         //intentFilter.addAction(Inte);
+        _shouldCreateShipmentOnBoot();
         registerReceiver(mBatteryLevelReceiver, intentFilter);
     }
 
@@ -249,7 +250,6 @@ public class BeaconService extends Service implements BeaconConsumer {
         if (startFromBoot) {
             startForeground(NOTIFICATION_ID, getNotification());
         }
-
         App.serviceStarted();
         requestUpdateData();
         return START_NOT_STICKY;
@@ -315,8 +315,21 @@ public class BeaconService extends Service implements BeaconConsumer {
         if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
             BluetoothAdapter.getDefaultAdapter().enable();
         }
+
+        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
+        mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
         mBeaconManager.setBackgroundMode(false);
         syncSettingsToService();
+
+        mServiceHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL_IN_MILLISECONDS/4);
+                mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
+                mBeaconManager.setBackgroundMode(false);
+                syncSettingsToService();
+            }
+        }, 20*1000);
     }
 
     private void stopBLEScan(boolean exit) {
@@ -456,12 +469,13 @@ public class BeaconService extends Service implements BeaconConsumer {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String strBody = response.body() != null ? response.body().string() : null;
+                Logger.d("WhyNull: " + strBody);
                 if (!TextUtils.isEmpty(strBody)) {
                     PairedBeaconResponse pbr = gson.fromJson(strBody, PairedBeaconResponse.class);
                     Logger.d("Paired-Beacons: " + (pbr.getResponse()!=null ? pbr.getResponse().size() : "null"));
-                    _paired_beacon.addAll(pbr.getResponse());
-
-
+                    if (pbr.getResponse() != null) {
+                        _paired_beacon.addAll(pbr.getResponse());
+                    }
                 }
             }
         });
@@ -480,8 +494,14 @@ public class BeaconService extends Service implements BeaconConsumer {
             }
 
             if (_paired_beacon != null && _paired_beacon.contains(data.getSerialNumberString())) {
-                deviceMap.get(data.getBluetoothAddress()).setPaired(true);
+                setPaired(data.getBluetoothAddress(), true);
             }
+        }
+    }
+
+    private void setPaired(String id, boolean paired) {
+        if (deviceMap.containsKey(id)) {
+            deviceMap.get(id).setPaired(paired);
         }
     }
 
@@ -514,7 +534,9 @@ public class BeaconService extends Service implements BeaconConsumer {
                             String lastReadingTimeISO = device.getLastReadingTimeISO();
                             String lastShipmentStatus = device.getShipmentStatus();
 
-                            if (TextUtils.isEmpty(lastShipmentStatus)|| TextUtils.isEmpty(lastReadingTimeISO)) {
+                            if (TextUtils.isEmpty(lastShipmentStatus)||
+                                    TextUtils.isEmpty(lastReadingTimeISO) ||
+                                    lastShipmentStatus.equalsIgnoreCase("null")) {
                                 deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(true);
                             } else if (lastShipmentStatus.equalsIgnoreCase("Ended")) {
                                 deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(true);
@@ -770,7 +792,7 @@ public class BeaconService extends Service implements BeaconConsumer {
         Logger.i("[GPS] Removing location updates");
 
         try {
-            if (ServiceUtils.isGooglePlayServicesAvailable(this)) {
+            if (hasGoogleClient) {
                 mFusedLocationClient.removeLocationUpdates(mLocationCallback);
             } else {
                 if (locationListener != null) {
@@ -778,7 +800,6 @@ public class BeaconService extends Service implements BeaconConsumer {
                     towerLocationManager.removeUpdates(locationListener);
                 }
             }
-            stopSelf();
         } catch (SecurityException unlikely) {
             Logger.i("[GPS] Lost location permission. Could not remove updates. " + unlikely);
         }
