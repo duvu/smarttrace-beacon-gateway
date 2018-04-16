@@ -18,12 +18,12 @@ import java.util.List;
 
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
-import au.com.smarttrace.beacon.model.BT04Package;
+import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.UpdateEvent;
 
 public class BeaconListActivity extends AppCompatActivity {
-    List<BT04Package> BT04PackageList;
+    List<BeaconPackage> BeaconPackageList;
     BeaconAdapter adapter;
     ListView deviceListView;
 
@@ -37,7 +37,7 @@ public class BeaconListActivity extends AppCompatActivity {
         actionBar.setDisplayHomeAsUpEnabled(true);
 
         deviceListView = (ListView) findViewById(R.id.list_beacons);
-        adapter = new BeaconAdapter(this, R.layout.control_scan_device_list, BT04PackageList);
+        adapter = new BeaconAdapter(this, R.layout.control_scan_device_list, BeaconPackageList);
         deviceListView.setAdapter(adapter);
 
         Button btnScanNow = findViewById(R.id.btn_scan_now);
@@ -48,6 +48,12 @@ public class BeaconListActivity extends AppCompatActivity {
             }
         });
         registerEventBus();
+    }
+
+    @Override
+    protected void onDestroy() {
+        unregisterEventBus();
+        super.onDestroy();
     }
 
     @Override
@@ -64,15 +70,14 @@ public class BeaconListActivity extends AppCompatActivity {
     }
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(BroadcastEvent data) {
-        Logger.d("[MainActivity] onUpdateScan" + data.getBT04PackageList().size());
         //update data
         //advancedDevice = data;
-        BT04PackageList = data.getBT04PackageList();
-        adapter.setDataPackageList(BT04PackageList);
+        BeaconPackageList = data.getBeaconPackageList();
+        adapter.setDataPackageList(BeaconPackageList);
         Location location = data.getLocation();
-        for (int i = 0; i < BT04PackageList.size(); i++) {
-            //Logger.i("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.get(i).getSerialNumber() +" Temperature:" + BT04PackageList.get(i).getTemperature() +"℃  Humidity:" + BT04PackageList.get(i).getHumidity() + "% Battery:"+BT04PackageList.get(i).getBatteryLevel()+"%");
-        }
+//        for (int i = 0; i < BeaconPackageList.size(); i++) {
+//            //Logger.i("[MainActivity]" + (i+1) + "、SN:" + BeaconPackageList.get(i).getSerialNumber() +" Temperature:" + BeaconPackageList.get(i).getTemperature() +"℃  Humidity:" + BeaconPackageList.get(i).getHumidity() + "% Battery:"+BeaconPackageList.get(i).getBatteryLevel()+"%");
+//        }
     }
     //--
     private void registerEventBus() {

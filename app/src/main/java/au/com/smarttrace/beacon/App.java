@@ -12,7 +12,10 @@ import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
+import au.com.smarttrace.beacon.model.MyObjectBox;
 import au.com.smarttrace.beacon.ui.SplashActivity;
+import io.objectbox.BoxStore;
+import io.objectbox.android.AndroidObjectBrowser;
 
 /**
  * Created by beou on 3/19/18.
@@ -21,7 +24,7 @@ import au.com.smarttrace.beacon.ui.SplashActivity;
 public class App extends Application implements BootstrapNotifier {
     private final String PACKAGE = "au.com.smarttrace.beacon";
     private final String BOOTSTRAP_REGION = PACKAGE + ".bootstrap_region";
-
+    private BoxStore boxStore;
     // private BackgroundPowerSaver backgroundPowerSaver;
     private RegionBootstrap regionBootstrap;
 
@@ -57,6 +60,12 @@ public class App extends Application implements BootstrapNotifier {
         super.onCreate();
         Logger.d("Application Started!");
         AppConfig.populateSetting(App.this);
+        boxStore = MyObjectBox.builder().androidContext(App.this).build();
+
+        if (BuildConfig.DEBUG) {
+            new AndroidObjectBrowser(boxStore).start(this);
+        }
+        Logger.d("Using ObjectBox " + BoxStore.getVersion() + " (" + BoxStore.getVersionNative() + ")");
 
         SharedPref.init(getApplicationContext());
 
@@ -111,5 +120,9 @@ public class App extends Application implements BootstrapNotifier {
     @Override
     public void didDetermineStateForRegion(int i, Region region) {
 
+    }
+
+    public BoxStore getBoxStore() {
+        return boxStore;
     }
 }

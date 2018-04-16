@@ -26,11 +26,14 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.google.firebase.crash.FirebaseCrash;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.Http;
@@ -262,9 +265,8 @@ public class LoginActivity extends AppCompatActivity {
              if (data != null) {
                  if (data.getStatus().getCode() != 0) {
                      return false;
-                 }
-
-                if (data.getResponse() != null) {
+                 } else if (data.getResponse() != null) {
+                     Logger.d("[+] token: " + data.getResponse().getToken());
                     SharedPref.saveToken(data.getResponse().getToken());
                     SharedPref.saveExpiredStr(data.getResponse().getExpired());
                     SharedPref.saveTokenInstance(data.getResponse().getInstance());

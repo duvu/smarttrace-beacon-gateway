@@ -12,7 +12,8 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import au.com.smarttrace.beacon.AppConfig;
-import au.com.smarttrace.beacon.model.BT04Package;
+import au.com.smarttrace.beacon.AppContants;
+import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
 
@@ -21,34 +22,31 @@ import au.com.smarttrace.beacon.model.CellTower;
  */
 
 public class DataUtil {
-    private static final String SEP = "|";
-    private static final String N = "\n";
-
     public static List<String> formatData1(BroadcastEvent broadcastEvent) {
-        List<BT04Package> BT04PackageList = broadcastEvent.getBT04PackageList();
+        List<BeaconPackage> BeaconPackageList = broadcastEvent.getBeaconPackageList();
         Date curremtDate = (new Date());
         List<String> stringList = new ArrayList<>();
-        for (BT04Package BT04Package : BT04PackageList) {
+        for (BeaconPackage BeaconPackage : BeaconPackageList) {
             StringBuffer sb = new StringBuffer();
 
             Location location = broadcastEvent.getLocation();
 
 
-            //sb.append(broadcastEvent.getGatewayId() + BT04Package.getSerialNumber()).append(SEP);
-            sb.append(BT04Package.getSerialNumber()).append(SEP);
-            sb.append("AUT").append(SEP); //type
-            sb.append(formatDate(curremtDate, null)).append(SEP).append(N);
+            //sb.append(broadcastEvent.getGatewayId() + BeaconPackage.getSerialNumber()).append(SEP);
+            sb.append(BeaconPackage.getSerialNumber()).append(AppContants.SEPARATE);
+            sb.append("AUT").append(AppContants.SEPARATE); //type
+            sb.append(formatDate(curremtDate, null)).append(AppContants.SEPARATE).append(AppContants.N);
 
-            sb.append(BT04Package.getBatteryLevel()).append(SEP);
-            sb.append(BT04Package.getTemperature()).append(SEP).append(N);
+            sb.append(BeaconPackage.getBatteryLevel()).append(AppContants.SEPARATE);
+            sb.append(BeaconPackage.getTemperature()).append(AppContants.SEPARATE).append(AppContants.N);
 
             List<CellTower> cellTowerList = broadcastEvent.getCellTowerList();
             for (CellTower cell : cellTowerList) {
-                sb.append(cell.getMcc()).append(SEP);
-                sb.append(cell.getMnc()).append(SEP);
-                sb.append(cell.getLac()).append(SEP);
-                sb.append(cell.getCid()).append(SEP);
-                sb.append(cell.getRxlev()).append(SEP).append(N);
+                sb.append(cell.getMcc()).append(AppContants.SEPARATE);
+                sb.append(cell.getMnc()).append(AppContants.SEPARATE);
+                sb.append(cell.getLac()).append(AppContants.SEPARATE);
+                sb.append(cell.getCid()).append(AppContants.SEPARATE);
+                sb.append(cell.getRxlev()).append(AppContants.SEPARATE).append(AppContants.N);
             }
             stringList.add(sb.toString());
         }
@@ -67,39 +65,39 @@ public class DataUtil {
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         Long timestamp = (new Date()).getTime();
         Location location = broadcastEvent.getLocation();
-        List<BT04Package> BT04PackageList = broadcastEvent.getBT04PackageList();
+        List<BeaconPackage> BeaconPackageList = broadcastEvent.getBeaconPackageList();
 
-        sb.append(broadcastEvent.getGatewayId()).append(SEP);
-        sb.append(timestamp).append(SEP);
+        sb.append(broadcastEvent.getGatewayId()).append(AppContants.SEPARATE);
+        sb.append(timestamp).append(AppContants.SEPARATE);
         if (location != null) {
-            sb.append(location.getLatitude()).append(SEP);
-            sb.append(location.getLongitude()).append(SEP);
-            sb.append(location.getAltitude()).append(SEP);
-            sb.append(location.getAccuracy()).append(SEP);
-            sb.append(location.getSpeed()).append(SEP).append(N);
+            sb.append(location.getLatitude()).append(AppContants.SEPARATE);
+            sb.append(location.getLongitude()).append(AppContants.SEPARATE);
+            sb.append(location.getAltitude()).append(AppContants.SEPARATE);
+            sb.append(location.getAccuracy()).append(AppContants.SEPARATE);
+            sb.append(location.getSpeed()).append(AppContants.SEPARATE).append(AppContants.N);
         } else {
-            sb.append(0).append(SEP);
-            sb.append(0).append(SEP);
-            sb.append(0).append(SEP);
-            sb.append(0).append(SEP);
-            sb.append(0).append(SEP).append(N);
+            sb.append(0).append(AppContants.SEPARATE);
+            sb.append(0).append(AppContants.SEPARATE);
+            sb.append(0).append(AppContants.SEPARATE);
+            sb.append(0).append(AppContants.SEPARATE);
+            sb.append(0).append(AppContants.SEPARATE).append(AppContants.N);
         }
 
-        for (BT04Package data : BT04PackageList) {
-            sb.append(data.getSerialNumberString()).append(SEP);
-            sb.append(data.getName()).append(SEP);
-            sb.append(data.getTemperature()).append(SEP);
-            sb.append(data.getHumidity()).append(SEP);
-            sb.append(data.getRssi()).append(SEP);
-            sb.append(data.getDistance()).append(SEP);
-            sb.append(battPercentToVolt(data.getPhoneBatteryLevel()*100)).append(SEP);
-            sb.append(data.getTimestamp()).append(SEP);
-            sb.append(data.getModel()).append(SEP).append(N);
+        for (BeaconPackage data : BeaconPackageList) {
+            sb.append(data.getSerialNumberString()).append(AppContants.SEPARATE);
+            sb.append(data.getName()).append(AppContants.SEPARATE);
+            sb.append(data.getTemperature()).append(AppContants.SEPARATE);
+            sb.append(data.getHumidity()).append(AppContants.SEPARATE);
+            sb.append(data.getRssi()).append(AppContants.SEPARATE);
+            sb.append(data.getDistance()).append(AppContants.SEPARATE);
+            sb.append(battPercentToVolt(data.getPhoneBatteryLevel()*100)).append(AppContants.SEPARATE);
+            sb.append(data.getTimestamp()).append(AppContants.SEPARATE);
+            sb.append(data.getModel()).append(AppContants.SEPARATE).append(AppContants.N);
         }
         return sb.toString();
     }
 
-    private static float battPercentToVolt (float battLevel) {
+    public static float battPercentToVolt (float battLevel) {
         //min 3194.3
         //max 4200.0
 

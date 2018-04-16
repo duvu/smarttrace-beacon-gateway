@@ -33,7 +33,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-//import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
+//import com.TZONE.Bluetooth.Temperature.Model.BeaconPackage;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -46,7 +46,7 @@ import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
-import au.com.smarttrace.beacon.model.BT04Package;
+import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.service.BeaconService;
@@ -190,7 +190,8 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
                 SharedPref.clear();
                 mService.stopSelf();
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
                 startActivity(intent);
                 return true;
             case R.id.action_beacons:
@@ -281,12 +282,12 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(BroadcastEvent data) {
-        Logger.d("[MainActivity] onUpdateScan" + data.getBT04PackageList().size());
-        List<BT04Package> BT04PackageList = data.getBT04PackageList();
+        //Logger.d("[MainActivity] onUpdateScan" + data.getBeaconPackageList().size());
+        List<BeaconPackage> BeaconPackageList = data.getBeaconPackageList();
         Location location = data.getLocation();
-        for (int i = 0; i < BT04PackageList.size(); i++) {
-            Logger.d("[MainActivity]" + (i+1) + "、SN:" + BT04PackageList.get(i).getSerialNumber() +" Temperature:" + BT04PackageList.get(i).getTemperature() +"℃  Humidity:" + BT04PackageList.get(i).getHumidity() + "% Battery:"+BT04PackageList.get(i).getBatteryLevel()+"%");
-        }
+//        for (int i = 0; i < BeaconPackageList.size(); i++) {
+//            Logger.d("[MainActivity]" + (i+1) + "、SN:" + BeaconPackageList.get(i).getSerialNumber() +" Temperature:" + BeaconPackageList.get(i).getTemperature() +"℃  Humidity:" + BeaconPackageList.get(i).getHumidity() + "% Battery:"+BeaconPackageList.get(i).getBatteryLevel()+"%");
+//        }
         showProgress(false);
     }
 

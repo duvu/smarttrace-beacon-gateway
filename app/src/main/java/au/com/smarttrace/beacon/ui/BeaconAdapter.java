@@ -11,12 +11,13 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-//import com.TZONE.Bluetooth.Temperature.Model.BT04Package;
+//import com.TZONE.Bluetooth.Temperature.Model.BeaconPackage;
 //import com.TZONE.Bluetooth.Utils.MeasuringDistance;
 //import com.TZONE.Bluetooth.Utils.StringUtil;
 //import com.TZONE.Bluetooth.Utils.TemperatureUnitUtil;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -29,7 +30,9 @@ import java.util.TimeZone;
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
-import au.com.smarttrace.beacon.model.BT04Package;
+import au.com.smarttrace.beacon.model.BeaconPackage;
+import au.com.smarttrace.beacon.model.EventData;
+import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
 import okhttp3.Call;
@@ -42,17 +45,17 @@ import okhttp3.Response;
 
 public class BeaconAdapter extends ArrayAdapter {
     private Context context;
-    private List<BT04Package> dataPackageList;
+    private List<BeaconPackage> dataPackageList;
     private int resourceId;
 
-    public BeaconAdapter(@NonNull Context context, int resource, List<BT04Package> dataPackageList) {
+    public BeaconAdapter(@NonNull Context context, int resource, List<BeaconPackage> dataPackageList) {
         super(context, resource);
         this.context = context;
         this.resourceId = resource;
         if (dataPackageList != null) {
-            Collections.sort(dataPackageList, new Comparator<BT04Package>() {
+            Collections.sort(dataPackageList, new Comparator<BeaconPackage>() {
                 @Override
-                public int compare(BT04Package o1, BT04Package o2) {
+                public int compare(BeaconPackage o1, BeaconPackage o2) {
                     return o1.getDistance().compareTo(o2.getDistance());
                 }
             });
@@ -106,7 +109,7 @@ public class BeaconAdapter extends ArrayAdapter {
             viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        final BT04Package beaconData = (BT04Package) getItem(position);
+        final BeaconPackage beaconData = (BeaconPackage) getItem(position);
         viewHolder.layoutTemperature.setVisibility(View.VISIBLE);
         viewHolder.layoutIbeacon.setVisibility(View.GONE);
         viewHolder.layoutEddystone.setVisibility(View.GONE);
@@ -171,10 +174,8 @@ public class BeaconAdapter extends ArrayAdapter {
             Date now = new Date();
             long TotalTime = (now.getTime() - beaconData.getTimestamp()) / (1000);
             if (TotalTime > 60) {
-                Logger.d("Switching dead");
                 convertView.setBackgroundColor(Color.parseColor("#AFCCCCCC"));
             } else {
-                Logger.d("Switching live");
                 convertView.setBackgroundColor(Color.TRANSPARENT);
             }
 
@@ -226,12 +227,19 @@ public class BeaconAdapter extends ArrayAdapter {
                 viewHolder.txtBattery.setTextColor(Color.parseColor("#808080"));
             }
 
-            viewHolder.btnPair.setEnabled(!beaconData.isPaired());
+            if (beaconData.isPaired()) {
+                viewHolder.btnPair.setText(R.string.unpair);
+            }
+            //viewHolder.btnPair.setEnabled(!beaconData.isPaired());
             viewHolder.btnPair.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     //get webservice for pair
-                    doPair(AppConfig.GATEWAY_ID, beaconData.getSerialNumberString());
+                    if (!beaconData.isPaired()) {
+                        doPair(AppConfig.GATEWAY_ID, beaconData.getSerialNumberString());
+                    } else {
+                        doUnPair(AppConfig.GATEWAY_ID, beaconData.getSerialNumberString());
+                    }
                 }
             });
         }
@@ -266,12 +274,12 @@ public class BeaconAdapter extends ArrayAdapter {
         public Button btnPair;
     }
 
-    public void setDataPackageList(List<BT04Package> dataPackageList) {
+    public void setDataPackageList(List<BeaconPackage> dataPackageList) {
         Logger.d("[BeaconAdapter] + ...setDataPackageList()");
         if (dataPackageList != null) {
-            Collections.sort(dataPackageList, new Comparator<BT04Package>() {
+            Collections.sort(dataPackageList, new Comparator<BeaconPackage>() {
                 @Override
-                public int compare(BT04Package o1, BT04Package o2) {
+                public int compare(BeaconPackage o1, BeaconPackage o2) {
                     return o1.getDistance().compareTo(o2.getDistance());
                 }
             });
@@ -297,7 +305,12 @@ public class BeaconAdapter extends ArrayAdapter {
             public void onResponse(Call call, Response response) throws IOException {
                 //
                 Logger.d("Paired!" + response.body().string());
+                EventBus.getDefault().post(new UpdateEvent());
             }
         });
+    }
+
+    private void doUnPair(String imei, String bSn) {
+
     }
 }

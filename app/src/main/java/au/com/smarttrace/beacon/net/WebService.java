@@ -11,6 +11,7 @@ import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.model.Device;
 import au.com.smarttrace.beacon.net.model.DeviceResponse;
+import au.com.smarttrace.beacon.net.model.PairedBeaconResponse;
 import au.com.smarttrace.beacon.net.model.PairedRequest;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -77,6 +78,11 @@ public class WebService {
         Http.getIntance().get(urlSb, callback);
     }
 
+    public static void getPairedPhones(Callback callback) {
+        String urlSb = AppConfig.WEB_SERVICE_URL + "/getPairedPhones/" + SharedPref.getToken();
+        Http.getIntance().get(urlSb, callback);
+    }
+
     public static void savePairedPhone(String pImei, String bSn, Callback callback) {
         if (TextUtils.isEmpty(pImei) || TextUtils.isEmpty(bSn) || TextUtils.isEmpty(SharedPref.getToken())) {
             return;
@@ -91,5 +97,29 @@ public class WebService {
         Logger.d("savedPairedPhone: " + postData);
         Http.getIntance().post(urlSb, postData, callback);
 
+    }
+
+    public static void sendEvent(String data) {
+        sendEvent(data, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Logger.i("[Http] failed " + e.getMessage());
+                // do nothing
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                Logger.i("[Broadcast+] success " + response.toString());
+                //do nothing
+            }
+        });
+    }
+    public static void sendEvent(String data, Callback callback) {
+        if (TextUtils.isEmpty(data)) {
+            Logger.d("[-] empty data");
+            return;
+        }
+        String urlSb = AppConfig.BACKEND_URL_BT04_NEW;
+        Http.getIntance().post(urlSb, data, callback);
     }
 }

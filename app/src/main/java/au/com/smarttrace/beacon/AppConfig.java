@@ -18,7 +18,7 @@ import android.preference.PreferenceManager;
 public class AppConfig {
 
     // Milliseconds per second
-    private static final int MILLISECONDS_PER_SECOND = 1000;
+    private static final int MILLISECONDS = 1000;
 
     // private static final String KEY_*
      private static final String KEY_WEB_SERVICE_URL            = "key_web_service_url";
@@ -37,13 +37,13 @@ public class AppConfig {
     public static final String BACKEND_URL_BT04_NEW                     = SMARTTRACE_URL + "/bt04";
 
     // max "age" in ms of last location (default 120000).
-    public static final long UPDATE_INTERVAL_IN_MILLISECONDS            = (DEBUG_ENABLED ? 10 : 600) * MILLISECONDS_PER_SECOND;
-    public static final long LAST_LOCATION_MAX_AGE                      = 60 * MILLISECONDS_PER_SECOND;
-    public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS    = (UPDATE_INTERVAL_IN_MILLISECONDS / 4) * 3;
-    public static final long DEVICE_MAX_AGE                             = 72 * UPDATE_INTERVAL_IN_MILLISECONDS  + 10 * MILLISECONDS_PER_SECOND; //1 hours
-    public static final long SHIPMENT_MAX_AGE                           = 12 * UPDATE_INTERVAL_IN_MILLISECONDS + 10 * MILLISECONDS_PER_SECOND; //2 hours
-    public static final long DEVICE_CACHED_AGE                          = 3 * UPDATE_INTERVAL_IN_MILLISECONDS;
-    public static final long UPDATE_PERIOD                              = 10 * MILLISECONDS_PER_SECOND;
+    public static final long UPDATE_INTERVAL                            = (DEBUG_ENABLED ? 10 : 600) * MILLISECONDS;
+    public static final long LAST_LOCATION_MAX_AGE                      = 60 * MILLISECONDS;
+    public static final long FASTEST_UPDATE_INTERVAL                    = UPDATE_INTERVAL / 10;
+    public static final long DEVICE_MAX_AGE                             = 144 * UPDATE_INTERVAL + 10 * MILLISECONDS; //1 day
+    public static final long SHIPMENT_MAX_AGE                           = 12 * UPDATE_INTERVAL + 10 * MILLISECONDS; //2 hours
+    public static final long DEVICE_CACHED_AGE                          = 3 * UPDATE_INTERVAL;
+    public static final long UPDATE_PERIOD                              = 10 * MILLISECONDS;
 
     // the minimum distance interval for GPS notifications, in meters (default 20)
     public static final float LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE = DEBUG_ENABLED ? 0 : 0;

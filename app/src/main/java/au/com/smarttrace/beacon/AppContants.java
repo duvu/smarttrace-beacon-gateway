@@ -5,6 +5,9 @@ package au.com.smarttrace.beacon;
  */
 
 public class AppContants {
+    public static final String SEPARATE = "|";
+    public static final String N = "\n";
+
     public static final String DEGREE = "\u00b0";
     public static final String DEGREE_CELSIUS = "\u2103";
     public static final String DEGREE_FAHRENHEIT = "\u2109";

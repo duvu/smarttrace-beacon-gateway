@@ -4,71 +4,124 @@
   "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
   "entities": [
     {
-      "id": "1:2850858729551723073",
-      "lastPropertyId": "12:7635945955162343526",
-      "name": "DataLogger",
+      "id": "2:7545109690532196455",
+      "lastPropertyId": "8:3753500987203320152",
+      "name": "EventData",
       "properties": [
         {
-          "id": "1:7578340702573691807",
-          "name": "bluetoothAddress"
+          "id": "1:2299166676937259898",
+          "name": "id"
         },
         {
-          "id": "2:1496745195803500256",
-          "name": "name"
+          "id": "2:8897971160774245533",
+          "name": "phoneImei"
         },
         {
-          "id": "3:2695548505751480947",
-          "name": "rssi"
+          "id": "3:7395148250934673842",
+          "name": "timestamp"
         },
         {
-          "id": "4:6491133509288706281",
-          "name": "type"
+          "id": "4:4829768239875067374",
+          "name": "latitude"
         },
         {
-          "id": "5:1004132935387764848",
-          "name": "batteryLevel"
+          "id": "5:7497835320272758653",
+          "name": "longitude"
         },
         {
-          "id": "6:3981826070430399426",
-          "name": "temperature"
+          "id": "6:7394410540667714023",
+          "name": "altitude"
         },
         {
-          "id": "7:2217788424810776342",
-          "name": "humidity"
+          "id": "7:2796001617657330718",
+          "name": "accuracy"
         },
         {
-          "id": "8:5024644922194732791",
-          "name": "distance"
+          "id": "8:3753500987203320152",
+          "name": "speedKPH"
+        }
+      ],
+      "relations": [
+        {
+          "id": "1:2060485091927323520",
+          "name": "sensorDataList"
+        }
+      ]
+    },
+    {
+      "id": "3:2397613807633497897",
+      "lastPropertyId": "10:7551026675484731302",
+      "name": "SensorData",
+      "properties": [
+        {
+          "id": "1:4330652031960733001",
+          "name": "id"
         },
         {
-          "id": "9:9215477612337927469",
-          "name": "model"
-        },
-        {
-          "id": "10:8545095260170728043",
-          "name": "firmware"
-        },
-        {
-          "id": "11:3671987606961209125",
+          "id": "2:1401212703335470018",
           "name": "serialNumber"
         },
         {
-          "id": "12:7635945955162343526",
-          "name": "id"
+          "id": "3:3382092691993192258",
+          "name": "name"
+        },
+        {
+          "id": "4:3022473830374634630",
+          "name": "temperature"
+        },
+        {
+          "id": "5:1867447493564091069",
+          "name": "humidity"
+        },
+        {
+          "id": "6:6756741581268140733",
+          "name": "rssi"
+        },
+        {
+          "id": "7:8257156641341839738",
+          "name": "distance"
+        },
+        {
+          "id": "8:8980226001031264751",
+          "name": "battery"
+        },
+        {
+          "id": "9:3375018967764623241",
+          "name": "lastScannedTime"
+        },
+        {
+          "id": "10:7551026675484731302",
+          "name": "hardwareModel"
         }
       ],
       "relations": []
     }
   ],
-  "lastEntityId": "1:2850858729551723073",
+  "lastEntityId": "3:2397613807633497897",
   "lastIndexId": "0:0",
-  "lastRelationId": "0:0",
+  "lastRelationId": "1:2060485091927323520",
   "lastSequenceId": "0:0",
   "modelVersion": 4,
   "modelVersionParserMinimum": 4,
-  "retiredEntityUids": [],
+  "retiredEntityUids": [
+    2850858729551723073
+  ],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    7578340702573691807,
+    1496745195803500256,
+    2695548505751480947,
+    6491133509288706281,
+    1004132935387764848,
+    3981826070430399426,
+    2217788424810776342,
+    5024644922194732791,
+    9215477612337927469,
+    8545095260170728043,
+    3671987606961209125,
+    7635945955162343526,
+    7563572836630777767
+  ],
   "retiredRelationUids": [],
   "version": 1
 }
