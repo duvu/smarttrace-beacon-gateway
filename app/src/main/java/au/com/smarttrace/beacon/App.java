@@ -2,6 +2,8 @@ package au.com.smarttrace.beacon;
 
 import android.app.Application;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
 import com.orhanobut.hawk.Hawk;
 
@@ -13,6 +15,7 @@ import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.model.MyObjectBox;
+import au.com.smarttrace.beacon.service.BeaconService;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
 import io.objectbox.android.AndroidObjectBrowser;

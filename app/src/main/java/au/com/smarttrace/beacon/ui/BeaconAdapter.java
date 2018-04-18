@@ -28,13 +28,15 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.model.BeaconPackage;
-import au.com.smarttrace.beacon.model.EventData;
 import au.com.smarttrace.beacon.model.UpdateEvent;
+import au.com.smarttrace.beacon.model.UpdateToken;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
+import au.com.smarttrace.beacon.net.model.Common;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
@@ -295,17 +297,27 @@ public class BeaconAdapter extends ArrayAdapter {
     }
 
     private void doPair(String imei, String bSn) {
-        WebService.savePairedPhone(imei, bSn, new Callback() {
+        WebService.savePairedPhone(imei, bSn, null, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 //
+                Logger.d("PairedFailure " + e.getMessage());
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 //
-                Logger.d("Paired!" + response.body().string());
-                EventBus.getDefault().post(new UpdateEvent());
+                String strBody = response.body().string();
+                if (strBody != null) {
+                    Logger.d("Paired!" + strBody);
+                    Common cr = GsonUtils.getInstance().fromJson(strBody, Common.class);
+                    if (cr.getStatus().getCode() != 0) {
+                        EventBus.getDefault().post(new UpdateToken());
+                    } else {
+                        EventBus.getDefault().post(new UpdateEvent());
+                    }
+                }
+
             }
         });
     }

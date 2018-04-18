@@ -90,29 +90,4 @@ public class ServiceUtils {
                         }
                     }
             );
-
-    public static Device getDevice(final String imei) {
-        final Device dev = deviceCache.asMap().get(imei);
-        if (dev == null) {
-            WebService.getDevice(imei, new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    Logger.d("Failed to get device");
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    if (response.body() != null) {
-                        DeviceResponse deviceResponse = gson.fromJson(response.body().string(), DeviceResponse.class);
-                        Device device = deviceResponse.getResponse();
-                        if (device != null) {
-                            // update cache
-                            deviceCache.asMap().putIfAbsent(imei, device);
-                        }
-                    }
-                }
-            });
-        }
-        return dev; // may null
-    }
 }
