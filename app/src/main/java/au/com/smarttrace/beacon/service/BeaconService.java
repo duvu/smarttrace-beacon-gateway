@@ -51,7 +51,6 @@ import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.NeighboringCellInfo;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -61,7 +60,14 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crash.FirebaseCrash;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.gson.Gson;
 
 import org.altbeacon.beacon.Beacon;
@@ -76,9 +82,7 @@ import org.greenrobot.eventbus.Subscribe;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -92,10 +96,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
+import au.com.smarttrace.beacon.firebase.ToFirebase;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
@@ -125,7 +131,7 @@ import static au.com.smarttrace.beacon.AppConfig.NOTIFICATION_ID;
 
 public class BeaconService extends Service implements BeaconConsumer, SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String PACKAGE_NAME = "au.com.smarttrace.beacon";
-    private static final String CHANNEL_ID = "channel_01";
+    //private static final String CHANNEL_ID = "channel_01";
 
     private static final String EXTRA_STARTED_FROM_NOTIFICATION = PACKAGE_NAME + ".started_from_notification";
     public static final String EXTRA_STARTED_FROM_BOOTSTRAP = PACKAGE_NAME + ".started_from_bootstrap";
@@ -201,6 +207,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private String currentToken = null;
 
+    private FirebaseAuth mAuth;
+    private FirebaseDatabase database;
+    DatabaseReference ref;
+
     public BeaconService() {
     }
 
@@ -243,16 +253,21 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.app_name);
             // Create the channel for the notification
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel(getString(R.string.default_notification_channel_id), name, NotificationManager.IMPORTANCE_DEFAULT);
 
             //set the notification-channel for the Notification Manager
             mNotificationManager.createNotificationChannel(channel);
         }
         registerEventBus();
         NetworkUtils.init(this);
+        String token = FirebaseInstanceId.getInstance().getToken();
+        Logger.i("TOKEN: " + token);
 
         //-- init database;
         eventBox = ((App) getApplicationContext()).getBoxStore().boxFor(EventData.class);
+        mAuth = FirebaseAuth.getInstance();
+        database = FirebaseDatabase.getInstance();
+        ref = database.getReference(getGatewayId());
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
@@ -335,6 +350,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Logger.i("##Service Started: " + SharedPref.getToken());
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        Logger.d("LogginInFirebase: " + currentUser.getEmail());
+        if (currentUser == null || currentUser.isAnonymous()) {
+            Logger.d("LogginInFirebase");
+            mAuth.signInWithEmailAndPassword("hoaivubk@gmail.com", "poiuyt01")
+                    .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            Logger.d("[>] logged in");
+                        }
+                    });
+        }
 
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 
@@ -363,11 +390,11 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
 
         checkIfNeedToCreateShipmentOnBoot();
-        isConnected = NetworkUtils.isConnected();
+        isConnected = NetworkUtils.isInternetAvailable();
         App.serviceStarted();
         startBLEAndLocationUpdate();
         uploadDataToServer();
-        return START_NOT_STICKY;
+        return START_STICKY;
     }
 
     @Override
@@ -534,6 +561,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private void broadcastData() {
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
+        //FirebaseDatabase.getInstance().getReference().setValue("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
         List<BeaconPackage> dataList = getDataPackageList();
 
         if (dataList == null || dataList.size() == 0 || mLocation == null) {
@@ -546,8 +574,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             _mShouldCreateOnBoot = false;
             SharedPref.saveOnBoot(false);
         }
-
-        Logger.d("Can you run here?");
         checkAndCreateShipment(dataList);
 
         List<CellTower> cellTowerList = getAllCellInfo();
@@ -557,8 +583,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         event.setGatewayId(getGatewayId());
         event.setCellTowerList(cellTowerList);
 
-        isConnected = NetworkUtils.isConnected();
-        if (NetworkUtils.isConnected()) {
+        Logger.d("[>] saving to firebase");
+        DatabaseReference locRef = ref.child(System.currentTimeMillis() + "");
+        locRef.setValue(ToFirebase.fromRaw(event));
+
+        isConnected = NetworkUtils.isInternetAvailable();
+        if (NetworkUtils.isInternetAvailable()) {
             Logger.d("[Online] Network is online");
             //1. upload old data
             List<EventData> evdtList = eventBox.getAll();
@@ -651,8 +681,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void updatePairedList() {
-        Logger.d("[+PairedList]  updatingToken: " + updatingToken + ", isConnected: " + isConnected + ", updatingPairedList: " + updatingPairedList);
-        if (updatingToken || !isConnected || updatingPairedList) return;
+        Logger.d("[+PairedList]  updatingToken: " + updatingToken + ", isConnected: " + NetworkUtils.isInternetAvailable() + ", updatingPairedList: " + updatingPairedList);
+        if (updatingToken || !NetworkUtils.isInternetAvailable() || updatingPairedList) return;
         updatingPairedList = true;
         WebService.getPairedBeacons(getGatewayId(), currentToken,  new Callback() {
             @Override
@@ -666,9 +696,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 String strBody = response.body() != null ? response.body().string() : null;
                 Logger.d("WhyNull: " + strBody);
                 if (!TextUtils.isEmpty(strBody)) {
-                    PairedBeaconResponse pbr = gson.fromJson(strBody, PairedBeaconResponse.class);
+                    PairedBeaconResponse pbr = GsonUtils.getInstance().fromJson(strBody, PairedBeaconResponse.class);
                     Logger.d("Paired-Beacons: " + (pbr.getResponse()!=null ? pbr.getResponse().size() : "null"));
-                    if (pbr.getStatus().getCode() == 0) {
+                    if (pbr != null && pbr.getStatus().getCode() == 0) {
                         _paired_beacon.addAll(pbr.getResponse());
                         refineDeviceMap();
                     } else {
@@ -759,7 +789,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void updateDeviceStateInMap(final BeaconPackage data) {
-        if (updatingToken || !isConnected) return;
+        if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
         WebService.getDevice(data.getSerialNumberString(), currentToken,  new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -771,9 +801,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 if (response.body() != null) {
                     String strData = response.body() != null ? response.body().string() : "";
 
-                    DeviceResponse deviceResponse = TextUtils.isEmpty(strData) ? null : gson.fromJson(strData, DeviceResponse.class);
+//                    DeviceResponse deviceResponse = TextUtils.isEmpty(strData) ? null : gson.fromJson(strData, DeviceResponse.class);
+                    DeviceResponse deviceResponse = TextUtils.isEmpty(strData) ? null : GsonUtils.getInstance().fromJson(strData, DeviceResponse.class);
                     if (deviceResponse != null) {
-                        if (deviceResponse.getStatus().getCode() == 0) {
+                        if (deviceResponse.getStatus() != null && deviceResponse.getStatus().getCode() == 0) {
                             Device device = deviceResponse.getResponse();
                             if (device != null) {
                                 //[+]
@@ -810,8 +841,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 //            startTime = System.currentTimeMillis();
 //        }
 
-        Logger.d("[+] checkAndCreateShipment: updatingToken: #" + updatingToken + "isConnected: #" + NetworkUtils.isConnected());
-        if (updatingToken || !NetworkUtils.isConnected()) return;
+        Logger.d("[+] checkAndCreateShipment: updatingToken: #" + updatingToken + "isConnected: #" + NetworkUtils.isInternetAvailable());
+        if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
         int idx = 0;
         for (final BeaconPackage data: dataList) {
             Logger.d("ShipmentCreated #" + (idx++));
@@ -1074,7 +1105,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 .setWhen(System.currentTimeMillis());
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder.setChannelId(CHANNEL_ID);
+            builder.setChannelId(getString(R.string.default_notification_channel_id));
         }
         return builder.build();
     }
@@ -1161,7 +1192,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
     }
     private void updateNewShipmentLocations(boolean isFirst) {
-        if (updatingToken || !isConnected) return;
+        if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
         if (timesOfDataUpdated >= AppConfig.COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS || isFirst) {
             WebService.getLocations(1, 1000, null, null, currentToken, new Callback() {
                 @Override
@@ -1173,14 +1204,14 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 public void onResponse(Call call, Response response) throws IOException {
                     String bodyStr = (response.body() != null) ? response.body().string() : null;
                     if (!TextUtils.isEmpty(bodyStr)) {
-                        LocationResponse response1 = gson.fromJson(bodyStr, LocationResponse.class);
-                        if (response1.getStatus().getCode() == 0) {
+                        LocationResponse response1 = GsonUtils.getInstance().fromJson(bodyStr, LocationResponse.class);
+                        if (response1!= null && response1.getStatus() != null && response1.getStatus().getCode() == 0) {
                             updateShipmentLocations(response1.getResponse());
                         } else {
-                            updateToken(3 *1000, false);
+                            updateToken(10 *1000, false);
                         }
                     } else {
-                        updateToken(3 * 1000, false);
+                        updateToken(10 * 1000, false);
                     }
                 }
             });
@@ -1205,7 +1236,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             mServiceHandler.postDelayed(reLoginRunnable, timeMillisDelay);
             updatingToken = true;
         } else {
-            if (!updatingToken && NetworkUtils.isConnected()) {
+            if (!updatingToken && NetworkUtils.isInternetAvailable()) {
                 Logger.d("[+] Token update in " + timeMillisDelay / 1000 + "s");
                 updatingToken = true;
                 mServiceHandler.postDelayed(reLoginRunnable, timeMillisDelay);
@@ -1236,7 +1267,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.body() != null) {
-                    LoginResponse data = gson.fromJson(response.body().string(), LoginResponse.class);
+                    LoginResponse data = GsonUtils.getInstance().fromJson(response.body().string(), LoginResponse.class);
                     if (data != null && data.getResponse() != null) {
                         SharedPref.saveToken(data.getResponse().getToken());
                         SharedPref.saveExpiredStr(data.getResponse().getExpired());
@@ -1256,7 +1287,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private void updateUserInformation() {
         //
         FirebaseCrash.log("[FirebaseCrash] + getTimezone");
-        if (updatingToken || !isConnected) return;
+        if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
         WebService.getUser(currentToken, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -1269,8 +1300,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 String strBody = response.body() != null ? response.body().string() : "";
                 if (!TextUtils.isEmpty(strBody)) {
                     Logger.d("+User: " + strBody);
-                    UserResponse userResponse = gson.fromJson(strBody, UserResponse.class);
-                    if (userResponse.getStatus().getCode() == 0) {
+                    UserResponse userResponse = GsonUtils.getInstance().fromJson(strBody, UserResponse.class);
+                    if (userResponse != null && userResponse.getStatus() != null && userResponse.getStatus().getCode() == 0) {
                         UserBody body = null;
                         if (userResponse != null) {
                             body = userResponse.getResponse();

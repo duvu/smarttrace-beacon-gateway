@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "221311899273-p8re28s69jsm0tapo2orb814slvgngri.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "au.com.smarttrace.beacon",
+            "certificate_hash": "2a066b1f95b552b34cca017600c7543e27f2fdb3"
+          }
+        },
+        {
           "client_id": "221311899273-sfhnm328qeh009thihuibll2drhq6at4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
