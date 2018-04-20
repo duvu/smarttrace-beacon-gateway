@@ -44,4 +44,51 @@ public class ToFirebase {
         return tf;
     }
 
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+
+    public double getAccuracy() {
+        return accuracy;
+    }
+
+    public void setAccuracy(double accuracy) {
+        this.accuracy = accuracy;
+    }
+
+    public double getSpeedKph() {
+        return speedKph;
+    }
+
+    public void setSpeedKph(double speedKph) {
+        this.speedKph = speedKph;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public List<ToFirebaseBeacon> getBeacons() {
+        return beacons;
+    }
+
+    public void setBeacons(List<ToFirebaseBeacon> beacons) {
+        this.beacons = beacons;
+    }
 }

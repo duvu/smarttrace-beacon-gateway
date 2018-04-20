@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
+import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.net.exception.ParsingException;
 import okhttp3.Callback;
@@ -21,7 +23,6 @@ import okhttp3.ResponseBody;
 
 public class Http {
     private OkHttpClient client = null;
-    private Gson gson = null;
     private static Http http = null;
 
     public static Http getIntance() {
@@ -32,8 +33,10 @@ public class Http {
     }
 
     private Http() {
-        client = new OkHttpClient();
-        gson = new Gson();
+        client = new OkHttpClient.Builder()
+                .connectTimeout(20, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+            .build();
     }
 
     //-- Sync
@@ -46,7 +49,7 @@ public class Http {
         Response response = client.newCall(request).execute();
         ResponseBody body = response.body();
         if (body != null) {
-            return gson.fromJson(body.string(), clazz);
+            return GsonUtils.getInstance().fromJson(body.string(), clazz);
         } else {
             throw new ParsingException("Empty body");
         }
@@ -64,7 +67,7 @@ public class Http {
         if (body1 == null) {
             throw new ParsingException("Empty body");
         } else {
-            return gson.fromJson(body1.string(), clazz);
+            return GsonUtils.getInstance().fromJson(body1.string(), clazz);
         }
     }
 
@@ -96,7 +99,7 @@ public class Http {
 
     private boolean isJson(String json) {
         try {
-            gson.fromJson(json, Object.class);
+            GsonUtils.getInstance().fromJson(json, Object.class);
             return true;
         } catch (JsonSyntaxException ex) {
             return false;

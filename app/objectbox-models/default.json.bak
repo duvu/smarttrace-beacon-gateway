@@ -41,16 +41,11 @@
           "name": "speedKPH"
         }
       ],
-      "relations": [
-        {
-          "id": "1:2060485091927323520",
-          "name": "sensorDataList"
-        }
-      ]
+      "relations": []
     },
     {
       "id": "3:2397613807633497897",
-      "lastPropertyId": "10:7551026675484731302",
+      "lastPropertyId": "11:2697296960212344325",
       "name": "SensorData",
       "properties": [
         {
@@ -92,13 +87,38 @@
         {
           "id": "10:7551026675484731302",
           "name": "hardwareModel"
+        },
+        {
+          "id": "11:2697296960212344325",
+          "indexId": "1:3919819620744557145",
+          "name": "eventDataId"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:203873894602726841",
+      "lastPropertyId": "3:6064114534749341459",
+      "name": "PhonePaired",
+      "properties": [
+        {
+          "id": "1:670291557073058925",
+          "name": "id"
+        },
+        {
+          "id": "2:4130012667907623560",
+          "name": "phoneImei"
+        },
+        {
+          "id": "3:6064114534749341459",
+          "name": "beaconSerialNumber"
         }
       ],
       "relations": []
     }
   ],
-  "lastEntityId": "3:2397613807633497897",
-  "lastIndexId": "0:0",
+  "lastEntityId": "4:203873894602726841",
+  "lastIndexId": "1:3919819620744557145",
   "lastRelationId": "1:2060485091927323520",
   "lastSequenceId": "0:0",
   "modelVersion": 4,
@@ -122,6 +142,8 @@
     7635945955162343526,
     7563572836630777767
   ],
-  "retiredRelationUids": [],
+  "retiredRelationUids": [
+    2060485091927323520
+  ],
   "version": 1
 }

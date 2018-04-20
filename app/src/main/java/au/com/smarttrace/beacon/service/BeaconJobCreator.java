@@ -13,7 +13,6 @@ public class BeaconJobCreator implements JobCreator {
         switch (tag) {
             case BeaconSyncJob.JOBS_TAG:
                 return new BeaconSyncJob();
-            case BeaconSyncJob.JOBS_TAG_PERIODIC:
             default:
                 return null;
         }

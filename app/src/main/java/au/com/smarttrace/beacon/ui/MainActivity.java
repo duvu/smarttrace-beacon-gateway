@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Set;
 
 import au.com.smarttrace.beacon.App;
+import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.service.BeaconSyncJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.R;
@@ -55,6 +56,8 @@ import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.service.BeaconService;
+
+import static au.com.smarttrace.beacon.service.BeaconService.EXTRA_STARTED_FROM_NOTIFICATION;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -104,10 +107,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             requestPermissions();
         }
 
-        Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
-        startService(intent1);
-        BeaconSyncJob.scheduleJob();
-
         TextView txt2Content = findViewById(R.id.txt_2_content);
         //- Press the POWER button for 6 secs util green light appears
         String textStr = getString(R.string.txt_statement_press_power_button);
@@ -124,16 +123,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mMainScreenView = findViewById(R.id.main_screen);
         registerEventBus();
 
-
-
-        Set<JobRequest> sjr = JobManager.instance().getAllJobRequestsForTag(BeaconSyncJob.JOBS_TAG_PERIODIC);
-        if (sjr.size() > 0) {
-            JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG_PERIODIC);
-        }
-
-        Set<JobRequest> sjr1 = JobManager.instance().getAllJobRequestsForTag(BeaconSyncJob.JOBS_TAG);
-        if (sjr1.size() > 0) {
+        Intent i = getIntent();
+        boolean startFromNotification = i.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION, false);
+        Logger.d("[MainActivity] startFromNotification: " + startFromNotification);
+        if (!App.isServiceRunning()) {
+            Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
+            startService(intent1);
             JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
+            BeaconSyncJob.scheduleJob();
+            BeaconSyncJob.scheduleJobStartNow();
         }
     }
 
@@ -165,6 +163,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             unbindService(mConnection);
         }
         super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        Logger.d("[MainActivity] Destroying");
+        super.onDestroy();
     }
 
     @Override

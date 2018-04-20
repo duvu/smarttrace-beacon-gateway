@@ -22,12 +22,10 @@ import au.com.smarttrace.beacon.ui.MainActivity;
 
 public class BeaconSyncJob extends Job {
     public static final String JOBS_TAG = "beacon_sync_job_tag";
-    public static final String JOBS_TAG_PERIODIC = "beacon_sync_job_periodic_tag";
-
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        boolean success = (new BeaconSyncEngine(getContext())).sync();
+        boolean success = (new BeaconSyncEngine(getContext())).syncPairedBeacons();
 
         PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, new Intent(getContext(), MainActivity.class), 0);
 
@@ -52,13 +50,22 @@ public class BeaconSyncJob extends Job {
 
         NotificationManagerCompat.from(getContext()).notify(new Random().nextInt(), notification);
 
-        return Result.RESCHEDULE; //success ? Result.SUCCESS : Result.FAILURE;
+        return success ? Result.SUCCESS : Result.FAILURE;
+    }
+
+    public static void scheduleJobStartNow() {
+        new JobRequest.Builder(JOBS_TAG)
+                .startNow()
+                .setUpdateCurrent(true)
+                .build()
+                .schedule();
     }
 
     public static void scheduleJob() {
         new JobRequest.Builder(JOBS_TAG)
-                .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
-                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
+                 .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
+                 .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
+                .setUpdateCurrent(true)
                 .build()
                 .schedule();
     }

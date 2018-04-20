@@ -6,10 +6,15 @@ android {
         applicationId "au.com.smarttrace.beacon"
         minSdkVersion 18
         targetSdkVersion 27
-        versionCode 53
-        versionName "1.3.23"
+        versionCode 55
+        versionName "1.3.25"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [ 'objectbox.debug' : 'true' ]
+            }
+        }
     }
 
     preBuild {

@@ -29,7 +29,7 @@ public class AppConfig {
     //ensure update startLocations for 1hours. default value is 12.
     public static final int COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS = 1;
 
-    public static final boolean DEBUG_ENABLED                           = true;
+    public static final boolean DEBUG_ENABLED                           = false;
     public static int TemperatureUnit = 0;
 
     public static final String SMARTTRACE_URL                           = "https://smarttrace.com.au";
@@ -37,9 +37,10 @@ public class AppConfig {
     public static final String BACKEND_URL_BT04_NEW                     = SMARTTRACE_URL + "/bt04";
 
     // max "age" in ms of last location (default 120000).
-    public static final long UPDATE_INTERVAL                            = (DEBUG_ENABLED ? 10 : 600) * MILLISECONDS;
+    public static final long UPDATE_INTERVAL                            = (DEBUG_ENABLED ? 60 : 600) * MILLISECONDS;
+    public static final long SCHEDULED_RUNNING_FIRST                    = (DEBUG_ENABLED ? 300 : 600) * MILLISECONDS;
     public static final long LAST_LOCATION_MAX_AGE                      = 60 * MILLISECONDS;
-    public static final long FASTEST_UPDATE_INTERVAL                    = UPDATE_INTERVAL / 10;
+    public static final long FASTEST_UPDATE_INTERVAL                    = UPDATE_INTERVAL / 5;
     public static final long DEVICE_MAX_AGE                             = 144 * UPDATE_INTERVAL + 10 * MILLISECONDS; //1 day
     public static final long SHIPMENT_MAX_AGE                           = 12 * UPDATE_INTERVAL + 10 * MILLISECONDS; //2 hours
     public static final long DEVICE_CACHED_AGE                          = 3 * UPDATE_INTERVAL;
@@ -56,17 +57,5 @@ public class AppConfig {
     private Context context;
 
     public static void populateSetting(Context context) {
-        //GATEWAY_ID = "356024089973101";
-//        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-//        GATEWAY_ID = telephonyManager != null ? telephonyManager.getDeviceId() : null;
-
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-    }
-
-    public static void setPlayServiceAvailability(Context context, boolean avail) {
-        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(KEY_PLAY_SERVICE_AVAILABILITY, avail).commit();
-    }
-    public static boolean getPlayServiceAvailability(Context context) {
-        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(KEY_PLAY_SERVICE_AVAILABILITY, false);
     }
 }

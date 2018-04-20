@@ -1,7 +1,6 @@
 package au.com.smarttrace.beacon.service;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -16,9 +15,9 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
-import android.net.ConnectivityManager;
 import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.Build;
@@ -31,23 +30,8 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.telephony.CellIdentityCdma;
-import android.telephony.CellIdentityGsm;
-import android.telephony.CellIdentityLte;
-import android.telephony.CellIdentityWcdma;
-import android.telephony.CellInfo;
-import android.telephony.CellInfoCdma;
-import android.telephony.CellInfoGsm;
-import android.telephony.CellInfoLte;
-import android.telephony.CellInfoWcdma;
-import android.telephony.CellSignalStrengthCdma;
-import android.telephony.CellSignalStrengthGsm;
-import android.telephony.CellSignalStrengthLte;
-import android.telephony.CellSignalStrengthWcdma;
-import android.telephony.NeighboringCellInfo;
-import android.telephony.TelephonyManager;
-import android.text.TextUtils;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -77,11 +61,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -95,28 +77,25 @@ import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
+import au.com.smarttrace.beacon.db.EventData;
+import au.com.smarttrace.beacon.db.Locations;
+import au.com.smarttrace.beacon.db.PhonePaired;
+import au.com.smarttrace.beacon.db.PhonePaired_;
 import au.com.smarttrace.beacon.db.SensorData;
 import au.com.smarttrace.beacon.firebase.ToFirebase;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
-import au.com.smarttrace.beacon.db.EventData;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.model.UpdateToken;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
-import au.com.smarttrace.beacon.net.model.Device;
-import au.com.smarttrace.beacon.net.model.DeviceResponse;
 import au.com.smarttrace.beacon.net.model.LatLng;
-import au.com.smarttrace.beacon.net.model.LocationBody;
-import au.com.smarttrace.beacon.net.model.LocationResponse;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
-import au.com.smarttrace.beacon.net.model.PairedBeaconResponse;
-import au.com.smarttrace.beacon.net.model.UserBody;
-import au.com.smarttrace.beacon.net.model.UserResponse;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import io.objectbox.Box;
+import io.objectbox.query.Query;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
@@ -125,7 +104,7 @@ import static au.com.smarttrace.beacon.AppConfig.NOTIFICATION_ID;
 
 public class BeaconService extends Service implements BeaconConsumer, SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String PACKAGE_NAME = "au.com.smarttrace.beacon";
-    private static final String EXTRA_STARTED_FROM_NOTIFICATION = PACKAGE_NAME + ".started_from_notification";
+    public static final String EXTRA_STARTED_FROM_NOTIFICATION = PACKAGE_NAME + ".started_from_notification";
     public static final String EXTRA_STARTED_FROM_BOOTSTRAP = PACKAGE_NAME + ".started_from_bootstrap";
 
     public static final String ACTION_BROADCAST = PACKAGE_NAME + ".broadcast";
@@ -141,8 +120,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     boolean _mShouldCreateOnBoot = false;
     private boolean updatingToken = false;
-    private boolean updatingPairedList = false;
-    private boolean isConnected = true;
 
     // phone battery
     private float mBatteryLevel = 0.0f;
@@ -162,10 +139,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private BeaconManager mBeaconManager = BeaconManager.getInstanceForApplication(this);
 
     private Map<String, BeaconPackage> deviceMap = new ConcurrentHashMap<>();
-
-    private Set<String> _paired_beacon = new HashSet<>();
-
-    private List<LocationBody> companyShipmentLocations = null;
+//    private List<LocationBody> companyShipmentLocations = null;
+    private List<Locations> companyShipmentLocations = null;
 
     private LocationManager gpsLocationManager;
     private LocationManager passiveLocationManager;
@@ -173,20 +148,16 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private GeneralLocationListener locationListener;
 
     private Box<EventData> eventBox;
+    private Box<PhonePaired> pairedBox;
+    private Box<Locations> locationsBox;
 
     private final IBinder mBinder = new LocalBinder();
-
-    private int timesOfDataUpdated = 0;
     private boolean hasGoogleClient = false;
-
-    ConnectivityManager connectivityManager;
-
     HandlerThread handlerThread = null;
-
     private String currentToken = null;
 
     private FirebaseAuth mAuth;
-    private FirebaseDatabase database;
+    FirebaseDatabase database;
     DatabaseReference ref;
 
     public BeaconService() {
@@ -195,13 +166,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public void onCreate() {
         Logger.i("[BeaconService] onCreated");
-        mBeaconManager.setBackgroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL / 5);
-        mBeaconManager.setBackgroundScanPeriod(AppConfig.UPDATE_PERIOD);
-        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL / 5);
+        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL/10);
         mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
         mBeaconManager.bind(this);
-
-        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (ServiceUtils.isGooglePlayServicesAvailable(this)) {
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -216,15 +183,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             hasGoogleClient = true;
         }
 
-        Logger.i("Starting foreground service");
-        startForeground(NOTIFICATION_ID, getNotification());
-
         handlerThread = new HandlerThread(AppConfig.TAG);
         handlerThread.start();
         mServiceHandler = new Handler(handlerThread.getLooper());
         mServiceHandler = new Handler();
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         // Android O requires a Notification Channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.app_name);
@@ -235,12 +199,14 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             mNotificationManager.createNotificationChannel(channel);
         }
         registerEventBus();
-        NetworkUtils.init(this);
         String token = FirebaseInstanceId.getInstance().getToken();
-        Logger.i("TOKEN: " + token);
+        Logger.i("FirebaseToken: " + token);
 
         //-- init database;
         eventBox = ((App) getApplicationContext()).getBoxStore().boxFor(EventData.class);
+        pairedBox = ((App) getApplicationContext()).getBoxStore().boxFor(PhonePaired.class);
+        locationsBox = ((App) getApplicationContext()).getBoxStore().boxFor(Locations.class);
+
         mAuth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance();
         ref = database.getReference(NetworkUtils.getGatewayId());
@@ -249,105 +215,85 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
         intentFilter.addAction(Intent.ACTION_BATTERY_LOW);
         intentFilter.addAction(Intent.ACTION_BATTERY_OKAY);
-        //intentFilter.addAction(Inte);
         registerReceiver(mBatteryLevelReceiver, intentFilter);
     }
 
     //--Upload data control
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
     private ScheduledFuture<?> sHandler;
     private final Runnable uploader = new Runnable() {
         @Override
         public void run() {
+            getLastLocation();
             broadcastData();
         }
     };
 
     private void uploadDataToServer() {
-        Logger.d("[+] uploadDataToServer");
+        Logger.i("[+] uploadDataToServer");
         if (sHandler != null) {
             sHandler.cancel(true);
         }
-        startScanFast();
-        sHandler = scheduler.scheduleAtFixedRate(uploader, 30 * 1000, 10*1000, TimeUnit.MILLISECONDS);
+
+        startFast();
+        sHandler = scheduler.scheduleAtFixedRate(uploader, 30 * 1000 /*Wait10Sec*/, 10*1000, TimeUnit.MILLISECONDS);
         scheduler.schedule(new Runnable() {
             @Override
             public void run() {
                 stopUploadDataToServer();
-                stopScanFast();
+                stopFast();
             }
-        }, 10 * 60, TimeUnit.SECONDS);
+        }, AppConfig.SCHEDULED_RUNNING_FIRST - 60*1000 /*Finished1minEarlier*/, TimeUnit.MILLISECONDS);
 
-        scheduler.scheduleAtFixedRate(uploader, 10*60*1000, AppConfig.UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(uploader, AppConfig.SCHEDULED_RUNNING_FIRST, AppConfig.UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
+    }
+
+    private void startFast() {
+        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
+        mBeaconManager.setForegroundScanPeriod(10*1000);
+        mBeaconManager.setBackgroundMode(false);
+        syncSettingsToService();
+    }
+
+    private void stopFast() {
+        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL/10);
+        mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
+        mBeaconManager.setBackgroundMode(false);
+        syncSettingsToService();
     }
 
     private void stopUploadDataToServer() {
         if (sHandler != null) {
-            sHandler.cancel(true);
+            sHandler.cancel(false);
         }
     }
 
-    private void startScanFast() {
-        //BLE
-        mBeaconManager.setBackgroundMode(false);
-        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
-        mBeaconManager.setForegroundScanPeriod(6*1000);
-        syncSettingsToService();
-
-        //Location
-        mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(10*1000);
-        mLocationRequest.setFastestInterval(2*1000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setSmallestDisplacement(0);
-        stopLocationUpdate();
-        startLocationUpdate();
-    }
-
-    private void stopScanFast() {
-        //BLE
-        mBeaconManager.setBackgroundMode(false);
-        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL/5);
-        mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
-        syncSettingsToService();
-        stopLocationUpdate();
-        createLocationRequest();
-        startLocationUpdate();
-    }
-
     //--End
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Logger.i("##Service Started: " + SharedPref.getToken());
+        currentToken = SharedPref.getToken();
+        startForeground(NOTIFICATION_ID, getNotification());
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+        //-- load Shipment Location
+        updateShipmentLocations();
+
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        Logger.d("LogginInFirebase: " + currentUser.getEmail());
+        Logger.i("LogginInFirebase: " + currentUser.getEmail());
+
         if (currentUser == null || currentUser.isAnonymous()) {
-            Logger.d("LogginInFirebase");
+            Logger.i("LogginInFirebase");
             mAuth.signInWithEmailAndPassword("hoaivubk@gmail.com", "poiuyt01")
                     .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                         @Override
                         public void onComplete(@NonNull Task<AuthResult> task) {
-                            Logger.d("[>] logged in");
+                            Logger.i("[>] logged in");
                         }
                     });
         }
 
-        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
-
-        currentToken = SharedPref.getToken();
-
-        boolean startFromNotification = intent.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION, false);
-        if (startFromNotification) {
-            stopLocationUpdate();
-            stopBLEScan(true);
-            stopSelf();
-        }
-
-        //-- load Shipment Location
-        updateNewShipmentLocations(true);
         if (userTimezone == null) {
-            updateUserInformation();
+            TimeZone.getTimeZone(SharedPref.getUserTimezone());
         }
 
         if (hasGoogleClient) {
@@ -355,7 +301,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
 
         checkIfNeedToCreateShipmentOnBoot();
-        isConnected = NetworkUtils.isInternetAvailable();
         App.serviceStarted();
         startBLEAndLocationUpdate();
         uploadDataToServer();
@@ -370,26 +315,17 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public IBinder onBind(Intent intent) {
         Logger.i("onBind");
-        //stopForeground(true);
         return mBinder;
     }
 
     @Override
     public void onRebind(Intent intent) {
-        // Called when a client returns to the foreground and binds once again with this service. The
-        // service should cease to be a foreground service when that happends.
-        //stopForeground(true);
         super.onRebind(intent);
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         Logger.i("onUnbind");
-
-        // Called when the last client unibinds from this service. If this method is called due to a
-        // configuration change in MainActivity, we do nothing. Otherwise, we make this service a foreground service.
-//        Logger.i("Starting foreground service");
-//        startForeground(NOTIFICATION_ID, getNotification());
         return true;
     }
 
@@ -442,7 +378,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void startLocationUpdate() {
-        Logger.d("[+] startLocationUpdate: " + hasGoogleClient);
+        Logger.i("[+] startLocationUpdate: " + hasGoogleClient);
         if (hasGoogleClient) {
             try {
                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
@@ -464,7 +400,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 if (gpsLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     gpsLocationManager.requestLocationUpdates(
                             LocationManager.GPS_PROVIDER,
-                            AppConfig.FASTEST_UPDATE_INTERVAL/5,
+                            AppConfig.FASTEST_UPDATE_INTERVAL/2,
                             AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE,
                             locationListener,Looper.myLooper());
                 }
@@ -472,7 +408,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 if (towerLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                     towerLocationManager.requestLocationUpdates(
                             LocationManager.NETWORK_PROVIDER,
-                            AppConfig.FASTEST_UPDATE_INTERVAL/5,
+                            AppConfig.FASTEST_UPDATE_INTERVAL/2,
                             AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE,
                             locationListener,
                             Looper.myLooper());
@@ -500,13 +436,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             }
         } else {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
                 return;
             }
             gpsLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -520,13 +449,30 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         //FirebaseDatabase.getInstance().getReference().setValue("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
         List<BeaconPackage> dataList = getDataPackageList();
 
-        if (dataList == null || dataList.size() == 0 || mLocation == null) {
-            Logger.d("[-] no new data");
+        //warning if no location:
+        if (mLocation == null) {
+
+            Notification notification = new NotificationCompat.Builder(this, getString(R.string.default_notification_channel_id))
+                    .setContentTitle("No Location!")
+                    .setContentText("No Location Fixed")
+                    .setChannelId(getString(R.string.default_notification_channel_id))
+                    .setSound(null)
+                    .setOngoing(true)
+                    .setSmallIcon(R.drawable.notification)
+                    .setShowWhen(true)
+                    .setColor(Color.GREEN)
+                    .setLocalOnly(true)
+                    .build();
+
+            NotificationManagerCompat.from(this).notify(new Random().nextInt(), notification);
+        }
+
+        if (dataList == null || dataList.size() == 0) {
+            Logger.i("[-] no new data");
             return; // not update if no event data;
         }
 
         if (!isAtStartLocations()) {
-            Logger.d("Can you run here?");
             _mShouldCreateOnBoot = false;
             SharedPref.saveOnBoot(false);
         }
@@ -539,18 +485,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         event.setGatewayId(NetworkUtils.getGatewayId());
         event.setCellTowerList(cellTowerList);
 
-        Logger.d("[>] saving to firebase");
-        DatabaseReference locRef = ref.child(System.currentTimeMillis() + "");
-        locRef.setValue(ToFirebase.fromRaw(event));
+        Logger.i("[>] saving to firebase");
+        DatabaseReference locRef = ref.child(System.currentTimeMillis()+"");
+        ToFirebase tfb = ToFirebase.fromRaw(event);
+        locRef.setValue(tfb);
 
-        isConnected = NetworkUtils.isInternetAvailable();
         if (NetworkUtils.isInternetAvailable()) {
-            Logger.d("[Online] Network is online");
+            Logger.i("[Online] Network is online");
             //1. upload old data
             List<EventData> evdtList = eventBox.getAll();
             for (EventData evdt : evdtList) {
                 final long evId = evdt.getId();
-                Logger.d("[*] check: " + evdt.toString());
+                Logger.i("[*] check: " + evdt.toString());
                 WebService.sendEvent(evdt.toString(), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
@@ -569,7 +515,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             String dataForUpload = DataUtil.formatData(event);
             WebService.sendEvent(dataForUpload);
         } else {
-            Logger.d("[Offline] Network is offline, going to store data");
+            Logger.i("[Offline] Network is offline, going to store data");
             EventData evdt = new EventData();
             evdt.setPhoneImei(NetworkUtils.getGatewayId());
             Long timestamp = (new Date()).getTime();
@@ -603,27 +549,24 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 evdt.getSensorDataList().add(sd);
             }
             long id = eventBox.put(evdt);
-            Logger.d("[+] stored #" + id);
+            Logger.i("[+] stored #" + id);
         }
     }
 
 
 
-    private synchronized List<BeaconPackage> getDataPackageList() {
-        //only get device that has data in 10 minute back
+    private List<BeaconPackage> getDataPackageList() {
         List<BeaconPackage> dataList = new ArrayList<>();
-
         for (Object o : deviceMap.entrySet()) {
             Map.Entry entry = (Map.Entry) o;
             String key = (String)entry.getKey();
             BeaconPackage data = (BeaconPackage) entry.getValue();
-            if (data.isShouldUpload() && isPaired(data)) {
+            if (isPaired(data)) {
                 dataList.add(data);
                 deviceMap.get(data.getBluetoothAddress()).setShouldUpload(false); // to prevent repeat upload
 
             }
         }
-
         return dataList;
     }
 
@@ -631,99 +574,14 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         return new ArrayList<>(deviceMap.values());
     }
 
-    private synchronized boolean isPaired(BeaconPackage data) {
-        Logger.d("isPaired: " + _paired_beacon.size());
-        return _paired_beacon.contains(data.getSerialNumberString());
-    }
-
-    private void updatePairedList() {
-        Logger.d("[+PairedList]  updatingToken: " + updatingToken + ", isConnected: " + NetworkUtils.isInternetAvailable() + ", updatingPairedList: " + updatingPairedList);
-        if (updatingToken || !NetworkUtils.isInternetAvailable() || updatingPairedList) return;
-        updatingPairedList = true;
-        WebService.getPairedBeacons(NetworkUtils.getGatewayId(), currentToken,  new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                //updateToken(3600*1000);
-                updatingPairedList = false;
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String strBody = response.body() != null ? response.body().string() : null;
-                Logger.d("WhyNull: " + strBody);
-                if (!TextUtils.isEmpty(strBody)) {
-                    PairedBeaconResponse pbr = GsonUtils.getInstance().fromJson(strBody, PairedBeaconResponse.class);
-                    Logger.d("Paired-Beacons: " + (pbr.getResponse()!=null ? pbr.getResponse().size() : "null"));
-                    if (pbr != null && pbr.getStatus().getCode() == 0) {
-                        _paired_beacon.addAll(pbr.getResponse());
-                        refineDeviceMap();
-                    } else {
-                        updateToken(3*1000, false);
-                    }
-                } else {
-                    updateToken(3*1000, false);
-                }
-                updatingPairedList = false;
-            }
-        });
-
-        WebService.getPairedPhones(currentToken, new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                Logger.d("GetPairedPhones" + response.body().string());
-                //{
-                //  "status": {
-                //    "code": 0,
-                //    "message": "Success"
-                //  },
-                //  "response": [
-                //    {
-                //      "pairedPhoneID": 195,
-                //      "active": true,
-                //      "pairedPhoneIMEI": "imei1",
-                //      "company": 1464,
-                //      "description": null,
-                //      "pairedBeaconID": "b2"
-                //    },
-                //    {
-                //      "pairedPhoneID": 194,
-                //      "active": true,
-                //      "pairedPhoneIMEI": "imei2",
-                //      "company": 1464,
-                //      "description": null,
-                //      "pairedBeaconID": "b1"
-                //    }
-                //  ],
-                //  "totalCount": 2
-                //}
-            }
-        });
-
-    }
-
-    private synchronized void refineDeviceMap() {
-        long now = (new Date()).getTime();
-        Iterator it = deviceMap.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry entry = (Map.Entry) it.next();
-            BeaconPackage data = (BeaconPackage) entry.getValue();
-//            if (now - data.getTimestamp() >= AppConfig.DEVICE_MAX_AGE) {
-            if (data.getReadingAge() >= AppConfig.DEVICE_MAX_AGE) {
-                it.remove();
-            } else {
-                updateDeviceStateInMap(data);
-            }
-
-            if (_paired_beacon != null && _paired_beacon.contains(data.getSerialNumberString())) {
-                setPaired(data.getBluetoothAddress(), true);
-            }
-        }
-        broadCastAllBeacon();
+    private boolean isPaired(BeaconPackage data) {
+        Logger.i("[>]Checking if paired");
+        Query<PhonePaired> query = pairedBox.query()
+                .equal(PhonePaired_.phoneImei, NetworkUtils.getGatewayId())
+                .equal(PhonePaired_.beaconSerialNumber, data.getSerialNumberString())
+                .build();
+        Logger.i("[>... isPaired: ] " + (query.findFirst() != null));
+        return query.findFirst() != null;
     }
 
     private void broadCastAllBeacon() {
@@ -738,70 +596,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         EventBus.getDefault().postSticky(event);
     }
 
-    private void setPaired(String id, boolean paired) {
-        if (deviceMap.containsKey(id)) {
-            deviceMap.get(id).setPaired(paired);
-        }
-    }
-
-    private void updateDeviceStateInMap(final BeaconPackage data) {
-        if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
-        WebService.getDevice(data.getSerialNumberString(), currentToken,  new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                updateToken(60*1000, false);
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                if (response.body() != null) {
-                    String strData = response.body() != null ? response.body().string() : "";
-
-//                    DeviceResponse deviceResponse = TextUtils.isEmpty(strData) ? null : gson.fromJson(strData, DeviceResponse.class);
-                    DeviceResponse deviceResponse = TextUtils.isEmpty(strData) ? null : GsonUtils.getInstance().fromJson(strData, DeviceResponse.class);
-                    if (deviceResponse != null) {
-                        if (deviceResponse.getStatus() != null && deviceResponse.getStatus().getCode() == 0) {
-                            Device device = deviceResponse.getResponse();
-                            if (device != null) {
-                                //[+]
-                                //Logger.i("[+] got device");
-                                String lastReadingTimeISO = device.getLastReadingTimeISO();
-                                String lastShipmentStatus = device.getShipmentStatus();
-
-                                if (TextUtils.isEmpty(lastShipmentStatus)||
-                                        TextUtils.isEmpty(lastReadingTimeISO) ||
-                                        lastShipmentStatus.equalsIgnoreCase("null")) {
-                                    deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(true);
-                                } else if (lastShipmentStatus.equalsIgnoreCase("Ended")) {
-                                    deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(true);
-                                } else {
-                                }
-                            }
-                        } else {
-                            //deviceMap.get(data.getBluetoothAddress()).setReadingCount(0);
-                            updateToken(10 * 1000, false);
-                        }
-                    }
-                } else {
-                    updateToken(60*1000, false);
-                }
-            }
-        });
-    }
-
-//    private long startTime = System.currentTimeMillis();
     private void checkAndCreateShipment(List<BeaconPackage> dataList) {
-//        if (System.currentTimeMillis() - startTime <= 30 * 1000) { // 30 sec
-//            return;
-//        } else {
-//            startTime = System.currentTimeMillis();
-//        }
-
-        Logger.d("[+] checkAndCreateShipment: updatingToken: #" + updatingToken + "isConnected: #" + NetworkUtils.isInternetAvailable());
+        Logger.i("[+] checkAndCreateShipment: updatingToken: #" + updatingToken + "isConnected: #" + NetworkUtils.isInternetAvailable());
         if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
         int idx = 0;
         for (final BeaconPackage data: dataList) {
-            Logger.d("ShipmentCreated #" + (idx++));
+            Logger.i("ShipmentCreated #" + (idx++));
             Logger.i("[" + data.getSerialNumber() +"] count: " + data.getReadingCount() + ", isStartLocation: " + isAtStartLocations() + ", isShouldCreate: " + data.isShouldCreateShipment() + ", [+] foreCreate: " + data.isForedCreateNew() + ", onBoot: " + data.isShouldCreateOnBoot());
             //if ((data.isShouldCreateOnBoot() && isAtStartLocations()) || (data.isForedCreateNew() && isAtStartLocations())) {
             if ((data.isShouldCreateOnBoot() && isAtStartLocations())) {
@@ -831,14 +631,14 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private boolean isAtStartLocations() {
-        if (companyShipmentLocations == null) return false;
-
+        if (companyShipmentLocations == null){
+            updateShipmentLocations();
+        }
         if (mLocation == null) {
             return false;
         }
-
-        for (LocationBody loc : companyShipmentLocations) {
-            LatLng ll = loc.getLocation();
+        for (Locations loc : companyShipmentLocations) {
+            LatLng ll = new LatLng(loc.getLatitude(), loc.getLongitude());
             float[] result = new float[3];
             Location.distanceBetween(mLocation.getLatitude(), mLocation.getLongitude(), ll.getLat(), ll.getLon(), result);
             if (result[0] < loc.getRadiusMeters() && loc.getStartFlag().equalsIgnoreCase("y")) {
@@ -848,9 +648,13 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         return false;
     }
 
+    private void updateShipmentLocations() {
+        companyShipmentLocations = locationsBox.query().build().find();
+    }
+
     @Override
     public void onBeaconServiceConnect() {
-        Logger.d("[+] onBeaconServiceConnect");
+        Logger.i("[+] onBeaconServiceConnect");
         mBeaconManager.addRangeNotifier(new RangeNotifier() {
             @Override
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
@@ -867,12 +671,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                             bt04.updateFromBeacon(beacon);
                         }
                         bt04.setPhoneBatteryLevel(mBatteryLevel);
-                        Logger.d("[+] paired-list");
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
                     }
-
-                    Logger.d("[+] prepare updateing paired-list");
-                    updatePairedList(); // update paired list from server
+                    broadCastAllBeacon();
                 }
             }
         });
@@ -882,12 +683,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         } catch (RemoteException e) {
             Logger.i("[BLE] error!");
         }
-
     }
-
-
-
-
 
     /**
      * Sets the location request parameters.
@@ -895,34 +691,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private void createLocationRequest() {
         mLocationRequest = LocationRequest.create();
         mLocationRequest.setInterval(AppConfig.UPDATE_INTERVAL/5);
-        mLocationRequest.setFastestInterval(AppConfig.FASTEST_UPDATE_INTERVAL/5);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        mLocationRequest.setFastestInterval(AppConfig.FASTEST_UPDATE_INTERVAL/2);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         mLocationRequest.setSmallestDisplacement(AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE);
     }
 
     public void onUpdateLocation(Location location) {
         Logger.i("[+] onUpdateLocation: " + location);
-//        if (mLocation == null) {
-//            mLocation = location;
-//        } else {
-//            if (location.getTime() - mLocation.getTime() > AppConfig.LAST_LOCATION_MAX_AGE) {
-//                mLocation = location;
-//            } else if (location.hasAccuracy() && location.getAccuracy() < mLocation.getAccuracy()) {
-//                mLocation = location;
-//            }
-//        }
-
         mLocation = location;
-        updateNewShipmentLocations(false);
-
         //Notify anyone listening for broadcasting about the new locatio
         Intent intent = new Intent(ACTION_BROADCAST);
         intent.putExtra(EXTRA_LOCATION, location);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-
-//        if (serviceIsRunningInForeground(this)) {
-//            mNotificationManager.notify(NOTIFICATION_ID, getNotification());
-//        }
     }
     /**
      * Removes location updates. Note that in this sample we merely log the
@@ -947,10 +727,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private Notification getNotification() {
-        Intent intent = new Intent(this, BeaconService.class);
+
         CharSequence text = ServiceUtils.getLocationText(mLocation);
         // The PendingIntent to launch activity
-        PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION, true);
+        PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .addAction(R.drawable.ic_launch, getString(R.string.launch_activity), activityPendingIntent)
@@ -986,7 +768,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         _mShouldCreateOnBoot = SharedPref.isOnBoot();
         //set flag to false
         //SharedPref.saveOnBoot(false);
-        Logger.d("[+] checkIfNeedToCreateShipmentOnBoot: " + _mShouldCreateOnBoot);
+        Logger.i("[+] checkIfNeedToCreateShipmentOnBoot: " + _mShouldCreateOnBoot);
     }
 
     // EventBus
@@ -1023,7 +805,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equalsIgnoreCase(SharedPref.KEY_SMARRTRACE_IO_TOKEN)) {
-            Logger.d("[+ Updating token ...]");
+            Logger.i("[+ Updating token ...]");
             currentToken = sharedPreferences.getString(SharedPref.KEY_SMARRTRACE_IO_TOKEN, "");
         }
 
@@ -1036,43 +818,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public class LocalBinder extends Binder {
         public BeaconService getService() {
             return BeaconService.this;
-        }
-    }
-
-    private void updateShipmentLocations(List<LocationBody> shipmentLocations) {
-        if (shipmentLocations != null) {
-            Logger.i("[ShipmentLocations]: " + shipmentLocations.size());
-            this.companyShipmentLocations = shipmentLocations;
-        }
-    }
-    private void updateNewShipmentLocations(boolean isFirst) {
-        if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
-        if (timesOfDataUpdated >= AppConfig.COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS || isFirst) {
-            WebService.getLocations(1, 1000, null, null, currentToken, new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    updateToken(60*1000, false);
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    String bodyStr = (response.body() != null) ? response.body().string() : null;
-                    if (!TextUtils.isEmpty(bodyStr)) {
-                        LocationResponse response1 = GsonUtils.getInstance().fromJson(bodyStr, LocationResponse.class);
-                        if (response1!= null && response1.getStatus() != null && response1.getStatus().getCode() == 0) {
-                            updateShipmentLocations(response1.getResponse());
-                        } else {
-                            updateToken(10 *1000, false);
-                        }
-                    } else {
-                        updateToken(10 * 1000, false);
-                    }
-                }
-            });
-            //reset
-            timesOfDataUpdated = 0;
-        } else {
-            timesOfDataUpdated++;
         }
     }
 
@@ -1091,7 +836,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             updatingToken = true;
         } else {
             if (!updatingToken && NetworkUtils.isInternetAvailable()) {
-                Logger.d("[+] Token update in " + timeMillisDelay / 1000 + "s");
+                Logger.i("[+] Token update in " + timeMillisDelay / 1000 + "s");
                 updatingToken = true;
                 mServiceHandler.postDelayed(reLoginRunnable, timeMillisDelay);
 
@@ -1127,7 +872,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                         SharedPref.saveExpiredStr(data.getResponse().getExpired());
                         SharedPref.saveTokenInstance(data.getResponse().getInstance());
                         stopUpdateToken();
-                        //startBLEAndLocationUpdate();
                     } else {
                         updateToken(60 * 1000, false);
                     }
@@ -1137,49 +881,4 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             }
         });
     }
-
-    private void updateUserInformation() {
-        //
-        FirebaseCrash.log("[FirebaseCrash] + getTimezone");
-        if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
-        WebService.getUser(currentToken, new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Logger.i("Not able get user");
-                //updateToken(60*1000);
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String strBody = response.body() != null ? response.body().string() : "";
-                if (!TextUtils.isEmpty(strBody)) {
-                    Logger.d("+User: " + strBody);
-                    UserResponse userResponse = GsonUtils.getInstance().fromJson(strBody, UserResponse.class);
-                    if (userResponse != null && userResponse.getStatus() != null && userResponse.getStatus().getCode() == 0) {
-                        UserBody body = null;
-                        if (userResponse != null) {
-                            body = userResponse.getResponse();
-                        }
-
-                        String tzId = null;
-                        long coId = 0;
-                        if (body != null) {
-                            tzId = body.getTimeZone();
-                            coId = body.getInternalCompanyId();
-                        }
-
-                        if (TextUtils.isEmpty(tzId)) tzId = "GMT";
-                        userTimezone = TimeZone.getTimeZone(tzId);
-                        SharedPref.saveUserTimezone(tzId);
-                        SharedPref.saveCompanyId(coId);
-                    } else {
-                        updateToken(3 * 1000, false);
-                    }
-                } else {
-                    updateToken(3 * 1000, false);
-                }
-            }
-        });
-    }
-
 }

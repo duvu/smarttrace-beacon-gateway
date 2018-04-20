@@ -4,12 +4,17 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
 public class GsonUtils {
-    private static Gson gson = null;
-    public static Gson getInstance() {
-        if (gson == null) {
-            gson = new Gson();
+    private static GsonUtils instance = null;
+    private Gson gson = null;
+    public static GsonUtils getInstance() {
+        if (instance == null) {
+            instance = new GsonUtils();
         }
-        return gson;
+        return instance;
+    }
+
+    public GsonUtils() {
+        gson = new Gson();
     }
 
     public <T> T fromJson(String json, Class<T> classOfT) {

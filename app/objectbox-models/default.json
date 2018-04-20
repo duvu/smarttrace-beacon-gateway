@@ -95,9 +95,73 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "4:203873894602726841",
+      "lastPropertyId": "3:6064114534749341459",
+      "name": "PhonePaired",
+      "properties": [
+        {
+          "id": "1:670291557073058925",
+          "name": "id"
+        },
+        {
+          "id": "2:4130012667907623560",
+          "name": "phoneImei"
+        },
+        {
+          "id": "3:6064114534749341459",
+          "name": "beaconSerialNumber"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:5902136105206079321",
+      "lastPropertyId": "9:5965727967930356954",
+      "name": "Locations",
+      "properties": [
+        {
+          "id": "1:1431511442884788704",
+          "name": "id"
+        },
+        {
+          "id": "2:4738550468952916993",
+          "name": "locationId"
+        },
+        {
+          "id": "3:5441320361011889972",
+          "name": "locationName"
+        },
+        {
+          "id": "4:7116507555398927421",
+          "name": "latitude"
+        },
+        {
+          "id": "5:2964377871136762164",
+          "name": "longitude"
+        },
+        {
+          "id": "6:6420193967003500236",
+          "name": "radiusMeters"
+        },
+        {
+          "id": "7:8068624615052241129",
+          "name": "startFlag"
+        },
+        {
+          "id": "8:5945051546554756163",
+          "name": "interimFlag"
+        },
+        {
+          "id": "9:5965727967930356954",
+          "name": "endFlag"
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "3:2397613807633497897",
+  "lastEntityId": "5:5902136105206079321",
   "lastIndexId": "1:3919819620744557145",
   "lastRelationId": "1:2060485091927323520",
   "lastSequenceId": "0:0",

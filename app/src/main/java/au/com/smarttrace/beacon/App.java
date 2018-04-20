@@ -14,6 +14,7 @@ import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.db.MyObjectBox;
 import au.com.smarttrace.beacon.service.BeaconJobCreator;
+import au.com.smarttrace.beacon.service.NetworkUtils;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
 import io.objectbox.android.AndroidObjectBrowser;
@@ -61,6 +62,9 @@ public class App extends Application implements BootstrapNotifier {
         super.onCreate();
         Logger.d("Application Started!");
 
+        NetworkUtils.init(this);
+        SharedPref.init(getApplicationContext());
+
         //start Android-job
         JobManager.create(this).addJobCreator(new BeaconJobCreator());
 
@@ -72,7 +76,7 @@ public class App extends Application implements BootstrapNotifier {
         }
         Logger.d("Using ObjectBox " + BoxStore.getVersion() + " (" + BoxStore.getVersionNative() + ")");
 
-        SharedPref.init(getApplicationContext());
+
 
         BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
         // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
@@ -111,9 +115,9 @@ public class App extends Application implements BootstrapNotifier {
         Logger.i("Beacon enter region ... ");
         if (!isActivityVisible() && !isServiceRunning()) {
             //start activity
-//            Intent i = new Intent(this, SplashActivity.class);
-//            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//            this.startActivity(i);
+            Intent i = new Intent(this, SplashActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            this.startActivity(i);
         }
     }
 
