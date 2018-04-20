@@ -20,9 +20,10 @@ public class BeaconDataJob extends Job {
 
     public static void scheduleJob() {
         new JobRequest.Builder(DATA_JOB_TAG)
-                .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
-                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
-                .setUpdateCurrent(true)
+//                .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
+//                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
+//                .setUpdateCurrent(true)
+                .startNow()
                 .build()
                 .schedule();
     }

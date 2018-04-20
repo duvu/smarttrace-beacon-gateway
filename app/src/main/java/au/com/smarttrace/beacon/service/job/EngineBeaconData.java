@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.location.Location;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.NetworkOnMainThreadException;
 import android.support.annotation.WorkerThread;
@@ -28,9 +30,15 @@ import java.util.TimerTask;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.model.BeaconPackage;
+import au.com.smarttrace.beacon.model.BroadcastEvent;
+import au.com.smarttrace.beacon.net.DataUtil;
+import au.com.smarttrace.beacon.net.WebService;
+import au.com.smarttrace.beacon.service.NetworkUtils;
 
 public class EngineBeaconData {
     private Context mContext;
@@ -64,13 +72,6 @@ public class EngineBeaconData {
         mLocationRequest.setSmallestDisplacement(AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE);
 
         try {
-            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
-        } catch (SecurityException unlikely) {
-            Logger.e("Lost location permission. Could not request update", unlikely);
-        }
-
-
-        try {
             if (_BroadcastService == null) {
                 _BroadcastService = new BroadcastService();
             }
@@ -98,6 +99,19 @@ public class EngineBeaconData {
             throw new NetworkOnMainThreadException();
         }
 
+        startScanBLE();
+        startScanLocation();
+
+        Executors.newScheduledThreadPool(2).schedule(new Runnable() {
+            @Override
+            public void run() {
+                broadcastToServer();
+            }
+        }, 5, TimeUnit.SECONDS);
+        return true;
+    }
+
+    private void startScanBLE() {
         try {
             if(_Timer != null)
                 _Timer.cancel();
@@ -111,14 +125,29 @@ public class EngineBeaconData {
                                 _BroadcastService.StartScan();
                             }
                         }
-                    }catch (Exception ex){}
+                    } catch (Exception ex){}
                 }
             };
             _Timer.schedule(timerTask, 1000, 500);
         } catch (Exception ex){
-            return false;
+            return;
         }
-        return true;
+    }
+
+    private void startScanLocation() {
+        HandlerThread hThread = new HandlerThread("background_job_smarttrace_io");
+        hThread.start();
+        Handler mHandler = new Handler(hThread.getLooper());
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+                } catch (SecurityException unlikely) {
+                    Logger.e("Lost location permission. Could not request update", unlikely);
+                }
+            }
+        });
     }
 
 
@@ -137,31 +166,16 @@ public class EngineBeaconData {
             for (int i = 0; i < _DeviceList.size(); i++) {
                 Device item = _DeviceList.get(i);
                 if (item.SN.equals(d.SN)){
+                    //update
+                    item.fromScanData(ble);
+                    _DeviceList.set(i, item);
+
                     flag = false;
                 }
             }
             if(flag){
                 _DeviceList.add(d);
             }
-
-//            Date now = new Date();
-//            long Totaltime = (now.getTime() - LastUpdateTime.getTime());
-//            if (Totaltime > 3000) {
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        synchronized (this) {
-//                            String printText = "";
-//                            for (int i = 0; i < _DeviceList.size(); i++) {
-//                                printText += "" + (i+1) + "、SN:" + _DeviceList.get(i).SN +" Temperature:" + (_DeviceList.get(i).Temperature != - 1000 ? _DeviceList.get(i).Temperature : "--") +"℃  Humidity:" + (_DeviceList.get(i).Humidity != -1000 ? _DeviceList.get(i).Humidity : "--") + "% Battery:"+_DeviceList.get(i).Battery+"%";
-//                                printText += "\n\n";
-//                            }
-//                            txtPrint.setText(printText);
-//                        }
-//                    }
-//                });
-//                LastUpdateTime = now;
-//            }
         }catch (Exception ex){
             Log.e("home", "AddOrUpdate:" + ex.toString());
         }
@@ -198,4 +212,34 @@ public class EngineBeaconData {
 
         }
     };
+
+    //broadcastToServer
+    private void broadcastToServer() {
+        Logger.i("[> BackgroundJob]");
+        BroadcastEvent be = new BroadcastEvent();
+        be.setLocation(mLastKnownLocation);
+        be.setCellTowerList(NetworkUtils.getAllCellInfo());
+        be.setGatewayId(NetworkUtils.getGatewayId());
+
+        List<BeaconPackage> lbp = new ArrayList<>();
+        for (Device d : _DeviceList) {
+            BeaconPackage bp = new BeaconPackage();
+            bp.setFirmware(d.Firmware);
+            bp.setDistance(0.0);
+            bp.setHumidity(d.Humidity);
+            bp.setModel(d.HardwareModel);
+            bp.setBatteryLevel(d.Battery);
+            bp.setPhoneBatteryLevel(d.Battery);
+            bp.setTemperature(d.Temperature);
+            bp.setSerialNumber(d.SN);
+            bp.setBluetoothAddress(d.MacAddress);
+            bp.setName(d.Name);
+            bp.setRssi(d.RSSI);
+            bp.setTimestamp(d.LastScanTime.getTime());
+
+            lbp.add(bp);
+        }
+        be.setBeaconPackageList(lbp);
+        WebService.sendEvent(DataUtil.formatData(be));
+    }
 }

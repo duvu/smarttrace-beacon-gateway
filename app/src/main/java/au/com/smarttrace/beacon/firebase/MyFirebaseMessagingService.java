@@ -1,6 +1,7 @@
 package au.com.smarttrace.beacon.firebase;
 
 import android.content.Intent;
+import android.support.v4.app.NotificationManagerCompat;
 
 import com.evernote.android.job.JobManager;
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -8,6 +9,7 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.service.job.BeaconDataJob;
 import au.com.smarttrace.beacon.service.job.BeaconSyncJob;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 
@@ -25,6 +27,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
             BeaconSyncJob.scheduleJobStartNow();
             BeaconSyncJob.scheduleJob();
+
+
+            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_JOB_TAG);
+            BeaconDataJob.scheduleJob();
         }
 
 //        // ...
