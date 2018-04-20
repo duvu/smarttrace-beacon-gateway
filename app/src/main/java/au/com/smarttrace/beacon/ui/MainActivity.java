@@ -23,6 +23,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
@@ -35,13 +36,19 @@ import android.widget.Toast;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BeaconPackage;
 
+import com.evernote.android.job.JobManager;
+import com.evernote.android.job.JobRequest;
+
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
+import java.util.Set;
 
 import au.com.smarttrace.beacon.App;
+import au.com.smarttrace.beacon.service.BeaconSyncJob;
+import au.com.smarttrace.beacon.service.CheckServiceRunningJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
@@ -51,7 +58,7 @@ import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.service.BeaconService;
 
-public class MainActivity extends BaseActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String[] INITIAL_PERMS={
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -118,18 +125,21 @@ public class MainActivity extends BaseActivity implements NavigationView.OnNavig
         mMainScreenView = findViewById(R.id.main_screen);
         registerEventBus();
 
-        if (getIntent().getBooleanExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, false)) {
-            //--
-            Logger.i("[-A-] Started on-boot");
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    //-- unbind service and finish this activity
-                    unbindService(mConnection);
-                    finish();
-                }
-            }, 1000);
+
+
+        Set<JobRequest> sjr = JobManager.instance().getAllJobRequestsForTag(BeaconSyncJob.JOBS_TAG_PERIODIC);
+        if (sjr.size() > 0) {
+            JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG_PERIODIC);
         }
+
+        Set<JobRequest> sjr1 = JobManager.instance().getAllJobRequestsForTag(BeaconSyncJob.JOBS_TAG);
+        if (sjr1.size() > 0) {
+            JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
+        }
+
+//        BeaconSyncJob.scheduleJob(10000);
+//        CheckServiceRunningJob.scheduleJobPeriodic();
+
     }
 
     @Override

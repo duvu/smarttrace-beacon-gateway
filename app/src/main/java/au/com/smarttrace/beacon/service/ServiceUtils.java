@@ -38,18 +38,26 @@ import okhttp3.Response;
 
 public class ServiceUtils {
     private static final String KEY_REQUESTING_LOCATION_UPDATES = "requesting_location_updates";
-    private static final Gson gson = new Gson();
+
     public static boolean isGooglePlayServicesAvailable(Context ctx){
-        boolean isGooglePlayServicesAvailable=false;
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M
-                || (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
-            int resultCode = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ctx);
-            if (ConnectionResult.SUCCESS == resultCode) {
-                isGooglePlayServicesAvailable=true;
-            }
+        int resultCode = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ctx);
+        if (ConnectionResult.SUCCESS == resultCode) {
+            return true;
+        } else {
+            return false;
         }
-        return isGooglePlayServicesAvailable;
+
+//        boolean isGooglePlayServicesAvailable=false;
+//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+//                || (ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+//                || ActivityCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
+//
+//            int resultCode = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ctx);
+//            if (ConnectionResult.SUCCESS == resultCode) {
+//                isGooglePlayServicesAvailable=true;
+//            }
+//        }
+//        return isGooglePlayServicesAvailable;
     }
 
     public static boolean requestingLocationUpdates(Context context) {

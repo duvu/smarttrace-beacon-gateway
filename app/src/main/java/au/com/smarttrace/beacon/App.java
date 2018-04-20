@@ -2,10 +2,8 @@ package au.com.smarttrace.beacon;
 
 import android.app.Application;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
-import com.orhanobut.hawk.Hawk;
+import com.evernote.android.job.JobManager;
 
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
@@ -15,7 +13,7 @@ import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.model.MyObjectBox;
-import au.com.smarttrace.beacon.service.BeaconService;
+import au.com.smarttrace.beacon.service.BeaconJobCreator;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
 import io.objectbox.android.AndroidObjectBrowser;
@@ -62,6 +60,10 @@ public class App extends Application implements BootstrapNotifier {
     public void onCreate() {
         super.onCreate();
         Logger.d("Application Started!");
+
+        //start Android-job
+        JobManager.create(this).addJobCreator(new BeaconJobCreator());
+
         AppConfig.populateSetting(App.this);
         boxStore = MyObjectBox.builder().androidContext(App.this).build();
 
@@ -109,9 +111,9 @@ public class App extends Application implements BootstrapNotifier {
         Logger.i("Beacon enter region ... ");
         if (!isActivityVisible() && !isServiceRunning()) {
             //start activity
-            Intent i = new Intent(this, SplashActivity.class);
-            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            this.startActivity(i);
+//            Intent i = new Intent(this, SplashActivity.class);
+//            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            this.startActivity(i);
         }
     }
 

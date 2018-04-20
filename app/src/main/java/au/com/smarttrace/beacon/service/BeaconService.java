@@ -67,7 +67,6 @@ import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.gson.Gson;
 
 import org.altbeacon.beacon.Beacon;
@@ -95,10 +94,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.firebase.ToFirebase;
@@ -139,7 +138,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public static final String ACTION_BROADCAST = PACKAGE_NAME + ".broadcast";
     public static final String EXTRA_LOCATION = PACKAGE_NAME + ".location";
 
-    private boolean mChangingConfiguration = false;
     private NotificationManager mNotificationManager;
 
     private LocationRequest mLocationRequest;
@@ -191,12 +189,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private Box<EventData> eventBox;
 
-    //private boolean hasValidBeaconData = false;
-    //private boolean hasValidLocationData = false;
-
     private final IBinder mBinder = new LocalBinder();
-
-    private final Gson gson = new Gson();
 
     private int timesOfDataUpdated = 0;
     private boolean hasGoogleClient = false;
@@ -242,6 +235,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             createLocationRequest();
             hasGoogleClient = true;
         }
+
+        Logger.i("Starting foreground service");
+        startForeground(NOTIFICATION_ID, getNotification());
 
         handlerThread = new HandlerThread(AppConfig.TAG);
         handlerThread.start();
@@ -374,11 +370,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             stopSelf();
         }
 
-        boolean startFromBoot = intent.getBooleanExtra(EXTRA_STARTED_FROM_BOOTSTRAP, false);
-        if (startFromBoot) {
-            startForeground(NOTIFICATION_ID, getNotification());
-        }
-
         //-- load Shipment Location
         updateNewShipmentLocations(true);
         if (userTimezone == null) {
@@ -400,14 +391,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        mChangingConfiguration = true;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         Logger.i("onBind");
-        stopForeground(true);
-        mChangingConfiguration = false;
+        //stopForeground(true);
         return mBinder;
     }
 
@@ -415,19 +404,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public void onRebind(Intent intent) {
         // Called when a client returns to the foreground and binds once again with this service. The
         // service should cease to be a foreground service when that happends.
-        stopForeground(true);
-        mChangingConfiguration = false;
+        //stopForeground(true);
         super.onRebind(intent);
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Logger.i("onUnbind: " + mChangingConfiguration);
+        Logger.i("onUnbind");
 
         // Called when the last client unibinds from this service. If this method is called due to a
         // configuration change in MainActivity, we do nothing. Otherwise, we make this service a foreground service.
-        Logger.i("Starting foreground service");
-        startForeground(NOTIFICATION_ID, getNotification());
+//        Logger.i("Starting foreground service");
+//        startForeground(NOTIFICATION_ID, getNotification());
         return true;
     }
 
@@ -1084,18 +1072,19 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Intent intent = new Intent(this, BeaconService.class);
         CharSequence text = ServiceUtils.getLocationText(mLocation);
 
-        // Extra to help us figure out if we arrived in onStartCommand via the notification or not
-        intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION, true);
-
+//        if (exit) {
+            // Extra to help us figure out if we arrived in onStartCommand via the notification or not
+//             intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION, true);
+//        }
         // The PendingIntent that leads to a call to onStartCommand() in this service
-        PendingIntent servicePendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+//        PendingIntent servicePendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // The PendingIntent to launch activity
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .addAction(R.drawable.ic_launch, getString(R.string.launch_activity), activityPendingIntent)
-                .addAction(R.drawable.ic_cancel, getString(R.string.cancel_service), servicePendingIntent)
+                //.addAction(R.drawable.ic_cancel, getString(R.string.cancel_service), servicePendingIntent)
                 .setContentText(text)
                 .setContentTitle(ServiceUtils.getLocationTitle(this))
                 .setOngoing(true)
