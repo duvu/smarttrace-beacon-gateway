@@ -55,7 +55,7 @@ public class NetworkUtils {
 
     public static boolean isInternetAvailable() {
         try {
-            InetAddress ipAddr = InetAddress.getByName("google.com");
+            InetAddress ipAddr = InetAddress.getByName("smarttrace.com.au");
             return !ipAddr.equals("");
         } catch (Exception e) {
             return false;

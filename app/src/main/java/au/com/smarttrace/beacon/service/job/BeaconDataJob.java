@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 public class BeaconDataJob extends Job {
     public static final String DATA_JOB_TAG = "beacon_data_job_tag";
+    public static final String DATA_ONCE_JOB_TAG = "beacon_data_once_job_tag";
 
 
     @NonNull
@@ -19,11 +20,18 @@ public class BeaconDataJob extends Job {
     }
 
     public static void scheduleJob() {
-        new JobRequest.Builder(DATA_JOB_TAG)
-//                .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
-//                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
-//                .setUpdateCurrent(true)
+        new JobRequest.Builder(DATA_ONCE_JOB_TAG)
+                .setUpdateCurrent(true)
                 .startNow()
+                .build()
+                .schedule();
+    }
+
+    public static void scheduleJobPeriodic() {
+        new JobRequest.Builder(DATA_JOB_TAG)
+                .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
+                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
+                .setUpdateCurrent(true)
                 .build()
                 .schedule();
     }

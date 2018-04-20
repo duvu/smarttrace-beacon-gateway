@@ -46,6 +46,7 @@ import java.util.List;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.service.job.BeaconDataJob;
 import au.com.smarttrace.beacon.service.job.BeaconSyncJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.R;
@@ -128,8 +129,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
             startService(intent1);
             JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
+            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_JOB_TAG);
+            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_ONCE_JOB_TAG);
+
             BeaconSyncJob.scheduleJob();
             BeaconSyncJob.scheduleJobStartNow();
+            BeaconDataJob.scheduleJobPeriodic();
         }
     }
 

@@ -29,7 +29,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             BeaconSyncJob.scheduleJob();
 
 
-            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_JOB_TAG);
+            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_ONCE_JOB_TAG);
             BeaconDataJob.scheduleJob();
         }
 

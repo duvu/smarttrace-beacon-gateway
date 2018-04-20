@@ -40,7 +40,7 @@ public class BeaconPackage extends AbstractDataPackage{
         dl.setTimestamp(now);
         dl.readingAge = 0L;
         dl.setBatteryLevel(beacon.getTxPower());
-        dl.distance = beacon.getDistance();
+        dl.distance = MeasuringDistance.calculateAccuracy(-60, beacon.getRssi());//beacon.getDistance();
         if (beacon.getDataFields().size() > 2) {
             dl.temperature = beacon.getDataFields().get(1) / 100.00;
             dl.humidity = beacon.getDataFields().get(2) / 100.00;
@@ -82,7 +82,7 @@ public class BeaconPackage extends AbstractDataPackage{
         //-- update timestamp
         this.setTimestamp(now);
         this.setBatteryLevel(beacon.getTxPower());
-        this.distance = beacon.getDistance();
+        this.distance = MeasuringDistance.calculateAccuracy(-60, beacon.getRssi()); //beacon.getDistance();
         if (beacon.getDataFields().size() > 2) {
             this.temperature = beacon.getDataFields().get(1) / 100.00;
             this.humidity = beacon.getDataFields().get(2) / 100.00;

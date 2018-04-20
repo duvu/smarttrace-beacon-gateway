@@ -17,6 +17,7 @@ public class BeaconJobCreator implements JobCreator {
             case BeaconSyncJob.JOBS_TAG:
                 return new BeaconSyncJob();
             case BeaconDataJob.DATA_JOB_TAG:
+            case BeaconDataJob.DATA_ONCE_JOB_TAG:
                 return new BeaconDataJob();
             default:
                 return null;

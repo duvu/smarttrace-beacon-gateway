@@ -226,7 +226,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     //--Upload data control
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
     private ScheduledFuture<?> sHandler;
     private final Runnable uploader = new Runnable() {
         @Override
@@ -384,8 +384,20 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
     }
 
+    private ScheduledFuture locationHandler;
     private void startLocationUpdate() {
         Logger.i("[+] startLocationUpdate: " + hasGoogleClient);
+        locationHandler = scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+                updateLoc();
+                Looper.loop();
+            }
+        }, 0, TimeUnit.SECONDS);
+    }
+
+    private void updateLoc() {
         if (hasGoogleClient) {
             try {
                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
@@ -453,12 +465,13 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private void broadcastData() {
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
-        //FirebaseDatabase.getInstance().getReference().setValue("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
+
+        checkAndCreateShipment(getAll());
+
         List<BeaconPackage> dataList = getDataPackageList();
 
         //warning if no location:
         if (mLocation == null) {
-
             Notification notification = new NotificationCompat.Builder(this, getString(R.string.default_notification_channel_id))
                     .setContentTitle("No Location!")
                     .setContentText("No Location Fixed")
@@ -483,8 +496,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             _mShouldCreateOnBoot = false;
             SharedPref.saveOnBoot(false);
         }
-        checkAndCreateShipment(dataList);
-
         List<CellTower> cellTowerList = NetworkUtils.getAllCellInfo();
         BroadcastEvent event = new BroadcastEvent();
         event.setBeaconPackageList(dataList);
@@ -568,7 +579,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             Map.Entry entry = (Map.Entry) o;
             String key = (String)entry.getKey();
             BeaconPackage data = (BeaconPackage) entry.getValue();
-            if (isPaired(data)) {
+            if (isPaired(data) && !data.isShouldCreateOnBoot()) {
                 dataList.add(data);
                 deviceMap.get(data.getBluetoothAddress()).setShouldUpload(false); // to prevent repeat upload
 
@@ -608,10 +619,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         if (updatingToken || !NetworkUtils.isInternetAvailable()) return;
         int idx = 0;
         for (final BeaconPackage data: dataList) {
-            Logger.i("ShipmentCreated #" + (idx++));
-            Logger.i("[" + data.getSerialNumber() +"] count: " + data.getReadingCount() + ", isStartLocation: " + isAtStartLocations() + ", isShouldCreate: " + data.isShouldCreateShipment() + ", [+] foreCreate: " + data.isForedCreateNew() + ", onBoot: " + data.isShouldCreateOnBoot());
-            //if ((data.isShouldCreateOnBoot() && isAtStartLocations()) || (data.isForedCreateNew() && isAtStartLocations())) {
-            if ((data.isShouldCreateOnBoot() && isAtStartLocations())) {
+            if ((data.isShouldCreateOnBoot() && isAtStartLocations() && isPaired(data))) {
 
                 WebService.createNewAutoSthipment(data.getSerialNumberString(), currentToken, new Callback() {
                     @Override
@@ -627,6 +635,22 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                         deviceMap.get(data.getBluetoothAddress()).setShouldCreateShipment(false);
                         deviceMap.get(data.getBluetoothAddress()).setShouldCreateOnBoot(false);
                         Logger.i("[ShipmentCreated+] " + data.getSerialNumber());
+
+
+                        Notification notification = new NotificationCompat.Builder(BeaconService.this, getString(R.string.default_notification_channel_id))
+                                .setContentTitle(data.getSerialNumberString() + "-Shipment++")
+                                .setContentText("ShipmentCreated")
+                                .setChannelId(getString(R.string.default_notification_channel_id))
+                                .setSound(null)
+                                .setTimeoutAfter(60*1000)
+                                .setSmallIcon(R.drawable.notification)
+                                .setShowWhen(true)
+                                .setColor(Color.GREEN)
+                                .setLocalOnly(true)
+                                .build();
+
+                        NotificationManagerCompat.from(BeaconService.this).notify(new Random().nextInt(), notification);
+
                     }
                 });
             } else {
@@ -706,7 +730,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
      */
     public void stopLocationUpdate() {
         Logger.i("[+] stopLocationUpdate");
-
+        locationHandler.cancel(true);
         try {
             if (hasGoogleClient) {
                 mFusedLocationClient.removeLocationUpdates(mLocationCallback);

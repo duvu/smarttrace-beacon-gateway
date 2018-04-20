@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.NetworkOnMainThreadException;
+import android.support.annotation.NonNull;
 import android.support.annotation.WorkerThread;
 import android.util.Log;
 import android.widget.Toast;
@@ -21,6 +22,8 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -32,16 +35,23 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.db.PhonePaired;
+import au.com.smarttrace.beacon.db.PhonePaired_;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
+import au.com.smarttrace.beacon.model.MeasuringDistance;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
 import au.com.smarttrace.beacon.service.NetworkUtils;
+import io.objectbox.Box;
+import io.objectbox.query.Query;
 
 public class EngineBeaconData {
     private Context mContext;
+    private Box<PhonePaired> pairedBox;
 
     private LocationRequest mLocationRequest;
     private FusedLocationProviderClient mFusedLocationClient;
@@ -51,9 +61,7 @@ public class EngineBeaconData {
 
     private BluetoothAdapter _BluetoothAdapter;
     private BroadcastService _BroadcastService;
-    private boolean _IsInit = false;
     private List<Device> _DeviceList = new ArrayList<>();
-    private Timer _Timer;
 
     EngineBeaconData(Context context) {
         mContext = context;
@@ -66,27 +74,11 @@ public class EngineBeaconData {
             }
         };
         mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(AppConfig.UPDATE_INTERVAL / 5);
-        mLocationRequest.setFastestInterval(AppConfig.FASTEST_UPDATE_INTERVAL / 2);
+        mLocationRequest.setInterval(10*1000);
+        mLocationRequest.setFastestInterval(5*1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setSmallestDisplacement(AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE);
 
-        try {
-            if (_BroadcastService == null) {
-                _BroadcastService = new BroadcastService();
-            }
-            final BluetoothManager bluetoothManager =
-                    (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-            _BluetoothAdapter = bluetoothManager.getAdapter();
-            if (_BroadcastService.Init(_BluetoothAdapter, _LocalBluetoothCallBack)) {
-                _IsInit = true;
-            } else {
-                _IsInit = false;
-                return;
-            }
-        } catch (Exception ex) {
-        }
-
+        pairedBox = ((App) mContext.getApplicationContext()).getBoxStore().boxFor(PhonePaired.class);
     }
 
     private void onUpdateLocation(Location lastLocation) {
@@ -99,55 +91,81 @@ public class EngineBeaconData {
             throw new NetworkOnMainThreadException();
         }
 
-        startScanBLE();
-        startScanLocation();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+        final ScheduledFuture scheduledFuture = scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+                try {
+                    if (_BroadcastService == null) {
+                        _BroadcastService = new BroadcastService();
+                    }
+                    final BluetoothManager bluetoothManager =
+                            (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+                    _BluetoothAdapter = bluetoothManager.getAdapter();
+                    if (_BroadcastService.Init(_BluetoothAdapter, _LocalBluetoothCallBack)) {
+                    } else {
+                        return;
+                    }
+                } catch (Exception ex) {
+                }
 
-        Executors.newScheduledThreadPool(2).schedule(new Runnable() {
+                _BroadcastService.StartScan();
+                Looper.loop();
+            }
+        }, 0, TimeUnit.SECONDS);
+
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                _BroadcastService.StopScan();
+                scheduledFuture.cancel(true);
+            }
+        }, 10, TimeUnit.SECONDS);
+
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+                startScanLocation();
+                Looper.loop();
+            }
+        }, 0, TimeUnit.SECONDS);
+
+        Executors.newScheduledThreadPool(1).schedule(new Runnable() {
             @Override
             public void run() {
                 broadcastToServer();
             }
-        }, 5, TimeUnit.SECONDS);
+        }, 30, TimeUnit.SECONDS);
         return true;
     }
 
-    private void startScanBLE() {
+    private void startScanLocation() {
         try {
-            if(_Timer != null)
-                _Timer.cancel();
-            _Timer = new Timer();
-            TimerTask timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        synchronized (this) {
-                            if (_IsInit) {
-                                _BroadcastService.StartScan();
-                            }
-                        }
-                    } catch (Exception ex){}
-                }
-            };
-            _Timer.schedule(timerTask, 1000, 500);
-        } catch (Exception ex){
-            return;
+            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
+        } catch (SecurityException unlikely) {
+            Logger.e("Lost location permission. Could not request update", unlikely);
         }
+        getLastLocation();
     }
 
-    private void startScanLocation() {
-        HandlerThread hThread = new HandlerThread("background_job_smarttrace_io");
-        hThread.start();
-        Handler mHandler = new Handler(hThread.getLooper());
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
-                } catch (SecurityException unlikely) {
-                    Logger.e("Lost location permission. Could not request update", unlikely);
-                }
-            }
-        });
+    private void getLastLocation() {
+        try {
+            mFusedLocationClient.getLastLocation()
+                    .addOnCompleteListener(new OnCompleteListener<Location>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Location> task) {
+                            if (task.isSuccessful() && task.getResult() != null) {
+                                mLastKnownLocation = task.getResult();
+                            } else {
+                                Logger.i("[GPS] Failed to get location.");
+                            }
+                        }
+                    });
+        } catch (SecurityException unlikely) {
+            Logger.i("[GPS] Lost location permission." + unlikely);
+        }
     }
 
 
@@ -225,7 +243,7 @@ public class EngineBeaconData {
         for (Device d : _DeviceList) {
             BeaconPackage bp = new BeaconPackage();
             bp.setFirmware(d.Firmware);
-            bp.setDistance(0.0);
+            bp.setDistance(MeasuringDistance.calculateAccuracy(-60, d.RSSI));
             bp.setHumidity(d.Humidity);
             bp.setModel(d.HardwareModel);
             bp.setBatteryLevel(d.Battery);
@@ -236,10 +254,21 @@ public class EngineBeaconData {
             bp.setName(d.Name);
             bp.setRssi(d.RSSI);
             bp.setTimestamp(d.LastScanTime.getTime());
-
-            lbp.add(bp);
+            if (isPaired(bp)) {
+                lbp.add(bp);
+            }
         }
         be.setBeaconPackageList(lbp);
         WebService.sendEvent(DataUtil.formatData(be));
+    }
+
+    private boolean isPaired(BeaconPackage data) {
+        Logger.i("[>]Checking if paired");
+        Query<PhonePaired> query = pairedBox.query()
+                .equal(PhonePaired_.phoneImei, NetworkUtils.getGatewayId())
+                .equal(PhonePaired_.beaconSerialNumber, data.getSerialNumberString())
+                .build();
+        Logger.i("[>... isPaired: ] " + (query.findFirst() != null));
+        return query.findFirst() != null;
     }
 }
