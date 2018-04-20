@@ -1,15 +1,32 @@
 package au.com.smarttrace.beacon.firebase;
 
+import android.content.Intent;
+
+import com.evernote.android.job.JobManager;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.service.job.BeaconSyncJob;
+import au.com.smarttrace.beacon.ui.SplashActivity;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
 
-        Logger.i("Get message: " + remoteMessage.getFrom());
+        Logger.i("[MyFirebaseMessagingService >]: " + remoteMessage.getFrom());
+        if (!App.isServiceRunning()) {
+            Intent i = new Intent(this, SplashActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(i);
+        } else {
+            JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
+            BeaconSyncJob.scheduleJobStartNow();
+            BeaconSyncJob.scheduleJob();
+        }
+
 //        // ...
 //
 //        // TODO(developer): Handle FCM messages here.

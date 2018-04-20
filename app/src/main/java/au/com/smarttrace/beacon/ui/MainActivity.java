@@ -37,18 +37,16 @@ import android.widget.Toast;
 //import com.TZONE.Bluetooth.Temperature.Model.BeaconPackage;
 
 import com.evernote.android.job.JobManager;
-import com.evernote.android.job.JobRequest;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
-import java.util.Set;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.service.BeaconSyncJob;
+import au.com.smarttrace.beacon.service.job.BeaconSyncJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;

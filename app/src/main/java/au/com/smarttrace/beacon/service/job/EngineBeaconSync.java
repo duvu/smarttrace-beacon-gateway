@@ -1,4 +1,4 @@
-package au.com.smarttrace.beacon.service;
+package au.com.smarttrace.beacon.service.job;
 
 import android.content.Context;
 import android.content.Intent;
@@ -27,6 +27,7 @@ import au.com.smarttrace.beacon.net.model.LocationBody;
 import au.com.smarttrace.beacon.net.model.LocationResponse;
 import au.com.smarttrace.beacon.net.model.PairedBeaconResponse;
 import au.com.smarttrace.beacon.net.model.UserResponse;
+import au.com.smarttrace.beacon.service.NetworkUtils;
 import io.objectbox.Box;
 import io.objectbox.query.Query;
 import io.objectbox.query.QueryBuilder;
@@ -34,9 +35,9 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
 
-public class BeaconSyncEngine {
+public class EngineBeaconSync {
     private Context mContext;
-    public BeaconSyncEngine(Context context) {
+    public EngineBeaconSync(Context context) {
         mContext = context;
     }
 

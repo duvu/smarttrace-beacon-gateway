@@ -1,4 +1,4 @@
-package au.com.smarttrace.beacon.service;
+package au.com.smarttrace.beacon.service.job;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -25,7 +25,7 @@ public class BeaconSyncJob extends Job {
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        boolean success = (new BeaconSyncEngine(getContext())).syncPairedBeacons();
+        boolean success = (new EngineBeaconSync(getContext())).syncPairedBeacons();
 
         PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, new Intent(getContext(), MainActivity.class), 0);
 

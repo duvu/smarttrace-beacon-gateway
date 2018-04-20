@@ -179,7 +179,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                     onUpdateLocation(locationResult.getLastLocation());
                 }
             };
-            createLocationRequest();
+            mLocationRequest = LocationRequest.create();
+            mLocationRequest.setInterval(AppConfig.UPDATE_INTERVAL/5);
+            mLocationRequest.setFastestInterval(AppConfig.FASTEST_UPDATE_INTERVAL/2);
+            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+            mLocationRequest.setSmallestDisplacement(AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE);
+
             hasGoogleClient = true;
         }
 
@@ -200,6 +205,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
         registerEventBus();
         String token = FirebaseInstanceId.getInstance().getToken();
+
         Logger.i("FirebaseToken: " + token);
 
         //-- init database;
@@ -210,6 +216,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         mAuth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance();
         ref = database.getReference(NetworkUtils.getGatewayId());
+        ref.child("TOKEN").setValue(token);
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
@@ -229,7 +236,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
     };
 
-    private void uploadDataToServer() {
+    public void uploadDataToServer() {
         Logger.i("[+] uploadDataToServer");
         if (sHandler != null) {
             sHandler.cancel(true);
@@ -683,17 +690,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         } catch (RemoteException e) {
             Logger.i("[BLE] error!");
         }
-    }
-
-    /**
-     * Sets the location request parameters.
-     */
-    private void createLocationRequest() {
-        mLocationRequest = LocationRequest.create();
-        mLocationRequest.setInterval(AppConfig.UPDATE_INTERVAL/5);
-        mLocationRequest.setFastestInterval(AppConfig.FASTEST_UPDATE_INTERVAL/2);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setSmallestDisplacement(AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE);
     }
 
     public void onUpdateLocation(Location location) {

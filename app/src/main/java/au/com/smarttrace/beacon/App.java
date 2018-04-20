@@ -117,6 +117,7 @@ public class App extends Application implements BootstrapNotifier {
             //start activity
             Intent i = new Intent(this, SplashActivity.class);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             this.startActivity(i);
         }
     }
