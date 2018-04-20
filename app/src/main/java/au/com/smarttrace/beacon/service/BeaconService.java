@@ -2,9 +2,7 @@ package au.com.smarttrace.beacon.service;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.ActivityManager;
-import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -29,7 +27,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.RemoteException;
-import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -59,7 +56,6 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -67,7 +63,6 @@ import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.gson.Gson;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -100,13 +95,13 @@ import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
+import au.com.smarttrace.beacon.db.SensorData;
 import au.com.smarttrace.beacon.firebase.ToFirebase;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
-import au.com.smarttrace.beacon.model.EventData;
+import au.com.smarttrace.beacon.db.EventData;
 import au.com.smarttrace.beacon.model.ExitEvent;
-import au.com.smarttrace.beacon.model.SensorData;
 import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.model.UpdateToken;
 import au.com.smarttrace.beacon.net.DataUtil;
@@ -130,27 +125,19 @@ import static au.com.smarttrace.beacon.AppConfig.NOTIFICATION_ID;
 
 public class BeaconService extends Service implements BeaconConsumer, SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String PACKAGE_NAME = "au.com.smarttrace.beacon";
-    //private static final String CHANNEL_ID = "channel_01";
-
     private static final String EXTRA_STARTED_FROM_NOTIFICATION = PACKAGE_NAME + ".started_from_notification";
     public static final String EXTRA_STARTED_FROM_BOOTSTRAP = PACKAGE_NAME + ".started_from_bootstrap";
 
     public static final String ACTION_BROADCAST = PACKAGE_NAME + ".broadcast";
     public static final String EXTRA_LOCATION = PACKAGE_NAME + ".location";
 
-    private NotificationManager mNotificationManager;
-
     private LocationRequest mLocationRequest;
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
     private Handler mServiceHandler;
-    private Handler mHandler = new Handler();
-    private AlarmManager nextPointAlarmManager;
     private Location mLocation;
 
     private TimeZone userTimezone = null;
-
-    private FirebaseAnalytics mFirebaseAnalytics;
 
     boolean _mShouldCreateOnBoot = false;
     private boolean updatingToken = false;
@@ -185,8 +172,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private LocationManager towerLocationManager;
     private GeneralLocationListener locationListener;
 
-    private TelephonyManager mTelephonyManager;
-
     private Box<EventData> eventBox;
 
     private final IBinder mBinder = new LocalBinder();
@@ -210,9 +195,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public void onCreate() {
         Logger.i("[BeaconService] onCreated");
-
-        nextPointAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-
         mBeaconManager.setBackgroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL / 5);
         mBeaconManager.setBackgroundScanPeriod(AppConfig.UPDATE_PERIOD);
         mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL / 5);
@@ -220,8 +202,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         mBeaconManager.bind(this);
 
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         if (ServiceUtils.isGooglePlayServicesAvailable(this)) {
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -243,7 +223,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         handlerThread.start();
         mServiceHandler = new Handler(handlerThread.getLooper());
         mServiceHandler = new Handler();
-        mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         // Android O requires a Notification Channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -263,7 +243,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         eventBox = ((App) getApplicationContext()).getBoxStore().boxFor(EventData.class);
         mAuth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance();
-        ref = database.getReference(getGatewayId());
+        ref = database.getReference(NetworkUtils.getGatewayId());
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
@@ -336,12 +316,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     //--End
-
-    @TargetApi(Build.VERSION_CODES.M)
-    private void setExactAndAllowWhileIdle(PendingIntent pendingIntent) {
-        nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 10 * 1000, pendingIntent);
-    }
-    //----
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -469,12 +443,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private void startLocationUpdate() {
         Logger.d("[+] startLocationUpdate: " + hasGoogleClient);
-//        if (handlerThread == null) {
-//            handlerThread = new HandlerThread(AppConfig.TAG);
-//            handlerThread.start();
-//        }
-
-        //Looper.prepare();
         if (hasGoogleClient) {
             try {
                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
@@ -564,11 +532,11 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
         checkAndCreateShipment(dataList);
 
-        List<CellTower> cellTowerList = getAllCellInfo();
+        List<CellTower> cellTowerList = NetworkUtils.getAllCellInfo();
         BroadcastEvent event = new BroadcastEvent();
         event.setBeaconPackageList(dataList);
         event.setLocation(mLocation);
-        event.setGatewayId(getGatewayId());
+        event.setGatewayId(NetworkUtils.getGatewayId());
         event.setCellTowerList(cellTowerList);
 
         Logger.d("[>] saving to firebase");
@@ -603,7 +571,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         } else {
             Logger.d("[Offline] Network is offline, going to store data");
             EventData evdt = new EventData();
-            evdt.setPhoneImei(getGatewayId());
+            evdt.setPhoneImei(NetworkUtils.getGatewayId());
             Long timestamp = (new Date()).getTime();
             evdt.setTimestamp(timestamp);
             if (mLocation != null) {
@@ -672,7 +640,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.d("[+PairedList]  updatingToken: " + updatingToken + ", isConnected: " + NetworkUtils.isInternetAvailable() + ", updatingPairedList: " + updatingPairedList);
         if (updatingToken || !NetworkUtils.isInternetAvailable() || updatingPairedList) return;
         updatingPairedList = true;
-        WebService.getPairedBeacons(getGatewayId(), currentToken,  new Callback() {
+        WebService.getPairedBeacons(NetworkUtils.getGatewayId(), currentToken,  new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 //updateToken(3600*1000);
@@ -760,11 +728,11 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private void broadCastAllBeacon() {
         List<BeaconPackage> dataList = getAll();
-        List<CellTower> cellTowerList = getAllCellInfo();
+        List<CellTower> cellTowerList = NetworkUtils.getAllCellInfo();
         BroadcastEvent event = new BroadcastEvent();
         event.setBeaconPackageList(dataList);
         event.setLocation(mLocation);
-        event.setGatewayId(getGatewayId());
+        event.setGatewayId(NetworkUtils.getGatewayId());
         event.setCellTowerList(cellTowerList);
         EventBus.getDefault().removeStickyEvent(BroadcastEvent.class);
         EventBus.getDefault().postSticky(event);
@@ -917,99 +885,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     }
 
-    @SuppressLint("MissingPermission")
-    private String getGatewayId() {
-        if (TextUtils.isEmpty(AppConfig.GATEWAY_ID)) {
-            if (mTelephonyManager == null) {
-                mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (mTelephonyManager.getPhoneType() ==  TelephonyManager.PHONE_TYPE_CDMA) {
-                    AppConfig.GATEWAY_ID = mTelephonyManager.getMeid();
-                } else {
-                    // GSM
-                    AppConfig.GATEWAY_ID = mTelephonyManager.getImei();
-                }
-            } else {
-                AppConfig.GATEWAY_ID = mTelephonyManager.getDeviceId();
-            }
-        }
-        return AppConfig.GATEWAY_ID;
-    }
 
-    @SuppressLint("MissingPermission")
-    private List<CellTower> getAllCellInfo() {
-        Logger.i("getAllCellInfo");
-        if (mTelephonyManager == null) {
-            mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        }
-        List<CellTower> cellTowerList = new ArrayList<>();
 
-        String networkOperator = mTelephonyManager.getNetworkOperator();
-        int mcc = 0;
-        int mnc = 0;
-        if (networkOperator != null && networkOperator.length() >=3) {
-            mcc = Integer.parseInt(networkOperator.substring(0, 3));
-            mnc = Integer.parseInt(networkOperator.substring(3));
-        }
 
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            List<NeighboringCellInfo> neighboringCellInfoList = mTelephonyManager.getNeighboringCellInfo();
-            for (NeighboringCellInfo info : neighboringCellInfoList) {
-                CellTower cellTower = new CellTower();
-                cellTower.setLac(info.getLac());
-                cellTower.setCid(info.getCid());
-                cellTower.setMcc(mcc);
-                cellTower.setMnc(mnc);
-                cellTower.setRxlev(info.getRssi());
-                cellTowerList.add(cellTower);
-            }
-        } else {
-            List<CellInfo> cellInfos = mTelephonyManager.getAllCellInfo();
-            if (cellInfos != null) {
-                Logger.i("CellinfosList: " + cellInfos.size());
-                for (CellInfo info : cellInfos) {
-                    CellTower cellTower = new CellTower();
-
-                    if (info instanceof CellInfoGsm) {
-                        CellSignalStrengthGsm gsm = ((CellInfoGsm) info).getCellSignalStrength();
-                        CellIdentityGsm identityGsm = ((CellInfoGsm) info).getCellIdentity();
-                        cellTower.setLac(identityGsm.getLac());
-                        cellTower.setCid(identityGsm.getCid());
-                        cellTower.setMcc(identityGsm.getMcc());
-                        cellTower.setMnc(identityGsm.getMnc());
-                        cellTower.setRxlev(gsm.getAsuLevel());
-                        cellTowerList.add(cellTower);
-
-                    } else if (info instanceof CellInfoLte) {
-                        CellSignalStrengthLte lte = ((CellInfoLte) info).getCellSignalStrength();
-                        CellIdentityLte identityLte = ((CellInfoLte) info).getCellIdentity();
-                        cellTower.setLac(identityLte.getTac());
-                        cellTower.setCid(identityLte.getCi());
-                        cellTower.setMcc(identityLte.getMcc());
-                        cellTower.setMnc(identityLte.getMnc());
-                        cellTower.setRxlev(lte.getAsuLevel());
-                        cellTowerList.add(cellTower);
-                    } else if (info instanceof CellInfoWcdma) {
-                        CellSignalStrengthWcdma wcdma = ((CellInfoWcdma) info).getCellSignalStrength();
-                        CellIdentityWcdma identityWcdma = ((CellInfoWcdma) info).getCellIdentity();
-
-                        cellTower.setLac(identityWcdma.getLac());
-                        cellTower.setCid(identityWcdma.getCid());
-                        cellTower.setMnc(identityWcdma.getMnc());
-                        cellTower.setMcc(identityWcdma.getMcc());
-                        cellTower.setRxlev(wcdma.getAsuLevel());
-                        cellTowerList.add(cellTower);
-                    } else if (info instanceof CellInfoCdma) {
-                        CellSignalStrengthCdma cdma = ((CellInfoCdma) info).getCellSignalStrength();
-                        CellIdentityCdma identityCdma = ((CellInfoCdma) info).getCellIdentity();
-                        //
-                    }
-                }
-            }
-        }
-        return cellTowerList;
-    }
 
     /**
      * Sets the location request parameters.
@@ -1071,14 +949,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private Notification getNotification() {
         Intent intent = new Intent(this, BeaconService.class);
         CharSequence text = ServiceUtils.getLocationText(mLocation);
-
-//        if (exit) {
-            // Extra to help us figure out if we arrived in onStartCommand via the notification or not
-//             intent.putExtra(EXTRA_STARTED_FROM_NOTIFICATION, true);
-//        }
-        // The PendingIntent that leads to a call to onStartCommand() in this service
-//        PendingIntent servicePendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
         // The PendingIntent to launch activity
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
 
@@ -1118,11 +988,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         //SharedPref.saveOnBoot(false);
         Logger.d("[+] checkIfNeedToCreateShipmentOnBoot: " + _mShouldCreateOnBoot);
     }
-//    private void _updateBootCompleted() {
-//        Logger.d("[+] changedBootStatus");
-//        _mShouldCreateOnBoot = false;
-//        SharedPref.saveOnBoot(false);
-//    }
 
     // EventBus
     private void registerEventBus() {

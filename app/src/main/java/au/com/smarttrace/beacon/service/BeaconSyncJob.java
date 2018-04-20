@@ -55,9 +55,10 @@ public class BeaconSyncJob extends Job {
         return Result.RESCHEDULE; //success ? Result.SUCCESS : Result.FAILURE;
     }
 
-    public static void scheduleJob(long intervalMillis) {
+    public static void scheduleJob() {
         new JobRequest.Builder(JOBS_TAG)
-                .setExact(intervalMillis)
+                .setPeriodic(TimeUnit.MINUTES.toMillis(15), TimeUnit.MINUTES.toMillis(5))
+                .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
                 .build()
                 .schedule();
     }

@@ -14,7 +14,6 @@ public class BeaconJobCreator implements JobCreator {
             case BeaconSyncJob.JOBS_TAG:
                 return new BeaconSyncJob();
             case BeaconSyncJob.JOBS_TAG_PERIODIC:
-                return new CheckServiceRunningJob();
             default:
                 return null;
         }

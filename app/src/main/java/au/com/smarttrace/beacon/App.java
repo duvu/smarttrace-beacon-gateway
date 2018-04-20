@@ -12,7 +12,7 @@ import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
-import au.com.smarttrace.beacon.model.MyObjectBox;
+import au.com.smarttrace.beacon.db.MyObjectBox;
 import au.com.smarttrace.beacon.service.BeaconJobCreator;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;

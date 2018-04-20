@@ -48,9 +48,7 @@ import java.util.Set;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.service.BeaconSyncJob;
-import au.com.smarttrace.beacon.service.CheckServiceRunningJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
-import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.model.BeaconPackage;
@@ -108,6 +106,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
         startService(intent1);
+        BeaconSyncJob.scheduleJob();
 
         TextView txt2Content = findViewById(R.id.txt_2_content);
         //- Press the POWER button for 6 secs util green light appears
@@ -136,10 +135,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (sjr1.size() > 0) {
             JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
         }
-
-//        BeaconSyncJob.scheduleJob(10000);
-//        CheckServiceRunningJob.scheduleJobPeriodic();
-
     }
 
     @Override

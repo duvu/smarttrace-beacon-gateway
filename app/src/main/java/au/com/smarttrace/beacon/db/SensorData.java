@@ -1,5 +1,6 @@
-package au.com.smarttrace.beacon.model;
+package au.com.smarttrace.beacon.db;
 
+import au.com.smarttrace.beacon.db.EventData;
 import io.objectbox.annotation.Entity;
 import io.objectbox.annotation.Id;
 import io.objectbox.relation.ToOne;
