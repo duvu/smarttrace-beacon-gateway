@@ -413,5 +413,6 @@
     <string name="action_beacons">Beacons</string>
     <string name="pair">Pair</string>
     <string name="unpair">UnPair</string>
+    <string name="ok">OK</string>
 
 </resources>

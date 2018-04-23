@@ -3,19 +3,15 @@ package au.com.smarttrace.beacon.ui;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
-
-import com.orhanobut.hawk.Hawk;
 
 import java.io.IOException;
 
 import au.com.smarttrace.beacon.AppConfig;
-import au.com.smarttrace.beacon.AppContants;
-import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.Http;

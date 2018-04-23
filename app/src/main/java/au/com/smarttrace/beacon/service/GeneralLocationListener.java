@@ -19,7 +19,7 @@ public class GeneralLocationListener implements LocationListener {
 
     @Override
     public void onLocationChanged(Location location) {
-        loggingService.onUpdateLocation(location);
+        //loggingService.onUpdateLocation(location);
     }
 
     @Override

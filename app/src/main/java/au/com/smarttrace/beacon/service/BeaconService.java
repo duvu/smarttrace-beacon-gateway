@@ -8,6 +8,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -25,14 +26,20 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.NetworkOnMainThreadException;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.WorkerThread;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 
+import com.TZONE.Bluetooth.BLE;
+import com.TZONE.Bluetooth.ILocalBluetoothCallBack;
+import com.TZONE.Bluetooth.Temperature.BroadcastService;
+import com.TZONE.Bluetooth.Temperature.Model.Device;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -83,6 +90,7 @@ import au.com.smarttrace.beacon.db.PhonePaired;
 import au.com.smarttrace.beacon.db.PhonePaired_;
 import au.com.smarttrace.beacon.db.SensorData;
 import au.com.smarttrace.beacon.firebase.ToFirebase;
+import au.com.smarttrace.beacon.jobs.LocationServiceWrapper;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
@@ -110,8 +118,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public static final String ACTION_BROADCAST = PACKAGE_NAME + ".broadcast";
     public static final String EXTRA_LOCATION = PACKAGE_NAME + ".location";
 
-    private LocationRequest mLocationRequest;
-    private FusedLocationProviderClient mFusedLocationClient;
     private LocationCallback mLocationCallback;
     private Handler mServiceHandler;
     private Location mLocation;
@@ -142,10 +148,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 //    private List<LocationBody> companyShipmentLocations = null;
     private List<Locations> companyShipmentLocations = null;
 
-    private LocationManager gpsLocationManager;
-    private LocationManager passiveLocationManager;
-    private LocationManager towerLocationManager;
-    private GeneralLocationListener locationListener;
+//    private LocationManager gpsLocationManager;
+//    private LocationManager passiveLocationManager;
+//    private LocationManager towerLocationManager;
+//    private GeneralLocationListener locationListener;
 
     private Box<EventData> eventBox;
     private Box<PhonePaired> pairedBox;
@@ -160,33 +166,29 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     FirebaseDatabase database;
     DatabaseReference ref;
 
+    LocationServiceWrapper locationWrapper;
+    private BluetoothAdapter _BluetoothAdapter;
+    private BroadcastService _BroadcastService;
+    private List<Device> _DeviceList = new ArrayList<>();
+
     public BeaconService() {
     }
 
     @Override
     public void onCreate() {
         Logger.i("[BeaconService] onCreated");
-        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL/10);
-        mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
-        mBeaconManager.bind(this);
+//        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL/10);
+//        mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
+//        mBeaconManager.bind(this);
 
-        if (ServiceUtils.isGooglePlayServicesAvailable(this)) {
-            mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-            mLocationCallback = new LocationCallback() {
-                @Override
-                public void onLocationResult(LocationResult locationResult) {
-                    super.onLocationResult(locationResult);
-                    onUpdateLocation(locationResult.getLastLocation());
-                }
-            };
-            mLocationRequest = LocationRequest.create();
-            mLocationRequest.setInterval(AppConfig.UPDATE_INTERVAL/5);
-            mLocationRequest.setFastestInterval(AppConfig.FASTEST_UPDATE_INTERVAL/2);
-            mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-            mLocationRequest.setSmallestDisplacement(AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE);
-
-            hasGoogleClient = true;
-        }
+        mLocationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                super.onLocationResult(locationResult);
+                onUpdateLocation(locationResult.getLastLocation());
+            }
+        };
+        locationWrapper = new LocationServiceWrapper(this, mLocationCallback);
 
         handlerThread = new HandlerThread(AppConfig.TAG);
         handlerThread.start();
@@ -231,7 +233,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private final Runnable uploader = new Runnable() {
         @Override
         public void run() {
-            getLastLocation();
             broadcastData();
         }
     };
@@ -242,31 +243,17 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             sHandler.cancel(true);
         }
 
-        startFast();
+//        startFast();
         sHandler = scheduler.scheduleAtFixedRate(uploader, 30 * 1000 /*Wait10Sec*/, 10*1000, TimeUnit.MILLISECONDS);
         scheduler.schedule(new Runnable() {
             @Override
             public void run() {
                 stopUploadDataToServer();
-                stopFast();
+//                stopFast();
             }
         }, AppConfig.SCHEDULED_RUNNING_FIRST - 60*1000 /*Finished1minEarlier*/, TimeUnit.MILLISECONDS);
 
         scheduler.scheduleAtFixedRate(uploader, AppConfig.SCHEDULED_RUNNING_FIRST, AppConfig.UPDATE_INTERVAL, TimeUnit.MILLISECONDS);
-    }
-
-    private void startFast() {
-        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
-        mBeaconManager.setForegroundScanPeriod(10*1000);
-        mBeaconManager.setBackgroundMode(false);
-        syncSettingsToService();
-    }
-
-    private void stopFast() {
-        mBeaconManager.setForegroundBetweenScanPeriod(AppConfig.UPDATE_INTERVAL/10);
-        mBeaconManager.setForegroundScanPeriod(AppConfig.UPDATE_PERIOD);
-        mBeaconManager.setBackgroundMode(false);
-        syncSettingsToService();
     }
 
     private void stopUploadDataToServer() {
@@ -282,11 +269,11 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         currentToken = SharedPref.getToken();
         startForeground(NOTIFICATION_ID, getNotification());
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+
         //-- load Shipment Location
-        updateShipmentLocations();
+        companyShipmentLocations = locationsBox.query().build().find();
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        Logger.i("LogginInFirebase: " + currentUser.getEmail());
 
         if (currentUser == null || currentUser.isAnonymous()) {
             Logger.i("LogginInFirebase");
@@ -303,15 +290,24 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             TimeZone.getTimeZone(SharedPref.getUserTimezone());
         }
 
-        if (hasGoogleClient) {
-            getLastLocation();
-        }
-
         checkIfNeedToCreateShipmentOnBoot();
         App.serviceStarted();
         startBLEAndLocationUpdate();
-        uploadDataToServer();
+        //uploadDataToServer();
         return START_STICKY;
+    }
+
+    private void startBLEAndLocationUpdate() {
+        startLocationUpdate();
+        startBLEScan(10);
+
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                broadcastData();
+            }
+        }, 30*1000, TimeUnit.MILLISECONDS);
+
     }
 
     @Override
@@ -340,8 +336,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public void onDestroy() {
         FirebaseCrash.log("Service was destroyed");
         mServiceHandler.removeCallbacks(null);
-        stopLocationUpdate();
-        stopBLEScan(true);
+        //stopLocationUpdate();
+        //stopBLEScan(true);
 
         App.serviceEnded();
         unregisterEventBus();
@@ -354,29 +350,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
 
-    private void startBLEAndLocationUpdate() {
-        Logger.i("[+] startBLEAndLocationUpdate ...");
-        startLocationUpdate();
-        startBLEScan();
-    }
 
-    private void startBLEScan() {
-        if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
-            BluetoothAdapter.getDefaultAdapter().enable();
-        }
-
-        mBeaconManager.setBackgroundMode(false);
-        syncSettingsToService();
-
-    }
-
-    private void stopBLEScan(boolean exit) {
-        if (exit) {
-            mBeaconManager.unbind(this);
-        } else {
-            mBeaconManager.setBackgroundMode(true);
-        }
-    }
 
     private void syncSettingsToService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -391,76 +365,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             @Override
             public void run() {
                 Looper.prepare();
-                updateLoc();
+                locationWrapper.startLocationUpdates();
                 Looper.loop();
             }
         }, 0, TimeUnit.SECONDS);
-    }
 
-    private void updateLoc() {
-        if (hasGoogleClient) {
-            try {
-                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
-            } catch (SecurityException unlikely) {
-                Logger.e("Lost location permission. Could not request update", unlikely);
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                locationWrapper.stopLocationUpdates();
+                locationHandler.cancel(true);
             }
-        } else {
-            if (locationListener == null) {
-                locationListener = new GeneralLocationListener(this);
-            }
-
-            gpsLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            towerLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                    (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                            ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)) {
-
-                if (gpsLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                    gpsLocationManager.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER,
-                            AppConfig.FASTEST_UPDATE_INTERVAL/2,
-                            AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE,
-                            locationListener,Looper.myLooper());
-                }
-
-                if (towerLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                    towerLocationManager.requestLocationUpdates(
-                            LocationManager.NETWORK_PROVIDER,
-                            AppConfig.FASTEST_UPDATE_INTERVAL/2,
-                            AppConfig.LOCATION_PROVIDERS_MIN_REFRESH_DISTANCE,
-                            locationListener,
-                            Looper.myLooper());
-                }
-            }
-        }
-    }
-
-    private void getLastLocation() {
-        if (hasGoogleClient) {
-            try {
-                mFusedLocationClient.getLastLocation()
-                        .addOnCompleteListener(new OnCompleteListener<Location>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Location> task) {
-                                if (task.isSuccessful() && task.getResult() != null) {
-                                    mLocation = task.getResult();
-                                } else {
-                                    Logger.i("[GPS] Failed to get location.");
-                                }
-                            }
-                        });
-            } catch (SecurityException unlikely) {
-                Logger.i("[GPS] Lost location permission." + unlikely);
-            }
-        } else {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                return;
-            }
-            gpsLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            towerLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
-        }
+        }, 30, TimeUnit.SECONDS);
     }
 
     private void broadcastData() {
@@ -663,7 +579,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private boolean isAtStartLocations() {
         if (companyShipmentLocations == null){
-            updateShipmentLocations();
+            companyShipmentLocations = locationsBox.query().build().find();
         }
         if (mLocation == null) {
             return false;
@@ -679,9 +595,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         return false;
     }
 
-    private void updateShipmentLocations() {
-        companyShipmentLocations = locationsBox.query().build().find();
-    }
 
     @Override
     public void onBeaconServiceConnect() {
@@ -716,34 +629,26 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
     }
 
-    public void onUpdateLocation(Location location) {
-        Logger.i("[+] onUpdateLocation: " + location);
-        mLocation = location;
+    //
+    private void onUpdateLocation(Location location) {
+        Logger.d("[>_] onLocationChanged: " + location.getAccuracy());
+        if (mLocation == null) {
+            mLocation = location;
+        } else {
+            //1. check time age
+            if (location.getTime() - mLocation.getTime() >= AppConfig.SCANNING_TIMEOUT) {
+                mLocation = location;
+            } else
+                //2. check accuracy
+                if (location.hasAccuracy() && (location.getAccuracy() < mLocation.getAccuracy())) {
+                    mLocation = location;
+                }
+        }
+
         //Notify anyone listening for broadcasting about the new locatio
         Intent intent = new Intent(ACTION_BROADCAST);
         intent.putExtra(EXTRA_LOCATION, location);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-    }
-    /**
-     * Removes location updates. Note that in this sample we merely log the
-     * {@link SecurityException}.
-     */
-    public void stopLocationUpdate() {
-        Logger.i("[+] stopLocationUpdate");
-        locationHandler.cancel(true);
-        try {
-            if (hasGoogleClient) {
-                mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-            }
-
-            if (locationListener != null) {
-                gpsLocationManager.removeUpdates(locationListener);
-                towerLocationManager.removeUpdates(locationListener);
-            }
-        } catch (SecurityException unlikely) {
-            Logger.i("[GPS] Lost location permission. Could not remove updates. " + unlikely);
-        }
-
     }
 
     private Notification getNotification() {
@@ -771,19 +676,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         return builder.build();
     }
 
-    // Return true if this is a foreground service
-    public boolean serviceIsRunningInForeground(Context context) {
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo serviceInfo : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (getClass().getName().equals(serviceInfo.service.getClassName())) {
-                if (serviceInfo.foreground) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private void checkIfNeedToCreateShipmentOnBoot() {
         _mShouldCreateOnBoot = SharedPref.isOnBoot();
         //set flag to false
@@ -804,6 +696,124 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
     }
 
+    private void startBLEScan(long timeout) {
+//        if (Looper.myLooper() == Looper.getMainLooper()) {
+//            throw new NetworkOnMainThreadException();
+//        }
+
+        final ScheduledFuture bleScheduledHandler = scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                Logger.d("[>_] startBLEScan ...");
+                Looper.prepare();
+                try {
+                    if (_BroadcastService == null) {
+                        _BroadcastService = new BroadcastService();
+                    }
+                    final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+                    _BluetoothAdapter = bluetoothManager.getAdapter();
+                    _BroadcastService.Init(_BluetoothAdapter, _LocalBluetoothCallBack);
+                } catch (Exception ex) {
+                    Logger.d("BLE error: " + ex.getMessage());
+                }
+
+
+                synchronized (this) {
+                    _BroadcastService.StartScan();
+                }
+
+                Looper.loop();
+            }
+        }, 1, TimeUnit.SECONDS);
+
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                Logger.d("[>_] stopBLEScan ...");
+                _BroadcastService.StopScan();
+                bleScheduledHandler.cancel(true);
+            }
+        }, timeout + 1, TimeUnit.SECONDS);
+
+    }
+
+    private void AddOrUpdate(final BLE ble){
+        try {
+            Device d = new Device();
+            d.fromScanData(ble);
+            if(d.SN == null || d.SN.length() != 8) return;
+
+            /*
+                HardwareModel = "39"  BT04
+                HardwareModel = "3A"  BT05
+            */
+
+            Logger.i("[BLE #] " + d.SN + ", [+onBoot: ] " + _mShouldCreateOnBoot);
+            BeaconPackage bt04 = deviceMap.get(d.MacAddress);
+            if (bt04 == null) {
+                bt04 = BeaconPackage.fromBt04(d);
+                //-- first reading
+                bt04.setShouldCreateOnBoot(_mShouldCreateOnBoot);
+            } else {
+                bt04.updateFromBt04(d);
+            }
+            bt04.setPhoneBatteryLevel(mBatteryLevel);
+
+            deviceMap.put(d.MacAddress, bt04);
+
+            //--
+
+            boolean flag = true;
+            for (int i = 0; i < _DeviceList.size(); i++) {
+                Device item = _DeviceList.get(i);
+                if (item.SN.equals(d.SN)){
+                    //update
+                    item.fromScanData(ble);
+                    _DeviceList.set(i, item);
+
+                    flag = false;
+                }
+            }
+            if(flag){
+                _DeviceList.add(d);
+            }
+        }catch (Exception ex){
+            Logger.e("AddOrUpdate:", ex);
+        }
+    }
+
+    private ILocalBluetoothCallBack _LocalBluetoothCallBack = new ILocalBluetoothCallBack() {
+        @Override
+        public void OnEntered(BLE ble) {
+            try {
+                AddOrUpdate(ble);
+            } catch (Exception ex) {
+            }
+        }
+
+        @Override
+        public void OnUpdate(BLE ble) {
+            try {
+                AddOrUpdate(ble);
+            } catch (Exception ex) {
+            }
+        }
+
+        @Override
+        public void OnExited(final BLE ble) {
+            try {
+
+            } catch (Exception ex) {
+            }
+        }
+
+        @Override
+        public void OnScanComplete() {
+
+        }
+    };
+
+
     @Subscribe
     public void onExitEvent(ExitEvent exitEvent) {
         stopForeground(true);
@@ -812,8 +822,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     @Subscribe
     public void onUpdateEvent(UpdateEvent updateEvent) {
-        stopBLEScan(false);
-        stopLocationUpdate();
+//        stopBLEScan(false);
+//        stopLocationUpdate();
         startBLEAndLocationUpdate();
     }
     @Subscribe
@@ -844,8 +854,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private Runnable reLoginRunnable = new Runnable() {
         @Override
         public void run() {
-            stopBLEScan(false);
-            stopLocationUpdate();
+//            stopBLEScan(false);
+//            stopLocationUpdate();
             reLogin();
         }
     };

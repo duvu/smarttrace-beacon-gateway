@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
-import com.orhanobut.hawk.Hawk;
-
 import au.com.smarttrace.beacon.service.BeaconService;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 

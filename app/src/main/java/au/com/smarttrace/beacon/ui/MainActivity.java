@@ -17,7 +17,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -46,8 +48,10 @@ import java.util.List;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.service.job.BeaconDataJob;
-import au.com.smarttrace.beacon.service.job.BeaconSyncJob;
+import au.com.smarttrace.beacon.jobs.BeaconJob00;
+import au.com.smarttrace.beacon.jobs.BeaconJob10;
+import au.com.smarttrace.beacon.jobs.BeaconJob20;
+import au.com.smarttrace.beacon.jobs.DBSyncJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
@@ -68,6 +72,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Manifest.permission.BLUETOOTH,
             Manifest.permission.BLUETOOTH_ADMIN
     };
+
+    // Used in checking for runtime permissions.
+    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
 
     private MyReceiver myReceiver;
     private BeaconService mService = null;
@@ -102,9 +109,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        if (!checkPermissions()) {
-            requestPermissions();
-        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
 
         TextView txt2Content = findViewById(R.id.txt_2_content);
         //- Press the POWER button for 6 secs util green light appears
@@ -122,27 +131,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mMainScreenView = findViewById(R.id.main_screen);
         registerEventBus();
 
-        Intent i = getIntent();
-        boolean startFromNotification = i.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION, false);
-        Logger.d("[MainActivity] startFromNotification: " + startFromNotification);
-        if (!App.isServiceRunning()) {
-            Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
-            startService(intent1);
-            JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
-            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_JOB_TAG);
-            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_ONCE_JOB_TAG);
-
-            BeaconSyncJob.scheduleJob();
-            BeaconSyncJob.scheduleJobStartNow();
-            BeaconDataJob.scheduleJobPeriodic();
+        if (!checkPermissions()) {
+            requestPermissions();
+        } else {
+            makeServiceRunning();
         }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
-        mBound = true;
     }
 
     @Override
@@ -269,11 +262,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     /**
      * Returns the current state of the permissions needed.
      * Manifest.permission.ACCESS_FINE_LOCATION,
-     Manifest.permission.ACCESS_COARSE_LOCATION,
-     Manifest.permission.WRITE_EXTERNAL_STORAGE,
-     Manifest.permission.READ_PHONE_STATE,
-     Manifest.permission.BLUETOOTH,
-     Manifest.permission.BLUETOOTH_ADMIN
+     * Manifest.permission.ACCESS_COARSE_LOCATION,
+     * Manifest.permission.WRITE_EXTERNAL_STORAGE,
+     * Manifest.permission.READ_PHONE_STATE,
+     * Manifest.permission.BLUETOOTH,
+     * Manifest.permission.BLUETOOTH_ADMIN
      */
     private boolean checkPermissions() {
         return (
@@ -287,8 +280,69 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         );
     }
     private void requestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(INITIAL_PERMS, 1);
+        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (shouldProvideRationale) {
+            Snackbar.make(
+                    findViewById(R.id.drawer_layout),
+                    R.string.permission_rationale,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.ok, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // Request permission
+                            ActivityCompat.requestPermissions(MainActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
+                        }
+                    })
+                    .show();
+        } else {
+            Logger.i("Requesting permission");
+            // Request permission. It's possible this can be auto answered if device policy
+            // sets the permission in a given state or the user denied the permission
+            // previously and checked "Never ask again".
+            ActivityCompat.requestPermissions(MainActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+    }
+
+    private void makeServiceRunning() {
+        Intent i = getIntent();
+        boolean startFromNotification = i.getBooleanExtra(EXTRA_STARTED_FROM_NOTIFICATION, false);
+        Logger.d("[MainActivity] startFromNotification: " + startFromNotification);
+        if (!App.isServiceRunning()) {
+            Intent intent1 = new Intent(MainActivity.this, BeaconService.class);
+            startService(intent1);
+
+            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
+//            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
+//            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
+//            JobManager.instance().cancelAllForTag(BeaconJob20.TAG);
+//
+            DBSyncJob.schedule(); // update & sync every 15 minutes
+//            BeaconJob00.schedule();
+//            BeaconJob10.schedule();
+        }
+        bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
+        mBound = true;
+    }
+
+    /**
+     * Callback received when a permissions request has been completed.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Logger.i("onRequestPermissionResult");
+        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.length <= 0) {
+                // If user interaction was interrupted, the permission request is cancelled and you
+                // receive empty arrays.
+                Logger.i("User interaction was cancelled.");
+            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission was granted.
+                //start service here
+                makeServiceRunning();
+            } else {
+                //noop
+            }
         }
     }
 

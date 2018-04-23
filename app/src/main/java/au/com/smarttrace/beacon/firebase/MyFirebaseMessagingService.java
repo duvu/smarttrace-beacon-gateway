@@ -1,7 +1,6 @@
 package au.com.smarttrace.beacon.firebase;
 
 import android.content.Intent;
-import android.support.v4.app.NotificationManagerCompat;
 
 import com.evernote.android.job.JobManager;
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -9,8 +8,9 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.service.job.BeaconDataJob;
-import au.com.smarttrace.beacon.service.job.BeaconSyncJob;
+import au.com.smarttrace.beacon.jobs.BeaconJob00;
+import au.com.smarttrace.beacon.jobs.BeaconJob20;
+import au.com.smarttrace.beacon.jobs.DBSyncJob;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
@@ -24,13 +24,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(i);
         } else {
-            JobManager.instance().cancelAllForTag(BeaconSyncJob.JOBS_TAG);
-            BeaconSyncJob.scheduleJobStartNow();
-            BeaconSyncJob.scheduleJob();
-
-
-            JobManager.instance().cancelAllForTag(BeaconDataJob.DATA_ONCE_JOB_TAG);
-            BeaconDataJob.scheduleJob();
+            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
+            DBSyncJob.schedule();
+            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
+            BeaconJob00.schedule();
         }
 
 //        // ...
@@ -45,7 +42,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 //
 //            if (/* Check if data needs to be processed by long running job */ true) {
 //                // For long-running tasks (10 seconds or more) use Firebase Job Dispatcher.
-//                scheduleJob();
+//                schedule();
 //            } else {
 //                // Handle message within 10 seconds
 //                handleNow();

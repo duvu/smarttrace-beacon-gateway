@@ -13,7 +13,7 @@ import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.db.MyObjectBox;
-import au.com.smarttrace.beacon.service.BeaconJobCreator;
+import au.com.smarttrace.beacon.jobs.BeaconJobCreator;
 import au.com.smarttrace.beacon.service.NetworkUtils;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
@@ -24,8 +24,8 @@ import io.objectbox.android.AndroidObjectBrowser;
  */
 
 public class App extends Application implements BootstrapNotifier {
-    private final String PACKAGE = "au.com.smarttrace.beacon";
-    private final String BOOTSTRAP_REGION = PACKAGE + ".bootstrap_region";
+    public static final String PACKAGE = "au.com.smarttrace.beacon";
+    public static final String BOOTSTRAP_REGION = PACKAGE + ".bootstrap_region";
     private BoxStore boxStore;
     // private BackgroundPowerSaver backgroundPowerSaver;
     private RegionBootstrap regionBootstrap;

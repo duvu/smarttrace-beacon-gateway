@@ -1,5 +1,7 @@
 package au.com.smarttrace.beacon.model;
 
+import com.TZONE.Bluetooth.Temperature.Model.Device;
+
 import org.altbeacon.beacon.Beacon;
 
 import java.util.Date;
@@ -29,6 +31,52 @@ public class BeaconPackage extends AbstractDataPackage{
     private boolean foredCreateNew;
     private long readingAge;
     private boolean isPaired;
+
+    public static BeaconPackage fromBt04(Device bt04) {
+        BeaconPackage bp = new BeaconPackage();
+        long now = (new Date()).getTime();
+
+        bp.setBluetoothAddress(bt04.MacAddress);
+        bp.setName(bt04.Name);
+        bp.setRssi(bt04.RSSI);
+        bp.setType(0);
+        bp.setTimestamp(now);
+        bp.readingAge = 0L;
+        bp.setBatteryLevel(bt04.Battery);
+        bp.setDistance(MeasuringDistance.calculateAccuracy(-60, bt04.RSSI));
+        bp.setTemperature(bt04.Temperature);
+        bp.setHumidity(bt04.Humidity);
+        bp.setModel(bt04.HardwareModel);
+        bp.setFirmware(bt04.Firmware);
+        bp.setSerialNumber(bt04.SN);
+        bp.readingCount = 0;
+        bp.shouldCreateShipment = false;
+        bp.shouldUpload = true;
+        bp.foredCreateNew = false;
+        bp.isPaired = false;
+        return bp;
+    }
+
+    public BeaconPackage updateFromBt04(Device bt04) {
+        long now = (new Date()).getTime();
+
+        this.setBluetoothAddress(bt04.MacAddress);
+        this.setName(bt04.Name);
+        this.setRssi(bt04.RSSI);
+        this.setType(0);
+        this.setTimestamp(now);
+        this.readingAge = now - this.getTimestamp();
+        this.setBatteryLevel(bt04.Battery);
+        this.setDistance(MeasuringDistance.calculateAccuracy(-60, bt04.RSSI));
+        this.setTemperature(bt04.Temperature);
+        this.setHumidity(bt04.Humidity);
+        this.setModel(bt04.HardwareModel);
+        this.setFirmware(bt04.Firmware);
+        this.setSerialNumber(bt04.SN);
+        this.readingCount++;
+        this.shouldUpload = true;
+        return this;
+    }
 
     public static BeaconPackage fromBeacon(Beacon beacon) {
         BeaconPackage dl = new BeaconPackage();
