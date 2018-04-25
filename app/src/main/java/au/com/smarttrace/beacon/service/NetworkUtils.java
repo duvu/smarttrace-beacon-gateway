@@ -28,6 +28,7 @@ import java.util.List;
 
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
 
 public class NetworkUtils {
@@ -56,8 +57,9 @@ public class NetworkUtils {
     public static boolean isInternetAvailable() {
         try {
             InetAddress ipAddr = InetAddress.getByName("smarttrace.com.au");
-            return !ipAddr.equals("");
+            return !ipAddr.toString().equals("");
         } catch (Exception e) {
+            Logger.e("[Network] + ", e);
             return false;
         }
     }

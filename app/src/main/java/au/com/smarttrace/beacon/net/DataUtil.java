@@ -57,7 +57,7 @@ public class DataUtil {
 
     public static String formatData(BroadcastEvent broadcastEvent) {
         StringBuffer sb = new StringBuffer();
-        // phone-imei|epoch-time|latitude|longitude|altitude|accuracy|speedKPH|<\n>
+        // phone-imei|epoch-time|latitude|longitude|altitude|accuracy|speedKPH|VERSION|VERSION_CODE|<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
@@ -74,13 +74,19 @@ public class DataUtil {
             sb.append(location.getLongitude()).append(AppContants.SEPARATE);
             sb.append(location.getAltitude()).append(AppContants.SEPARATE);
             sb.append(location.getAccuracy()).append(AppContants.SEPARATE);
-            sb.append(location.getSpeed()).append(AppContants.SEPARATE).append(AppContants.N);
+            sb.append(location.getSpeed()).append(AppContants.SEPARATE);
+            sb.append(AppConfig.getVersionName()).append(AppContants.SEPARATE);
+            sb.append(AppConfig.getVersionCode()).append(AppContants.SEPARATE);
+            sb.append(AppContants.N);
         } else {
             sb.append(0).append(AppContants.SEPARATE);
             sb.append(0).append(AppContants.SEPARATE);
             sb.append(0).append(AppContants.SEPARATE);
             sb.append(0).append(AppContants.SEPARATE);
-            sb.append(0).append(AppContants.SEPARATE).append(AppContants.N);
+            sb.append(0).append(AppContants.SEPARATE);
+            sb.append(AppConfig.getVersionName()).append(AppContants.SEPARATE);
+            sb.append(AppConfig.getVersionCode()).append(AppContants.SEPARATE);
+            sb.append(AppContants.N);
         }
 
         for (BeaconPackage data : BeaconPackageList) {

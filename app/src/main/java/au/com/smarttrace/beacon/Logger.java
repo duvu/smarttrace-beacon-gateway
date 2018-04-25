@@ -25,5 +25,4 @@ public class Logger {
         else
             Log.e(AppConfig.TAG, message);
     }
-
 }

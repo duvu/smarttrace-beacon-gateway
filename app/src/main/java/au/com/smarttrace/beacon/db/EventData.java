@@ -2,6 +2,7 @@ package au.com.smarttrace.beacon.db;
 
 import java.util.List;
 
+import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.AppContants;
 import io.objectbox.annotation.Backlink;
 import io.objectbox.annotation.Entity;
@@ -13,7 +14,6 @@ public class EventData {
 
     @Id
     private Long id;
-
     private String phoneImei;
     private long timestamp;
     private double latitude;
@@ -99,7 +99,7 @@ public class EventData {
 
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        // phone-imei|epoch-time|latitude|longitude|altitude|accuracy|speedKPH|<\n>
+        // phone-imei|epoch-time|latitude|longitude|altitude|accuracy|speedKPH|VERSION|VERSION_CODE<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
         // SN|Name|Temperature|Humidity|RSSI|Distance|battery|LastScannedTime|HardwareModel|<\n>
@@ -113,7 +113,10 @@ public class EventData {
         sb.append(getLongitude()).append(AppContants.SEPARATE);
         sb.append(getAltitude()).append(AppContants.SEPARATE);
         sb.append(getAccuracy()).append(AppContants.SEPARATE);
-        sb.append(getSpeedKPH()).append(AppContants.SEPARATE).append(AppContants.N);
+        sb.append(getSpeedKPH()).append(AppContants.SEPARATE);
+        sb.append(AppConfig.getVersionName()).append(AppContants.SEPARATE);
+        sb.append(AppConfig.getVersionCode()).append(AppContants.SEPARATE);
+        sb.append(AppContants.N);
 
         for (SensorData data : getSensorDataList()) {
             sb.append(data.getSerialNumber()).append(AppContants.SEPARATE);

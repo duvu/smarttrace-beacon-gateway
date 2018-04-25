@@ -48,10 +48,12 @@ import java.util.List;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.jobs.BeaconJob00;
-import au.com.smarttrace.beacon.jobs.BeaconJob10;
-import au.com.smarttrace.beacon.jobs.BeaconJob20;
-import au.com.smarttrace.beacon.jobs.DBSyncJob;
+import au.com.smarttrace.beacon.service.BeaconJob00;
+import au.com.smarttrace.beacon.service.BeaconJob05;
+import au.com.smarttrace.beacon.service.BeaconJob10;
+import au.com.smarttrace.beacon.service.BeaconJob15;
+import au.com.smarttrace.beacon.service.BeaconJobX;
+import au.com.smarttrace.beacon.service.DBSyncJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
@@ -62,6 +64,7 @@ import au.com.smarttrace.beacon.service.BeaconService;
 
 import static au.com.smarttrace.beacon.service.BeaconService.EXTRA_STARTED_FROM_NOTIFICATION;
 
+@TargetApi(Build.VERSION_CODES.M)
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String[] INITIAL_PERMS={
@@ -106,36 +109,35 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
-
+        registerEventBus();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
 
         TextView txt2Content = findViewById(R.id.txt_2_content);
-        //- Press the POWER button for 6 secs util green light appears
         String textStr = getString(R.string.txt_statement_press_power_button);
         SpannableString text = new SpannableString(textStr);
 
         text.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.textColorWarn)), 0, textStr.length(), 0);
         text.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.colorPrimaryDark)), 39, 45, 0);
-        //text.setSpan(new RelativeSizeSpan(1.1f), 0, textStr.length(), 0);
         text.setSpan(new StyleSpan(Typeface.BOLD), 10, 15, 0);
         text.setSpan(new StyleSpan(Typeface.BOLD), 39, 45, 0);
         txt2Content.setText(text, TextView.BufferType.SPANNABLE);
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
-        registerEventBus();
 
         if (!checkPermissions()) {
             requestPermissions();
         } else {
             makeServiceRunning();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
+        mBound = true;
     }
 
     @Override
@@ -164,6 +166,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void onDestroy() {
         Logger.d("[MainActivity] Destroying");
+        unregisterEventBus();
         super.onDestroy();
     }
 
@@ -313,16 +316,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             startService(intent1);
 
             JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
-//            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
-//            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
-//            JobManager.instance().cancelAllForTag(BeaconJob20.TAG);
-//
+            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
+            JobManager.instance().cancelAllForTag(BeaconJob05.TAG);
+            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
+            JobManager.instance().cancelAllForTag(BeaconJob15.TAG);
+            JobManager.instance().cancelAllForTag(BeaconJobX.TAG);
+
+            DBSyncJob.scheduleNow();
             DBSyncJob.schedule(); // update & sync every 15 minutes
+            BeaconJobX.scheduleNow();
 //            BeaconJob00.schedule();
+//            BeaconJob05.schedule();
 //            BeaconJob10.schedule();
+//            BeaconJob15.schedule();
         }
-        bindService(new Intent(this, BeaconService.class), mConnection, BIND_AUTO_CREATE);
-        mBound = true;
+
     }
 
     /**
@@ -377,12 +385,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
     private void showProgress(final boolean show) {
-        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-        // for very easy animations. If available, use these APIs to fade-in
-        // the progress spinner.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2) {
-            int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
+        int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
+        if (mMainScreenView != null) {
             mMainScreenView.setVisibility(show ? View.GONE : View.VISIBLE);
             mMainScreenView.animate().setDuration(shortAnimTime).alpha(
                     show ? 0 : 1).setListener(new AnimatorListenerAdapter() {
@@ -392,6 +397,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 }
             });
 
+        }
+        if (mProgressView != null) {
             mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
             mProgressView.animate().setDuration(shortAnimTime).alpha(
                     show ? 1 : 0).setListener(new AnimatorListenerAdapter() {
@@ -400,11 +407,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
                 }
             });
-        } else {
-            // The ViewPropertyAnimator APIs are not available, so simply show
-            // and hide the relevant UI components.
-            mProgressView.setVisibility(show ? View.VISIBLE : View.GONE);
-            mMainScreenView.setVisibility(show ? View.GONE : View.VISIBLE);
         }
     }
 

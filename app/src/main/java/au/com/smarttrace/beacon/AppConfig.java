@@ -2,6 +2,7 @@ package au.com.smarttrace.beacon;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.preference.PreferenceManager;
 
 /**
@@ -16,6 +17,9 @@ import android.preference.PreferenceManager;
  */
 
 public class AppConfig {
+
+    private static int VERSION_CODE = 0;
+    private static String VERSION = "0";
 
     // Milliseconds per second
     private static final int MILLISECONDS = 1000;
@@ -59,5 +63,17 @@ public class AppConfig {
     private Context context;
 
     public static void populateSetting(Context context) {
+        try {
+            VERSION_CODE = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionCode;
+            VERSION = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+    public static int getVersionCode() {
+        return VERSION_CODE;
+    }
+    public static String getVersionName() {
+        return VERSION;
     }
 }
