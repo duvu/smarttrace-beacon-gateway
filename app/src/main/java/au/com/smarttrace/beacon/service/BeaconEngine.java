@@ -295,72 +295,72 @@ public class BeaconEngine {
         }
 
         be.setBeaconPackageList(lbp);
-        UploadDataAsync uploadDataAsync;
-        uploadDataAsync = new UploadDataAsync(eventBox);
-        uploadDataAsync.setEvent(be);
-        uploadDataAsync.setCurrentLocation(mCurrentLocation);
-        uploadDataAsync.execute((Void)null);
+//        UploadDataAsync uploadDataAsync;
+//        uploadDataAsync = new UploadDataAsync(eventBox);
+//        uploadDataAsync.setEvent(be);
+//        uploadDataAsync.setCurrentLocation(mCurrentLocation);
+//        uploadDataAsync.execute();
 
-//        if (NetworkUtils.isInternetAvailable()) {
-//            Logger.i("[Online] Network is online");
-//            //1. upload old data
-//            List<EventData> evdtList = eventBox.getAll();
-//            for (EventData evdt : evdtList) {
-//                final long evId = evdt.getId();
-//                Logger.i("[*] check: " + evdt.toString());
-//                WebService.sendEvent(evdt.toString(), new Callback() {
-//                    @Override
-//                    public void onFailure(Call call, IOException e) {
-//
-//                    }
-//
-//                    @Override
-//                    public void onResponse(Call call, Response response) throws IOException {
-//                        // remove data from db;
-//                        eventBox.remove(evId);
-//                    }
-//                });
-//            }
-//
-//            //2. upload new data
-//            String dataForUpload = DataUtil.formatData(be);
-//            WebService.sendEvent(dataForUpload);
-//        } else {
-//            Logger.i("[Offline] Network is offline, going to store data");
-//            EventData evdt = new EventData();
-//            evdt.setPhoneImei(NetworkUtils.getGatewayId());
-//            Long timestamp = (new Date()).getTime();
-//            evdt.setTimestamp(timestamp);
-//            if (mCurrentLocation != null) {
-//                evdt.setLatitude(mCurrentLocation.getLatitude());
-//                evdt.setLongitude(mCurrentLocation.getLongitude());
-//                evdt.setAltitude(mCurrentLocation.getAltitude());
-//                evdt.setAccuracy(mCurrentLocation.getAccuracy());
-//                evdt.setSpeedKPH(mCurrentLocation.getSpeed());
-//            } else {
-//                evdt.setLatitude(0);
-//                evdt.setLongitude(0);
-//                evdt.setAltitude(0);
-//                evdt.setAccuracy(0);
-//                evdt.setSpeedKPH(0);
-//            }
-//
-//            for (BeaconPackage data : lbp) {
-//                SensorData sd = new SensorData();
-//                sd.setSerialNumber(data.getSerialNumberString());
-//                sd.setName(data.getName());
-//                sd.setTemperature(data.getTemperature());
-//                sd.setHumidity(data.getHumidity());
-//                sd.setRssi(data.getRssi());
-//                sd.setDistance(data.getDistance());
-//                sd.setBattery(DataUtil.battPercentToVolt(data.getPhoneBatteryLevel()*100));
-//                sd.setLastScannedTime(data.getTimestamp());
-//                sd.setHardwareModel(data.getModel());
-//                evdt.getSensorDataList().add(sd);
-//            }
-//            long id = eventBox.put(evdt);
-//            Logger.i("[+] stored #" + id);
-//        }
+        if (NetworkUtils.isInternetAvailable()) {
+            Logger.i("[Online] Network is online");
+            //1. upload old data
+            List<EventData> evdtList = eventBox.getAll();
+            for (EventData evdt : evdtList) {
+                final long evId = evdt.getId();
+                Logger.i("[*] check: " + evdt.toString());
+                WebService.sendEvent(evdt.toString(), new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        // remove data from db;
+                        eventBox.remove(evId);
+                    }
+                });
+            }
+
+            //2. upload new data
+            String dataForUpload = DataUtil.formatData(be);
+            WebService.sendEvent(dataForUpload);
+        } else {
+            Logger.i("[Offline] Network is offline, going to store data");
+            EventData evdt = new EventData();
+            evdt.setPhoneImei(NetworkUtils.getGatewayId());
+            Long timestamp = (new Date()).getTime();
+            evdt.setTimestamp(timestamp);
+            if (mCurrentLocation != null) {
+                evdt.setLatitude(mCurrentLocation.getLatitude());
+                evdt.setLongitude(mCurrentLocation.getLongitude());
+                evdt.setAltitude(mCurrentLocation.getAltitude());
+                evdt.setAccuracy(mCurrentLocation.getAccuracy());
+                evdt.setSpeedKPH(mCurrentLocation.getSpeed());
+            } else {
+                evdt.setLatitude(0);
+                evdt.setLongitude(0);
+                evdt.setAltitude(0);
+                evdt.setAccuracy(0);
+                evdt.setSpeedKPH(0);
+            }
+
+            for (BeaconPackage data : lbp) {
+                SensorData sd = new SensorData();
+                sd.setSerialNumber(data.getSerialNumberString());
+                sd.setName(data.getName());
+                sd.setTemperature(data.getTemperature());
+                sd.setHumidity(data.getHumidity());
+                sd.setRssi(data.getRssi());
+                sd.setDistance(data.getDistance());
+                sd.setBattery(DataUtil.battPercentToVolt(data.getPhoneBatteryLevel()*100));
+                sd.setLastScannedTime(data.getTimestamp());
+                sd.setHardwareModel(data.getModel());
+                evdt.getSensorDataList().add(sd);
+            }
+            long id = eventBox.put(evdt);
+            Logger.i("[+] stored #" + id);
+        }
     }
 
     private boolean isPaired(BeaconPackage data) {

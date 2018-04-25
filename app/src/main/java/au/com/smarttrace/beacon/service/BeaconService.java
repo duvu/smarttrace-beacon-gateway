@@ -47,6 +47,7 @@ import org.greenrobot.eventbus.Subscribe;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -69,6 +70,7 @@ import au.com.smarttrace.beacon.db.EventData;
 import au.com.smarttrace.beacon.db.Locations;
 import au.com.smarttrace.beacon.db.PhonePaired;
 import au.com.smarttrace.beacon.db.PhonePaired_;
+import au.com.smarttrace.beacon.db.SensorData;
 import au.com.smarttrace.beacon.firebase.ToFirebase;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
@@ -76,6 +78,7 @@ import au.com.smarttrace.beacon.model.CellTower;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.model.UpdateToken;
+import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
 import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
@@ -253,7 +256,7 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
             public void run() {
                 startBLEAndLocationUpdate();
             }
-        }, 5, 10, TimeUnit.SECONDS);
+        }, 0, 10, TimeUnit.SECONDS);
 
         scheduler.schedule(new Runnable() {
             @Override
@@ -274,14 +277,9 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
     boolean scanningBLEAndLocation = false;
     private void startBLEAndLocationUpdate() {
         Logger.i("[+] startLocationUpdate");
-
         mLocation = locationWrapper.getCurrentLocation();
 
         if (!scanningBLEAndLocation) {
-            scanningBLEAndLocation = true;
-
-
-
             mServiceHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -293,12 +291,13 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
             }, AppConfig.SCANNING_TIMEOUT); //30s for several try location update
 
             startBLEScan();
-            mServiceHandler.postAtFrontOfQueue(new Runnable() {
+            mServiceHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
+                    scanningBLEAndLocation = true;
                     locationWrapper.startLocationUpdates();
                 }
-            });
+            }, 0);
         }
     }
     private void startBLEScan() {
@@ -367,11 +366,7 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         if (handlerThread != null) {
             handlerThread.quitSafely();
         }
-        try {
-            scheduler.awaitTermination(30, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        scheduler.shutdown();
         super.onDestroy();
     }
 
@@ -420,10 +415,72 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         ToFirebase tfb = ToFirebase.fromRaw(event);
         locRef.setValue(tfb);
 
-        UploadDataAsync uploadDataAsync = new UploadDataAsync(eventBox);
-        uploadDataAsync.setEvent(event);
-        uploadDataAsync.setCurrentLocation(mLocation);
-        uploadDataAsync.execute((Void) null);
+//        UploadDataAsync uploadDataAsync = new UploadDataAsync(eventBox);
+//        uploadDataAsync.setEvent(event);
+//        uploadDataAsync.setCurrentLocation(mLocation);
+//        uploadDataAsync.execute();
+
+//        if (NetworkUtils.isConnected()) {
+            Logger.i("[Online] Network is online");
+            //1. upload old data
+            List<EventData> evdtList = eventBox.getAll();
+            for (EventData evdt : evdtList) {
+                final long evId = evdt.getId();
+                Logger.i("[*] check: " + evdt.toString());
+                WebService.sendEvent(evdt.toString(), new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        // remove data from db;
+                        eventBox.remove(evId);
+                    }
+                });
+            }
+
+            //2. upload new data
+            String dataForUpload = DataUtil.formatData(event);
+            WebService.sendEvent(dataForUpload);
+//        } else {
+//            Logger.i("[Offline] Network is offline, going to store data");
+//            EventData evdt = new EventData();
+//            evdt.setPhoneImei(NetworkUtils.getGatewayId());
+//            Long timestamp = (new Date()).getTime();
+//            evdt.setTimestamp(timestamp);
+//            if (mLocation != null) {
+//                evdt.setLatitude(mLocation.getLatitude());
+//                evdt.setLongitude(mLocation.getLongitude());
+//                evdt.setAltitude(mLocation.getAltitude());
+//                evdt.setAccuracy(mLocation.getAccuracy());
+//                evdt.setSpeedKPH(mLocation.getSpeed());
+//            } else {
+//                evdt.setLatitude(0);
+//                evdt.setLongitude(0);
+//                evdt.setAltitude(0);
+//                evdt.setAccuracy(0);
+//                evdt.setSpeedKPH(0);
+//            }
+//
+//            for (BeaconPackage data : dataList) {
+//                SensorData sd = new SensorData();
+//                sd.setSerialNumber(data.getSerialNumberString());
+//                sd.setName(data.getName());
+//                sd.setTemperature(data.getTemperature());
+//                sd.setHumidity(data.getHumidity());
+//                sd.setRssi(data.getRssi());
+//                sd.setDistance(data.getDistance());
+//                sd.setBattery(DataUtil.battPercentToVolt(data.getPhoneBatteryLevel()*100));
+//                sd.setLastScannedTime(data.getTimestamp());
+//                sd.setHardwareModel(data.getModel());
+//
+//                evdt.getSensorDataList().add(sd);
+//            }
+//            long id = eventBox.put(evdt);
+//            Logger.i("[+] stored #" + id);
+//        }
     }
 
     private List<BeaconPackage> getDataPackageList() {
