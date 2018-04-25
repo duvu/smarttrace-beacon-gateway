@@ -3,6 +3,7 @@ package au.com.smarttrace.beacon.ui;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -13,10 +14,12 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -38,6 +41,8 @@ import android.widget.Toast;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BeaconPackage;
 
+import com.evernote.android.job.JobApi;
+import com.evernote.android.job.JobConfig;
 import com.evernote.android.job.JobManager;
 
 import org.greenrobot.eventbus.EventBus;
@@ -125,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
+        ignoreBattOpt();
 
         if (!checkPermissions()) {
             requestPermissions();
@@ -325,12 +331,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             DBSyncJob.scheduleNow();
             DBSyncJob.schedule(); // update & sync every 15 minutes
             BeaconJobX.scheduleNow();
-//            BeaconJob00.schedule();
-//            BeaconJob05.schedule();
-//            BeaconJob10.schedule();
-//            BeaconJob15.schedule();
+            BeaconJob00.schedule();
+            BeaconJob05.schedule();
+            BeaconJob10.schedule();
+            BeaconJob15.schedule();
         }
 
+    }
+
+    @SuppressLint("BatteryLife")
+    private void ignoreBattOpt() {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String packageName = getPackageName();
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                Intent intent = new Intent();
+                intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + packageName));
+                startActivity(intent);
+            }
+        }
     }
 
     /**
