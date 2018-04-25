@@ -262,7 +262,7 @@ public class BeaconEngine {
 
     //uploadToServer
     private void uploadToServer() {
-        Logger.i("[>_] starting upload to server ...");
+        Logger.i("[Engine#] starting upload to server ...");
 
         updateBatteryLevel();
         BroadcastEvent be = new BroadcastEvent();
@@ -270,7 +270,7 @@ public class BeaconEngine {
         be.setCellTowerList(NetworkUtils.getAllCellInfo());
         be.setGatewayId(NetworkUtils.getGatewayId());
 
-        List<BeaconPackage> lbp = new ArrayList<>();
+        final List<BeaconPackage> lbp = new ArrayList<>();
         for (Device d : _DeviceList) {
             BeaconPackage bp = new BeaconPackage();
             bp.setFirmware(d.Firmware);
@@ -295,14 +295,25 @@ public class BeaconEngine {
         }
 
         be.setBeaconPackageList(lbp);
-//        UploadDataAsync uploadDataAsync;
-//        uploadDataAsync = new UploadDataAsync(eventBox);
-//        uploadDataAsync.setEvent(be);
-//        uploadDataAsync.setCurrentLocation(mCurrentLocation);
-//        uploadDataAsync.execute();
 
-        if (NetworkUtils.isInternetAvailable()) {
-            Logger.i("[Online] Network is online");
+        //2. upload new data
+        String dataForUpload = DataUtil.formatData(be);
+        WebService.sendEvent(dataForUpload, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // save to db
+                saveDataToDB(lbp);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                //try to upload old
+                tryToSendOldData();
+            }
+        });
+    }
+
+    private void tryToSendOldData() {
             //1. upload old data
             List<EventData> evdtList = eventBox.getAll();
             for (EventData evdt : evdtList) {
@@ -311,7 +322,7 @@ public class BeaconEngine {
                 WebService.sendEvent(evdt.toString(), new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
-
+                        //noop
                     }
 
                     @Override
@@ -321,11 +332,9 @@ public class BeaconEngine {
                     }
                 });
             }
+    }
 
-            //2. upload new data
-            String dataForUpload = DataUtil.formatData(be);
-            WebService.sendEvent(dataForUpload);
-        } else {
+    private void saveDataToDB(List<BeaconPackage> lbp) {
             Logger.i("[Offline] Network is offline, going to store data");
             EventData evdt = new EventData();
             evdt.setPhoneImei(NetworkUtils.getGatewayId());
@@ -360,7 +369,6 @@ public class BeaconEngine {
             }
             long id = eventBox.put(evdt);
             Logger.i("[+] stored #" + id);
-        }
     }
 
     private boolean isPaired(BeaconPackage data) {

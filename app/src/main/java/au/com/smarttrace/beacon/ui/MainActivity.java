@@ -49,7 +49,9 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
@@ -130,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
-        ignoreBattOpt();
+//        ignoreBattOpt();
 
         if (!checkPermissions()) {
             requestPermissions();
@@ -330,47 +332,60 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             DBSyncJob.scheduleNow();
             DBSyncJob.schedule(); // update & sync every 15 minutes
-            BeaconJobX.scheduleNow();
-            BeaconJob00.schedule();
-            BeaconJob05.schedule();
-            BeaconJob10.schedule();
-            BeaconJob15.schedule();
+//            BeaconJobX.scheduleNow();
+//            BeaconJob00.schedule();
+//            BeaconJob05.schedule();
+//            BeaconJob10.schedule();
+//            BeaconJob15.schedule();
         }
 
     }
 
-    @SuppressLint("BatteryLife")
-    private void ignoreBattOpt() {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            String packageName = getPackageName();
-            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                Intent intent = new Intent();
-                intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                intent.setData(Uri.parse("package:" + packageName));
-                startActivity(intent);
-            }
-        }
-    }
+//    @SuppressLint("BatteryLife")
+//    private void ignoreBattOpt() {
+//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            String packageName = getPackageName();
+//            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+//            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+//                Intent intent = new Intent();
+//                intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+//                intent.setData(Uri.parse("package:" + packageName));
+//                startActivity(intent);
+//            }
+//        }
+//    }
 
     /**
      * Callback received when a permissions request has been completed.
      */
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Logger.i("onRequestPermissionResult");
-        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
-            if (grantResults.length <= 0) {
-                // If user interaction was interrupted, the permission request is cancelled and you
-                // receive empty arrays.
-                Logger.i("User interaction was cancelled.");
-            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission was granted.
-                //start service here
-                makeServiceRunning();
-            } else {
-                //noop
-            }
+        switch (requestCode) {
+            case REQUEST_PERMISSIONS_REQUEST_CODE:
+                Map<String, Integer> perms = new HashMap<>();
+                for (int i = 0; i < permissions.length; i++) {
+                    perms.put(permissions[i], grantResults[i]);
+                }
+
+                /**
+                 * Returns the current state of the permissions needed.
+                 * Manifest.permission.ACCESS_FINE_LOCATION,
+                 * Manifest.permission.ACCESS_COARSE_LOCATION,
+                 * Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                 * Manifest.permission.READ_PHONE_STATE,
+                 * Manifest.permission.BLUETOOTH,
+                 * Manifest.permission.BLUETOOTH_ADMIN
+                 */
+                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                        perms.get(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                        perms.get(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
+                        perms.get(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+
+                    makeServiceRunning();
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 

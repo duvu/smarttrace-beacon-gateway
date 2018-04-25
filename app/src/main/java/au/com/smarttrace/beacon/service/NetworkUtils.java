@@ -1,10 +1,12 @@
 package au.com.smarttrace.beacon.service;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
+import android.os.PowerManager;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
@@ -60,6 +62,22 @@ public class NetworkUtils {
             return !ipAddr.toString().equals("");
         } catch (Exception e) {
             Logger.e("[Network] + ", e);
+            return false;
+        }
+    }
+
+    /**
+     * Returns true if the device is in Doze/Idle mode. Should be called before checking the network connection because
+     * the ConnectionManager may report the device is connected when it isn't during Idle mode.
+     * https://github.com/yigit/android-priority-jobqueue/blob/master/jobqueue/src/main/java/com/path/android/jobqueue/network/NetworkUtilImpl.java#L60
+     */
+    @TargetApi(23)
+    public static boolean isDozing(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            return powerManager.isDeviceIdleMode() &&
+                    !powerManager.isIgnoringBatteryOptimizations(context.getPackageName());
+        } else {
             return false;
         }
     }
