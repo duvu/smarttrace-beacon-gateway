@@ -14,7 +14,7 @@ public class BroadcastJob extends Job {
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        BeaconService.instance().broadcastData();
+
         return Result.SUCCESS;
     }
 

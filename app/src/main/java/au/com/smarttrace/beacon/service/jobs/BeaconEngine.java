@@ -17,6 +17,7 @@ import com.TZONE.Bluetooth.BLE;
 import com.TZONE.Bluetooth.ILocalBluetoothCallBack;
 import com.TZONE.Bluetooth.Temperature.BroadcastService;
 import com.TZONE.Bluetooth.Temperature.Model.Device;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,10 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
@@ -41,6 +38,7 @@ import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.MeasuringDistance;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
+import au.com.smarttrace.beacon.net.model.FcmMessage;
 import au.com.smarttrace.beacon.service.LCallback;
 import au.com.smarttrace.beacon.service.LServiceWrapper;
 import au.com.smarttrace.beacon.service.NetworkUtils;
@@ -263,6 +261,11 @@ public class BeaconEngine {
     //uploadToServer
     private void uploadToServer() {
         Logger.i("[Engine#] starting upload to server ...");
+        FcmMessage fcmMessage = FcmMessage.create();
+        fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
+        fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
+        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis() + 10*60*1000);
+        WebService.nextPoint(fcmMessage);
 
         updateBatteryLevel();
         BroadcastEvent be = new BroadcastEvent();

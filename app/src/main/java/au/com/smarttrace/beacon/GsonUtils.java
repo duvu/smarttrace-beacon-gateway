@@ -1,5 +1,7 @@
 package au.com.smarttrace.beacon;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -21,6 +23,17 @@ public class GsonUtils {
         try {
             return gson.fromJson(json, classOfT);
         } catch (JsonSyntaxException jse) {
+            //Logger.e("JsonParsing #", jse);
+            Logger.d("[>>JSON ERROR] #" + json);
+            return null;
+        }
+    }
+
+    public String toJson(Object ob) {
+        try {
+            return gson.toJson(ob);
+        } catch (Exception ex) {
+            Logger.e("JsonError", ex);
             return null;
         }
     }

@@ -12,6 +12,7 @@ import au.com.smarttrace.beacon.service.jobs.BeaconJob00;
 import au.com.smarttrace.beacon.service.jobs.BeaconJob10;
 import au.com.smarttrace.beacon.service.BeaconService;
 import au.com.smarttrace.beacon.service.DBSyncJob;
+import au.com.smarttrace.beacon.service.jobs.BeaconJobX;
 import au.com.smarttrace.beacon.service.jobs.BroadcastJob;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 
@@ -32,7 +33,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 //            BeaconJob00.schedule();
 //            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
 //            BeaconJob10.schedule();
-            BroadcastJob.schedule();
+            BeaconJobX.scheduleNow();
         }
 
 //        // ...

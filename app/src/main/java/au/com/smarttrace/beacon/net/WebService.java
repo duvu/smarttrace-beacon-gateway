@@ -7,8 +7,10 @@ import com.google.gson.Gson;
 import java.io.IOException;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.SharedPref;
+import au.com.smarttrace.beacon.net.model.FcmMessage;
 import au.com.smarttrace.beacon.net.model.LocationResponse;
 import au.com.smarttrace.beacon.net.model.PairedBeaconResponse;
 import au.com.smarttrace.beacon.net.model.PairedRequest;
@@ -188,18 +190,18 @@ public class WebService {
         Http.getIntance().post(urlSb, data, callback);
     }
 
-    public static void nextPoint() {
-        String urlSb = "https://fcm.smarttrace.io/api/fcm";
+    public static void nextPoint(FcmMessage fcmMessage) {
+        String urlSb = "http://admin.smarttrace.io/api/fcm";
 
-        Http.getIntance().post(urlSb, null, new Callback() {
+        Http.getIntance().post(urlSb, GsonUtils.getInstance().toJson(fcmMessage), new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-
+                Logger.e("[Error#]", e);
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-
+                Logger.d("[>>] for scheduled job >> " + response.body().string());
             }
         });
     }
