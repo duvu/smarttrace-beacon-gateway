@@ -1,13 +1,12 @@
 package au.com.smarttrace.beacon.service;
 
+import android.annotation.TargetApi;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,17 +21,17 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 
-import com.TZONE.Bluetooth.BLE;
-import com.TZONE.Bluetooth.ILocalBluetoothCallBack;
-import com.TZONE.Bluetooth.Temperature.BroadcastService;
-import com.TZONE.Bluetooth.Temperature.Model.Device;
+import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.ActivityRecognitionClient;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -42,18 +41,22 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
 
+import org.altbeacon.beacon.Beacon;
+import org.altbeacon.beacon.BeaconConsumer;
+import org.altbeacon.beacon.BeaconManager;
+import org.altbeacon.beacon.RangeNotifier;
+import org.altbeacon.beacon.Region;
+import org.altbeacon.beacon.service.ScanJobScheduler;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -91,7 +94,7 @@ import okhttp3.Response;
 
 import static au.com.smarttrace.beacon.AppConfig.NOTIFICATION_ID;
 
-public class BeaconService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class BeaconService extends Service implements BeaconConsumer, SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String PACKAGE_NAME = "au.com.smarttrace.beacon";
     public static final String EXTRA_STARTED_FROM_NOTIFICATION = PACKAGE_NAME + ".started_from_notification";
     public static final String EXTRA_STARTED_FROM_BOOTSTRAP = PACKAGE_NAME + ".started_from_bootstrap";
@@ -103,8 +106,6 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
 
     private Handler mServiceHandler;
     private Location mLocation;
-
-    private TimeZone userTimezone = null;
 
     boolean _mShouldCreateOnBoot = false;
     private boolean updatingToken = false;
@@ -123,7 +124,7 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
             }
         }
     };
-
+    private BeaconManager mBeaconManager = BeaconManager.getInstanceForApplication(this);
     private final Map<String, BeaconPackage> deviceMap = new ConcurrentHashMap<>();
     private List<Locations> companyShipmentLocations = null;
 
@@ -143,20 +144,37 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
     private LCallback lCallback;
 
     AlarmManager nextPointAlarmManager;
+    PendingIntent activityRecognitionPendingIntent;
 
+    private static BeaconService instance = null;
 
-    private BluetoothAdapter _BluetoothAdapter;
-    private BroadcastService _BroadcastService;
-    private Timer _Timer;
-    private boolean _IsInit = false;
+    public static BeaconService instance() {
+        if (instance == null) {
+            instance = new BeaconService();
+        }
+        return instance;
+    }
+
 
     public BeaconService() {
+        super();
     }
 
     @Override
     public void onCreate() {
+
+        if (instance == null) {
+            instance = new BeaconService();
+        }
+
         Logger.i("[BeaconService] onCreated");
         nextPointAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+
+        mBeaconManager.setForegroundBetweenScanPeriod(5*1000);
+        mBeaconManager.setForegroundScanPeriod(5*1000);
+        mBeaconManager.bind(this);
+        mBeaconManager.setBackgroundMode(false);
+        syncSettingsToService();
 
         lCallback = new LCallback() {
             @Override
@@ -164,19 +182,6 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
                 onUpdateLocation(location);
             }
         };
-
-        try {
-            if (_BroadcastService == null) {
-                _BroadcastService = new BroadcastService();
-            }
-            final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-            _BluetoothAdapter = bluetoothManager.getAdapter();
-            if (!_IsInit) {
-                _IsInit = _BroadcastService.Init(_BluetoothAdapter, _LocalBluetoothCallBack);
-            }
-        } catch (Exception ex) {
-
-        }
 
         locationWrapper = LServiceWrapper.instances(this, lCallback);
 
@@ -205,6 +210,40 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         registerReceiver(mBatteryLevelReceiver, intentFilter);
     }
 
+    private boolean isStill = false;
+//    private void requestActivityRecognitionUpdates() {
+//        Logger.d("Requesting activity recognition updates: " + isStill);
+//        if (!isStill) {
+//            Intent intent = new Intent(getApplicationContext(), BeaconService.class);
+//            activityRecognitionPendingIntent = PendingIntent.getService(getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+//            ActivityRecognitionClient arClient = ActivityRecognition.getClient(getApplicationContext());
+//            arClient.requestActivityUpdates(30 * 1000, activityRecognitionPendingIntent).addOnSuccessListener(new OnSuccessListener<Void>() {
+//                @Override
+//                public void onSuccess(Void aVoid) {
+//                    isStill = true;
+//                }
+//            });
+//        }
+//    }
+//
+//    private void stopActivityRecognitionUpdates(){
+//        try{
+//            if (activityRecognitionPendingIntent != null){
+//                Logger.d("Stopping activity recognition updates");
+//                ActivityRecognitionClient arClient = ActivityRecognition.getClient(getApplicationContext());
+//                arClient.removeActivityUpdates(activityRecognitionPendingIntent).addOnSuccessListener(new OnSuccessListener<Void>() {
+//                    @Override
+//                    public void onSuccess(Void aVoid) {
+//                        isStill = false;
+//                    }
+//                });
+//            }
+//        } catch (Exception ex){
+//            Logger.e("Could not stop activity recognition service", ex);
+//        }
+//    }
+
+
     //--Upload data control
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
     //--End
@@ -217,7 +256,6 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         database = FirebaseDatabase.getInstance();
         ref = database.getReference(NetworkUtils.getGatewayId());
         ref.child("TOKEN").setValue(token);
-
         Logger.i("FirebaseToken: " + token);
 
         currentToken = SharedPref.getToken();
@@ -240,10 +278,6 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
                     });
         }
 
-        if (userTimezone == null) {
-            TimeZone.getTimeZone(SharedPref.getUserTimezone());
-        }
-
         checkIfNeedToCreateShipmentOnBoot();
         App.serviceStarted();
         start();
@@ -251,27 +285,27 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
     }
 
     private void start() {
-//        final ScheduledFuture handler = scheduler.scheduleAtFixedRate(new Runnable() {
-//            @Override
-//            public void run() {
-//                startBLEAndLocationUpdate();
-//            }
-//        }, 0, 10, TimeUnit.SECONDS);
-//
-//        scheduler.schedule(new Runnable() {
-//            @Override
-//            public void run() {
-//                handler.cancel(true);
-//                //stopSelf();
-//            }
-//        }, 9*60, TimeUnit.SECONDS);
+        final ScheduledFuture handler = scheduler.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                startBLEAndLocationUpdate();
+            }
+        }, 0, 10, TimeUnit.SECONDS);
+
+        scheduler.schedule(new Runnable() {
+            @Override
+            public void run() {
+                handler.cancel(true);
+                //stopSelf();
+            }
+        }, 9*60, TimeUnit.SECONDS);
 
         scheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                (new BeaconEngine(BeaconService.this)).scanAndUpload();
+                startBLEAndLocationUpdate();
             }
-        }, 5, 60, TimeUnit.SECONDS);
+        }, 10*60, 10*60, TimeUnit.SECONDS);
     }
 
     boolean scanningBLEAndLocation = false;
@@ -280,62 +314,39 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         mLocation = locationWrapper.getCurrentLocation();
 
         if (!scanningBLEAndLocation) {
+
             mServiceHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     locationWrapper.stopLocationUpdates();
-                    stopBLEScan();
+                    stopBLE();
+//                    stopActivityRecognitionUpdates();
                     broadcastData();
                     scanningBLEAndLocation = false;
+                    mServiceHandler.removeCallbacksAndMessages(null);
                 }
             }, AppConfig.SCANNING_TIMEOUT); //30s for several try location update
 
-            startBLEScan();
+
             mServiceHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    scanningBLEAndLocation = true;
                     locationWrapper.startLocationUpdates();
+                    startBLE();
+                    scanningBLEAndLocation = true;
+//                    requestActivityRecognitionUpdates();
                 }
             }, 0);
         }
     }
-    private void startBLEScan() {
-        Logger.i("[>_] startBLEScan");
-        try {
-            if(_Timer != null) {
-                _Timer.cancel();
-            }
-            _Timer = new Timer();
-            TimerTask timerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    try {
-                        synchronized (this) {
-                            _BroadcastService.StartScan();
-                        }
-                    } catch (Exception ex){}
-                }
-            };
-
-            _Timer.schedule(timerTask, 100);
-        } catch (Exception ex){
-            Logger.e("[>_] BLErError #", ex);
-        }
+    private void stopBLE() {
+//        mBeaconManager.setBackgroundMode(true);
+//        syncSettingsToService();
     }
 
-    private void stopBLEScan() {
-        Logger.d("[>_] StopBLEScan");
-        try {
-            _Timer.cancel();
-            if(_BroadcastService!=null)
-                _BroadcastService.StopScan();
-        } catch (Exception ex){
-            Logger.e("#", ex);
-        } finally {
-            _Timer.purge();
-            broadCastAllBeacon();
-        }
+    private void startBLE() {
+        mBeaconManager.setBackgroundMode(false);
+        syncSettingsToService();
     }
 
     @Override
@@ -370,7 +381,7 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         super.onDestroy();
     }
 
-    private void broadcastData() {
+    public void broadcastData() {
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
 
         checkAndCreateShipment(getAll());
@@ -553,7 +564,6 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
 
                         Notification notification = new NotificationCompat.Builder(BeaconService.this, getString(R.string.default_notification_channel_id))
                                 .setContentTitle(data.getSerialNumberString() + "-Shipment++")
-                                .setContentText("ShipmentCreated")
                                 .setChannelId(getString(R.string.default_notification_channel_id))
                                 .setSound(null)
                                 .setTimeoutAfter(60*1000)
@@ -642,60 +652,6 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         _mShouldCreateOnBoot = SharedPref.isOnBoot();
     }
 
-
-    private void AddOrUpdate(final BLE ble){
-        synchronized (deviceMap) {
-            try {
-                Device d = new Device();
-                d.fromScanData(ble);
-                if (d.SN == null || d.SN.length() != 8) return;
-                //Logger.i("[Service #Scanning] " + d.SN + ", [+onBoot: ] " + _mShouldCreateOnBoot);
-                BeaconPackage bt04 = deviceMap.get(d.MacAddress);
-                if (bt04 == null) {
-                    bt04 = BeaconPackage.fromBt04(d);
-                    //-- first reading
-                    bt04.setShouldCreateOnBoot(_mShouldCreateOnBoot);
-                } else {
-                    bt04.updateFromBt04(d);
-                }
-                bt04.setPhoneBatteryLevel(mBatteryLevel);
-
-                deviceMap.put(d.MacAddress, bt04);
-            } catch (Exception ex) {
-                Logger.e("AddOrUpdate:", ex);
-            }
-        }
-    }
-
-    private ILocalBluetoothCallBack _LocalBluetoothCallBack = new ILocalBluetoothCallBack() {
-        @Override
-        public void OnEntered(BLE ble) {
-            try {
-                AddOrUpdate(ble);
-            } catch (Exception ex) {
-            }
-        }
-
-        @Override
-        public void OnUpdate(BLE ble) {
-            try {
-                AddOrUpdate(ble);
-            } catch (Exception ex) {
-            }
-        }
-
-        @Override
-        public void OnExited(final BLE ble) {
-            try {
-            } catch (Exception ex) {
-            }
-        }
-
-        @Override
-        public void OnScanComplete() {
-        }
-    };
-
     // EventBus
     private void registerEventBus() {
         EventBus.getDefault().register(this);
@@ -736,71 +692,49 @@ public class BeaconService extends Service implements SharedPreferences.OnShared
         }
     }
 
+    @Override
+    public void onBeaconServiceConnect() {
+        Logger.i("[+] onBeaconServiceConnect");
+        mBeaconManager.addRangeNotifier(new RangeNotifier() {
+            @Override
+            public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+                if (beacons.size() > 0) {
+                    checkIfNeedToCreateShipmentOnBoot();
+                    for (Beacon beacon : beacons) {
+                        Logger.i("[BLE #] " + beacon.getIdentifier(2).toHexString() + ", [+onBoot: ] " + _mShouldCreateOnBoot);
+                        BeaconPackage bt04 = deviceMap.get(beacon.getBluetoothAddress());
+                        if (bt04 == null) {
+                            bt04 = BeaconPackage.fromBeacon(beacon);
+                            //-- first reading
+                            bt04.setShouldCreateOnBoot(_mShouldCreateOnBoot);
+                        } else {
+                            bt04.updateFromBeacon(beacon);
+                        }
+                        bt04.setPhoneBatteryLevel(mBatteryLevel);
+                        deviceMap.put(beacon.getBluetoothAddress(), bt04);
+                    }
+                    broadCastAllBeacon();
+                }
+            }
+        });
+        try {
+            Region myRegion = new Region("ranging_unique_id", null, null, null);
+            mBeaconManager.startRangingBeaconsInRegion(myRegion);
+        } catch (RemoteException e) {
+            Logger.i("[BLE] error!");
+        }
+    }
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void syncSettingsToService() {
+        ScanJobScheduler.getInstance().applySettingsToScheduledJob(this, mBeaconManager);
+    }
+
     //-- class LocalBinder --
     public class LocalBinder extends Binder {
         public BeaconService getService() {
             return BeaconService.this;
         }
     }
-
-//    private Runnable reLoginRunnable = new Runnable() {
-//        @Override
-//        public void run() {
-//            reLogin();
-//        }
-//    };
-//    private void updateToken(long timeMillisDelay, boolean cancelPrev) {
-//        if (cancelPrev) {
-//            stopUpdateToken();
-//            mServiceHandler.postDelayed(reLoginRunnable, timeMillisDelay);
-//            updatingToken = true;
-//        } else {
-//            if (!updatingToken && NetworkUtils.isInternetAvailable()) {
-//                Logger.i("[+] Token update in " + timeMillisDelay / 1000 + "s");
-//                updatingToken = true;
-//                mServiceHandler.postDelayed(reLoginRunnable, timeMillisDelay);
-//
-//                mServiceHandler.postDelayed(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        startBLEAndLocationUpdate();
-//                    }
-//                }, timeMillisDelay + 5*1000);
-//            }
-//        }
-//
-//    }
-//
-//    private void stopUpdateToken() {
-//        mServiceHandler.removeCallbacks(reLoginRunnable);
-//        updatingToken = false;
-//    }
-//
-//    private void reLogin() {
-//        WebService.login(SharedPref.getUserName(), SharedPref.getPassword(), new Callback() {
-//            @Override
-//            public void onFailure(Call call, IOException e) {
-//                updateToken(2* 60 * 1000, false);
-//            }
-//
-//            @Override
-//            public void onResponse(Call call, Response response) throws IOException {
-//                if (response.body() != null) {
-//                    LoginResponse data = GsonUtils.getInstance().fromJson(response.body().string(), LoginResponse.class);
-//                    if (data != null && data.getResponse() != null) {
-//                        SharedPref.saveToken(data.getResponse().getToken());
-//                        SharedPref.saveExpiredStr(data.getResponse().getExpired());
-//                        SharedPref.saveTokenInstance(data.getResponse().getInstance());
-//                        stopUpdateToken();
-//                    } else {
-//                        updateToken(60 * 1000, false);
-//                    }
-//                } else {
-//                    updateToken(60 * 1000, false);
-//                }
-//            }
-//        });
-//    }
 
     public class UpdateTokenAsync extends AsyncTask<Void, Void, Boolean> {
         @Override

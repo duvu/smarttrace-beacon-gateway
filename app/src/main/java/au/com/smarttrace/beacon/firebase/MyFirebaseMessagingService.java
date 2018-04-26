@@ -8,9 +8,11 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.service.BeaconJob00;
-import au.com.smarttrace.beacon.service.BeaconJob10;
+import au.com.smarttrace.beacon.service.jobs.BeaconJob00;
+import au.com.smarttrace.beacon.service.jobs.BeaconJob10;
+import au.com.smarttrace.beacon.service.BeaconService;
 import au.com.smarttrace.beacon.service.DBSyncJob;
+import au.com.smarttrace.beacon.service.jobs.BroadcastJob;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
@@ -24,13 +26,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(i);
         } else {
-            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
-            DBSyncJob.schedule();
-
-            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
-            BeaconJob00.schedule();
-            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
-            BeaconJob10.schedule();
+//            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
+            DBSyncJob.scheduleNow();
+//            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
+//            BeaconJob00.schedule();
+//            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
+//            BeaconJob10.schedule();
+            BroadcastJob.schedule();
         }
 
 //        // ...

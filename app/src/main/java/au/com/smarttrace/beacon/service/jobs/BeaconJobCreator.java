@@ -1,10 +1,12 @@
-package au.com.smarttrace.beacon.service;
+package au.com.smarttrace.beacon.service.jobs;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.evernote.android.job.Job;
 import com.evernote.android.job.JobCreator;
+
+import au.com.smarttrace.beacon.service.DBSyncJob;
 
 public class BeaconJobCreator implements JobCreator {
     @Nullable
@@ -23,6 +25,8 @@ public class BeaconJobCreator implements JobCreator {
                 return new BeaconJob15();
             case BeaconJobX.TAG:
                 return new BeaconJobX();
+            case BroadcastJob.TAG:
+                return new BroadcastJob();
             default:
                 return null;
         }

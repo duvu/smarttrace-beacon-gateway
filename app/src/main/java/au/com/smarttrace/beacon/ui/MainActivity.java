@@ -3,7 +3,6 @@ package au.com.smarttrace.beacon.ui;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -14,12 +13,10 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -41,8 +38,6 @@ import android.widget.Toast;
 
 //import com.TZONE.Bluetooth.Temperature.Model.BeaconPackage;
 
-import com.evernote.android.job.JobApi;
-import com.evernote.android.job.JobConfig;
 import com.evernote.android.job.JobManager;
 
 import org.greenrobot.eventbus.EventBus;
@@ -55,11 +50,11 @@ import java.util.Map;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.service.BeaconJob00;
-import au.com.smarttrace.beacon.service.BeaconJob05;
-import au.com.smarttrace.beacon.service.BeaconJob10;
-import au.com.smarttrace.beacon.service.BeaconJob15;
-import au.com.smarttrace.beacon.service.BeaconJobX;
+import au.com.smarttrace.beacon.service.jobs.BeaconJob00;
+import au.com.smarttrace.beacon.service.jobs.BeaconJob05;
+import au.com.smarttrace.beacon.service.jobs.BeaconJob10;
+import au.com.smarttrace.beacon.service.jobs.BeaconJob15;
+import au.com.smarttrace.beacon.service.jobs.BeaconJobX;
 import au.com.smarttrace.beacon.service.DBSyncJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.R;

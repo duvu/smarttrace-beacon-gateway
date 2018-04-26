@@ -1,4 +1,4 @@
-package au.com.smarttrace.beacon.service;
+package au.com.smarttrace.beacon.service.jobs;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.R;
-import au.com.smarttrace.beacon.service.BeaconEngine;
 import au.com.smarttrace.beacon.ui.MainActivity;
 
 public class BeaconJobX extends Job {

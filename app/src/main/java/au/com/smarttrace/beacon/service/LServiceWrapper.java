@@ -224,6 +224,9 @@ public class LServiceWrapper {
     }
 
     public Location getCurrentLocation() {
+        if (mCurrentLocation == null) {
+            startLocationUpdates();
+        }
         return mCurrentLocation;
     }
 

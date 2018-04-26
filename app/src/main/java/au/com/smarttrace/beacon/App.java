@@ -1,13 +1,20 @@
 package au.com.smarttrace.beacon;
 
 import android.app.Application;
+import android.content.Intent;
 
 import com.evernote.android.job.JobManager;
 import com.google.firebase.FirebaseApp;
 
+import org.altbeacon.beacon.BeaconManager;
+import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.Region;
+import org.altbeacon.beacon.startup.BootstrapNotifier;
+
 import au.com.smarttrace.beacon.db.MyObjectBox;
-import au.com.smarttrace.beacon.service.BeaconJobCreator;
+import au.com.smarttrace.beacon.service.jobs.BeaconJobCreator;
 import au.com.smarttrace.beacon.service.NetworkUtils;
+import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
 import io.objectbox.android.AndroidObjectBrowser;
 
@@ -15,7 +22,7 @@ import io.objectbox.android.AndroidObjectBrowser;
  * Created by beou on 3/19/18.
  */
 
-public class App extends Application {
+public class App extends Application implements BootstrapNotifier {
     public static final String PACKAGE = "au.com.smarttrace.beacon";
     private BoxStore boxStore;
     private static boolean activityVisible = false;
@@ -64,9 +71,37 @@ public class App extends Application {
             new AndroidObjectBrowser(boxStore).start(this);
         }
         Logger.d("Using ObjectBox " + BoxStore.getVersion() + " (" + BoxStore.getVersionNative() + ")");
+
+        BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
+        beaconManager.getBeaconParsers().clear();
+        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("s:0-1=cbff,m:2-2=11,i:3-4,i:5-5,i:6-9,p:10-10,d:11-11=04,d:12-13,d:14-15,d:16-18"));
     }
 
     public BoxStore getBoxStore() {
         return boxStore;
+    }
+
+    @Override
+    public void didEnterRegion(Region region) {
+        // check if service is running
+        // if not, start it.
+        Logger.i("Beacon enter region ... ");
+        if (!isActivityVisible() && !isServiceRunning()) {
+            //start activity
+            Intent i = new Intent(this, SplashActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            this.startActivity(i);
+        }
+    }
+
+    @Override
+    public void didExitRegion(Region region) {
+
+    }
+
+    @Override
+    public void didDetermineStateForRegion(int i, Region region) {
+
     }
 }

@@ -187,4 +187,20 @@ public class WebService {
         String urlSb = AppConfig.BACKEND_URL_BT04_NEW;
         Http.getIntance().post(urlSb, data, callback);
     }
+
+    public static void nextPoint() {
+        String urlSb = "https://fcm.smarttrace.io/api/fcm";
+
+        Http.getIntance().post(urlSb, null, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+            }
+        });
+    }
 }
