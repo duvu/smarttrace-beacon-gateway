@@ -46,28 +46,28 @@ public class BeaconJobX extends Job {
     }
 
     private void createNotification() {
-        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, new Intent(getContext(), MainActivity.class), 0);
+//        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, new Intent(getContext(), MainActivity.class), 0);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel("beacon_engine_tag", "Job Demo", NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription("Job demo job");
-            getContext().getSystemService(NotificationManager.class).createNotificationChannel(channel);
-        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            NotificationChannel channel = new NotificationChannel("beacon_engine_tag", "Job Demo", NotificationManager.IMPORTANCE_LOW);
+//            channel.setDescription("Job demo job");
+//            getContext().getSystemService(NotificationManager.class).createNotificationChannel(channel);
+//        }
 
-        Notification notification = new NotificationCompat.Builder(getContext(), "beacon_engine_tag")
-                .setContentTitle("Uploaded data")
-                .setContentText(" Background Jobs are running ")
-                .setAutoCancel(true)
-                .setTimeoutAfter(20*60*1000)
-                .setChannelId("beacon_engine_tag")
-                .setSound(null)
-                .setContentIntent(pendingIntent)
-                .setSmallIcon(R.drawable.notification)
-                .setShowWhen(true)
-                .setColor(Color.GREEN)
-                .setLocalOnly(true)
-                .build();
-
-        NotificationManagerCompat.from(getContext()).notify(new Random().nextInt(), notification);
+//        Notification notification = new NotificationCompat.Builder(getContext(), "beacon_engine_tag")
+//                .setContentTitle("Uploaded data")
+//                .setContentText(" Background Jobs are running ")
+//                .setAutoCancel(true)
+//                .setTimeoutAfter(20*60*1000)
+//                .setChannelId("beacon_engine_tag")
+//                .setSound(null)
+//                .setContentIntent(pendingIntent)
+//                .setSmallIcon(R.drawable.notification)
+//                .setShowWhen(true)
+//                .setColor(Color.GREEN)
+//                .setLocalOnly(true)
+//                .build();
+//
+//        NotificationManagerCompat.from(getContext()).notify(new Random().nextInt(), notification);
     }
 }

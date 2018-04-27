@@ -264,7 +264,8 @@ public class BeaconEngine {
         FcmMessage fcmMessage = FcmMessage.create();
         fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
         fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
-        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis() + 10*60*1000);
+        fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
+        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis()+10*60*1000);
         WebService.nextPoint(fcmMessage);
 
         updateBatteryLevel();

@@ -1,6 +1,10 @@
 package au.com.smarttrace.beacon.firebase;
 
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
+import android.support.annotation.WorkerThread;
 
 import com.evernote.android.job.JobManager;
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -17,24 +21,58 @@ import au.com.smarttrace.beacon.service.jobs.BroadcastJob;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
+
+    BeaconService mService;
+    boolean mBound;
+
+    private final ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            BeaconService.LocalBinder binder = (BeaconService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mBound = false;
+        }
+    };
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+    }
+
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
 
         Logger.i("[MyFirebaseMessagingService >]: " + remoteMessage.getFrom());
-        if (!App.isServiceRunning()) {
-            Intent i = new Intent(this, SplashActivity.class);
-            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(i);
-        } else {
-//            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
+//        if (!App.isServiceRunning()) {
+//            Intent i = new Intent(this, SplashActivity.class);
+//            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+//            startActivity(i);
+//        } else {
+////            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
             DBSyncJob.scheduleNow();
-//            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
-//            BeaconJob00.schedule();
-//            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
-//            BeaconJob10.schedule();
-            BeaconJobX.scheduleNow();
-        }
+////            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
+////            BeaconJob00.schedule();
+////            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
+////            BeaconJob10.schedule();
+//            BeaconJobX.scheduleNow();
+//        }
+
+//        Intent iService = new Intent(this, BeaconService.class);
+//        bindService(iService, mConnection, BIND_AUTO_CREATE);
+//        mBound = true;
+//        if (mService != null) {
+//            mService.start();
+//        } else {
+//            startService(iService);
+//        }
 
 //        // ...
 //
@@ -63,5 +101,22 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 //
 //        // Also if you intend on generating your own notifications as a result of a received FCM
 //        // message, here is where that should be initiated. See sendNotification method below.
+    }
+
+    @Override
+    public void onDeletedMessages() {
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+        }
+        super.onDestroy();
     }
 }

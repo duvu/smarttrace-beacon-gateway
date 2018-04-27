@@ -21,6 +21,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -148,6 +149,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     AlarmManager nextPointAlarmManager;
     PendingIntent activityRecognitionPendingIntent;
 
+    PowerManager mPowerManager;
+    PowerManager.WakeLock mWakeLokc;
 
     public BeaconService() {
         super();
@@ -157,6 +160,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public void onCreate() {
         Logger.i("[BeaconService] onCreated");
         nextPointAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
 
         mBeaconManager.setForegroundBetweenScanPeriod(5*1000);
         mBeaconManager.setForegroundScanPeriod(5*1000);
@@ -232,13 +236,13 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 //    }
 
     private void startAbsoluteTimer() {
-            handler.postDelayed(stopManagerRunnable, 30 * 1000);
+            handler.postDelayed(stopManagerRunnable, 30 * 1000); //working for 30 seconds
     }
 
     private Runnable stopManagerRunnable = new Runnable() {
         @Override
         public void run() {
-            Logger.d("[>_] Absolute timeout reached, giving up on this point");
+            Logger.d("[-->] Absolute timeout reached!");
             stopManagerAndResetAlarm();
         }
     };
@@ -253,6 +257,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         stopBLE();
         broadcastData();
         setAlarmForNextPoint();
+        mWakeLokc.release();
     }
     @TargetApi(23)
     private void setAlarmForNextPoint() {
@@ -266,18 +271,23 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         if(Systems.isDozing(this)){
             //Only invoked once per 15 minutes in doze mode
             Logger.d("Device is dozing, using infrequent alarm");
-            nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 60 * 1000, pi);
+            nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
         }
         else {
-            nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + 60 * 1000, pi);
+            nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
         }
     }
+
     private void cancelAlarm() {
         if (alarmIntent != null) {
             AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
             PendingIntent sender = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             am.cancel(sender);
         }
+    }
+
+    private long getNextPointTimestamp() {
+        return SystemClock.elapsedRealtime() + 60 * 1000;
     }
 
     //--Upload data control
@@ -287,6 +297,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Logger.i("##Service Started: " + SharedPref.getToken());
+
+        if (mWakeLokc == null) {
+            mWakeLokc = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "myWakeLockTag");
+        }
         String token = FirebaseInstanceId.getInstance().getToken();
         mAuth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance();
@@ -320,35 +334,39 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         return START_NOT_STICKY;
     }
 
-    private void start() {
-        final ScheduledFuture handler = scheduler.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                startBLEAndLocationUpdate();
-            }
-        }, 0, 10, TimeUnit.SECONDS);
-
-        scheduler.schedule(new Runnable() {
-            @Override
-            public void run() {
-                handler.cancel(true);
-                //stopSelf();
-            }
-        }, 9*60, TimeUnit.SECONDS);
-
-        scheduler.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                startBLEAndLocationUpdate();
-            }
-        }, 10*60, 10*60, TimeUnit.SECONDS);
-//        locationWrapper.startLocationUpdates();
-//        startBLE();
-//        startAbsoluteTimer();
+    public void start() {
+        Logger.d("[>>] Start scanning");
+        mWakeLokc.acquire(11*60*1000);
+//        final ScheduledFuture handler = scheduler.scheduleAtFixedRate(new Runnable() {
+//            @Override
+//            public void run() {
+//                startBLEAndLocationUpdate();
+//            }
+//        }, 0, 10, TimeUnit.SECONDS);
+//
+//        scheduler.schedule(new Runnable() {
+//            @Override
+//            public void run() {
+//                handler.cancel(true);
+//                //stopSelf();
+//            }
+//        }, 9*60, TimeUnit.SECONDS);
+//
+//        scheduler.scheduleAtFixedRate(new Runnable() {
+//            @Override
+//            public void run() {
+//                startBLEAndLocationUpdate();
+//            }
+//        }, 10*60, 10*60, TimeUnit.SECONDS);
+        locationWrapper.startLocationUpdates();
+        startBLE();
+        startAbsoluteTimer();
     }
 
+
+
     boolean scanningBLEAndLocation = false;
-    private void startBLEAndLocationUpdate() {
+    public void startBLEAndLocationUpdate() {
         Logger.i("[+] startLocationUpdate");
         mLocation = locationWrapper.getCurrentLocation();
 
@@ -424,7 +442,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
 
         FcmMessage fcmMessage = new FcmMessage();
-        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis() + 10*60*1000); // for 10 minute
+        fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis()+10*60*1000)); // for 10 minute
         fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
         fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
         fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
