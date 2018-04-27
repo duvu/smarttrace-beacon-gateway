@@ -15,7 +15,11 @@ public class DBSyncJob extends Job {
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        boolean success = (new DBSyncEngine(getContext())).sync();
+        DBSyncEngine dbSyncEngine = new DBSyncEngine(getContext());
+
+        boolean success = dbSyncEngine.sync();
+        dbSyncEngine.closeBox();
+
         return success ? Result.SUCCESS : Result.FAILURE;
     }
 

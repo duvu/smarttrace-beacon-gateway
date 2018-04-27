@@ -29,8 +29,10 @@ public class BeaconJobX extends Job {
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        Location success = (new BeaconEngine(getContext())).scanAndUpload();
+        BeaconEngine beaconEngine = new BeaconEngine(getContext());
+        Location success = beaconEngine.scanAndUpload();
         createNotification();
+        beaconEngine.closeBox();
         return Result.SUCCESS;
     }
 

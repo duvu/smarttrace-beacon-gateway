@@ -65,14 +65,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 //            BeaconJobX.scheduleNow();
 //        }
 
-//        Intent iService = new Intent(this, BeaconService.class);
-//        bindService(iService, mConnection, BIND_AUTO_CREATE);
-//        mBound = true;
-//        if (mService != null) {
-//            mService.start();
-//        } else {
-//            startService(iService);
-//        }
+        Intent iService = new Intent(this, BeaconService.class);
+        bindService(iService, mConnection, BIND_AUTO_CREATE);
+        mBound = true;
+        if (mService != null) {
+            mService.start();
+        } else {
+            startService(iService);
+        }
 
 //        // ...
 //

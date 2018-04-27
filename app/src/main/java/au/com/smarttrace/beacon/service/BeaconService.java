@@ -72,6 +72,7 @@ import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.Systems;
 import au.com.smarttrace.beacon.db.EventData;
 import au.com.smarttrace.beacon.db.Locations;
+import au.com.smarttrace.beacon.db.Locations_;
 import au.com.smarttrace.beacon.db.PhonePaired;
 import au.com.smarttrace.beacon.db.PhonePaired_;
 import au.com.smarttrace.beacon.db.SensorData;
@@ -89,6 +90,7 @@ import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import io.objectbox.Box;
+import io.objectbox.BoxStore;
 import io.objectbox.query.Query;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -106,8 +108,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     public static final String GET_NEXT_POINT = "getnextpoint";
 
-    private Handler handler;
-    private Intent alarmIntent;
+
     private Location mLocation;
 
     boolean _mShouldCreateOnBoot = false;
@@ -136,7 +137,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private Box<Locations> locationsBox;
 
     private final IBinder mBinder = new LocalBinder();
-    HandlerThread handlerThread = null;
+    private Handler handler;
+    private HandlerThread handlerThread = null;
     private String currentToken = null;
 
     private FirebaseAuth mAuth;
@@ -147,10 +149,34 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private LCallback lCallback;
 
     AlarmManager nextPointAlarmManager;
-    PendingIntent activityRecognitionPendingIntent;
 
     PowerManager mPowerManager;
     PowerManager.WakeLock mWakeLokc;
+
+    private PendingIntent wakeupIntent;
+    private PendingIntent bleWakeupIntent;
+    private final Runnable heartbeat = new Runnable() {
+        @Override
+        public void run() {
+            Logger.d("[>_] #Heartbeat: " + Systems.isDozing(BeaconService.this));
+            try {
+                if (Systems.isDozing(BeaconService.this)) {
+                    try {
+                        wakeupIntent.send();
+                        bleWakeupIntent.send();
+                    } catch (SecurityException | PendingIntent.CanceledException e) {
+                        e.printStackTrace();
+                        Logger.e("Heartbeat location manager keep-alive failed", e);
+                    }
+                }
+            } finally {
+                if (handler != null) {
+                    handler.postDelayed(this, 10*1000);
+                }
+            }
+        }
+    };
+
 
     public BeaconService() {
         super();
@@ -162,8 +188,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         nextPointAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
 
-        mBeaconManager.setForegroundBetweenScanPeriod(5*1000);
-        mBeaconManager.setForegroundScanPeriod(5*1000);
+        //--heartbeat
+        handlerThread = new HandlerThread(AppConfig.TAG);
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
+        handler = new Handler();
+
+        wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
+        bleWakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.bluetooth.btservice.action.ALARM_WAKEUP"), 0);
+        handler.postDelayed(heartbeat, 10*1000);
+
+        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
+        mBeaconManager.setForegroundScanPeriod(10*1000);
         mBeaconManager.bind(this);
         mBeaconManager.setBackgroundMode(false);
         syncSettingsToService();
@@ -177,10 +213,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
         locationWrapper = LServiceWrapper.instances(this, lCallback);
 
-        handlerThread = new HandlerThread(AppConfig.TAG);
-        handlerThread.start();
-        handler = new Handler(handlerThread.getLooper());
-        handler = new Handler();
 
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -202,41 +234,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         registerReceiver(mBatteryLevelReceiver, intentFilter);
     }
 
-//    private boolean isStill = false;
-//    private void requestActivityRecognitionUpdates() {
-//        Logger.d("Requesting activity recognition updates: " + isStill);
-//        if (!isStill) {
-//            Intent intent = new Intent(getApplicationContext(), BeaconService.class);
-//            activityRecognitionPendingIntent = PendingIntent.getService(getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-//            ActivityRecognitionClient arClient = ActivityRecognition.getClient(getApplicationContext());
-//            arClient.requestActivityUpdates(30 * 1000, activityRecognitionPendingIntent).addOnSuccessListener(new OnSuccessListener<Void>() {
-//                @Override
-//                public void onSuccess(Void aVoid) {
-//                    isStill = true;
-//                }
-//            });
-//        }
-//    }
-//
-//    private void stopActivityRecognitionUpdates(){
-//        try{
-//            if (activityRecognitionPendingIntent != null){
-//                Logger.d("Stopping activity recognition updates");
-//                ActivityRecognitionClient arClient = ActivityRecognition.getClient(getApplicationContext());
-//                arClient.removeActivityUpdates(activityRecognitionPendingIntent).addOnSuccessListener(new OnSuccessListener<Void>() {
-//                    @Override
-//                    public void onSuccess(Void aVoid) {
-//                        isStill = false;
-//                    }
-//                });
-//            }
-//        } catch (Exception ex){
-//            Logger.e("Could not stop activity recognition service", ex);
-//        }
-//    }
-
     private void startAbsoluteTimer() {
-            handler.postDelayed(stopManagerRunnable, 30 * 1000); //working for 30 seconds
+            handler.postDelayed(stopManagerRunnable, AppConfig.SCANNING_TIMEOUT); //working for 30 seconds
     }
 
     private Runnable stopManagerRunnable = new Runnable() {
@@ -256,8 +255,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         locationWrapper.stopLocationUpdates();
         stopBLE();
         broadcastData();
-        setAlarmForNextPoint();
-        mWakeLokc.release();
+
     }
     @TargetApi(23)
     private void setAlarmForNextPoint() {
@@ -276,23 +274,17 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         else {
             nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
         }
-    }
 
-    private void cancelAlarm() {
-        if (alarmIntent != null) {
-            AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
-            PendingIntent sender = PendingIntent.getBroadcast(this, 0, alarmIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            am.cancel(sender);
-        }
+        mWakeLokc.release();
     }
 
     private long getNextPointTimestamp() {
-        return SystemClock.elapsedRealtime() + 60 * 1000;
+        if (isAtStartLocations()) {
+            return SystemClock.elapsedRealtime() + 60 * 1000;
+        } else {
+            return SystemClock.elapsedRealtime() + 10 * 60 * 1000;
+        }
     }
-
-    //--Upload data control
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-    //--End
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -301,6 +293,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         if (mWakeLokc == null) {
             mWakeLokc = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "myWakeLockTag");
         }
+
         String token = FirebaseInstanceId.getInstance().getToken();
         mAuth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance();
@@ -313,7 +306,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 
         //-- load Shipment Location
-        companyShipmentLocations = locationsBox.query().build().find();
+        loadLocations();
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
@@ -336,72 +329,24 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     public void start() {
         Logger.d("[>>] Start scanning");
-        mWakeLokc.acquire(11*60*1000);
-//        final ScheduledFuture handler = scheduler.scheduleAtFixedRate(new Runnable() {
-//            @Override
-//            public void run() {
-//                startBLEAndLocationUpdate();
-//            }
-//        }, 0, 10, TimeUnit.SECONDS);
-//
-//        scheduler.schedule(new Runnable() {
-//            @Override
-//            public void run() {
-//                handler.cancel(true);
-//                //stopSelf();
-//            }
-//        }, 9*60, TimeUnit.SECONDS);
-//
-//        scheduler.scheduleAtFixedRate(new Runnable() {
-//            @Override
-//            public void run() {
-//                startBLEAndLocationUpdate();
-//            }
-//        }, 10*60, 10*60, TimeUnit.SECONDS);
+        if (!mWakeLokc.isHeld()) {
+            mWakeLokc.acquire(11 * 60 * 1000);
+        } else {
+            mWakeLokc.release();
+            mWakeLokc.acquire(11 * 60 * 1000);
+        }
         locationWrapper.startLocationUpdates();
         startBLE();
         startAbsoluteTimer();
     }
 
-
-
-    boolean scanningBLEAndLocation = false;
-    public void startBLEAndLocationUpdate() {
-        Logger.i("[+] startLocationUpdate");
-        mLocation = locationWrapper.getCurrentLocation();
-
-        if (!scanningBLEAndLocation) {
-
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    locationWrapper.stopLocationUpdates();
-                    stopBLE();
-//                    stopActivityRecognitionUpdates();
-                    broadcastData();
-                    scanningBLEAndLocation = false;
-                    handler.removeCallbacksAndMessages(null);
-                }
-            }, AppConfig.SCANNING_TIMEOUT); //30s for several try location update
-
-
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    locationWrapper.startLocationUpdates();
-                    startBLE();
-                    scanningBLEAndLocation = true;
-//                    requestActivityRecognitionUpdates();
-                }
-            }, 0);
-        }
-    }
     private void stopBLE() {
-        mBeaconManager.setBackgroundMode(true);
+        mBeaconManager.setForegroundBetweenScanPeriod(60*1000);
         syncSettingsToService();
     }
 
     private void startBLE() {
+        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
         mBeaconManager.setBackgroundMode(false);
         syncSettingsToService();
     }
@@ -430,11 +375,13 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         App.serviceEnded();
         unregisterEventBus();
         unregisterReceiver(mBatteryLevelReceiver);
+        locationsBox.closeThreadResources();
+        eventBox.closeThreadResources();
+        pairedBox.closeThreadResources();
         stopForeground(false);
         if (handlerThread != null) {
             handlerThread.quitSafely();
         }
-        scheduler.shutdown();
         super.onDestroy();
     }
 
@@ -442,7 +389,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
 
         FcmMessage fcmMessage = new FcmMessage();
-        fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis()+10*60*1000)); // for 10 minute
+        fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis())); // for 10 minute
         fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
         fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
         fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
@@ -499,12 +446,14 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             public void onFailure(Call call, IOException e) {
                 // save to db
                 saveDataToDB(dataList);
+                setAlarmForNextPoint();
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 //try to upload old
                 tryToSendOldData();
+                setAlarmForNextPoint();
             }
         });
     }
@@ -650,8 +599,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private boolean isAtStartLocations() {
-        if (companyShipmentLocations == null){
-            companyShipmentLocations = locationsBox.query().build().find();
+        if (companyShipmentLocations == null) {
+            loadLocations();
         }
         if (mLocation == null) {
             return false;
@@ -665,6 +614,11 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             }
         }
         return false;
+    }
+
+    private void loadLocations() {
+        Query<Locations> query = locationsBox.query().equal(Locations_.startFlag, "y").build();
+        companyShipmentLocations = query.find();
     }
 
     private void onUpdateLocation(Location location) {
@@ -733,16 +687,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Subscribe
     public void onExitEvent(ExitEvent exitEvent) {
         stopSelf();
-    }
-
-    @Subscribe
-    public void onUpdateEvent(UpdateEvent updateEvent) {
-        startBLEAndLocationUpdate();
-    }
-    @Subscribe
-    public void onUpdateToken(UpdateToken updateToken) {
-        // update token
-        //updateToken(1000, true);
     }
 
     @Override

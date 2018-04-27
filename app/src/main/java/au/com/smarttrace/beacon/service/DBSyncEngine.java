@@ -27,6 +27,10 @@ import io.objectbox.query.Query;
 
 public class DBSyncEngine {
     private Context mContext;
+    private Box<PhonePaired> pairedBox; // = ((App) mContext.getApplicationContext()).getBoxStore().boxFor(PhonePaired.class);
+    private Box<Locations> locationsBox; // = ((App) mContext.getApplicationContext()).getBoxStore().boxFor(Locations.class);
+
+
     public DBSyncEngine(Context context) {
         mContext = context;
     }
@@ -37,11 +41,10 @@ public class DBSyncEngine {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             throw new NetworkOnMainThreadException();
         }
-
         String gatewayId = NetworkUtils.getGatewayId();
         String token = SharedPref.getToken();
-        Box<PhonePaired> pairedBox = ((App) mContext.getApplicationContext()).getBoxStore().boxFor(PhonePaired.class);
-        Box<Locations> locationsBox = ((App) mContext.getApplicationContext()).getBoxStore().boxFor(Locations.class);
+        pairedBox = ((App) mContext.getApplicationContext()).getBoxStore().boxFor(PhonePaired.class);
+        locationsBox = ((App) mContext.getApplicationContext()).getBoxStore().boxFor(Locations.class);
 
         PairedBeaconResponse pbr = WebService.getPairedBeacons(gatewayId, token);
         if (pbr != null && pbr.getStatus().getCode() == 0) {
@@ -121,6 +124,15 @@ public class DBSyncEngine {
         }
 
         return true;
+    }
+
+    public void closeBox() {
+        if (pairedBox != null) {
+            pairedBox.closeThreadResources();
+        }
+        if (locationsBox != null) {
+            locationsBox.closeThreadResources();
+        }
     }
 
     private Set<Long> getIds(List<LocationBody> llb) {

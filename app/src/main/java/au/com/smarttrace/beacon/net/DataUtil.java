@@ -68,8 +68,9 @@ public class DataUtil {
         List<BeaconPackage> BeaconPackageList = broadcastEvent.getBeaconPackageList();
 
         sb.append(broadcastEvent.getGatewayId()).append(AppContants.SEPARATE);
-        sb.append(timestamp).append(AppContants.SEPARATE);
+
         if (location != null) {
+            sb.append(location.getTime()).append(AppContants.SEPARATE);
             sb.append(location.getLatitude()).append(AppContants.SEPARATE);
             sb.append(location.getLongitude()).append(AppContants.SEPARATE);
             sb.append(location.getAltitude()).append(AppContants.SEPARATE);
@@ -79,6 +80,7 @@ public class DataUtil {
             sb.append(AppConfig.getVersionCode()).append(AppContants.SEPARATE);
             sb.append(AppContants.N);
         } else {
+            sb.append(timestamp).append(AppContants.SEPARATE);
             sb.append(0).append(AppContants.SEPARATE);
             sb.append(0).append(AppContants.SEPARATE);
             sb.append(0).append(AppContants.SEPARATE);

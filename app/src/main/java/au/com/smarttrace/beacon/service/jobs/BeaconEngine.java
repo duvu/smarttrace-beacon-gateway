@@ -265,7 +265,7 @@ public class BeaconEngine {
         fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
         fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
         fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
-        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis()+10*60*1000);
+        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis());
         WebService.nextPoint(fcmMessage);
 
         updateBatteryLevel();
@@ -399,4 +399,12 @@ public class BeaconEngine {
     }
 
 
+    public void closeBox() {
+        if (pairedBox != null) {
+            pairedBox.closeThreadResources();
+        }
+        if (eventBox != null) {
+            eventBox.closeThreadResources();
+        }
+    }
 }

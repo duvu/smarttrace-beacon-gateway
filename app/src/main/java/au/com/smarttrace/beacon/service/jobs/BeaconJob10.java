@@ -1,5 +1,6 @@
 package au.com.smarttrace.beacon.service.jobs;
 
+import android.location.Location;
 import android.support.annotation.NonNull;
 
 import com.evernote.android.job.Job;
@@ -17,7 +18,9 @@ public class BeaconJob10 extends Job {
     @Override
     protected Result onRunJob(@NonNull Params params) {
         BeaconJobX.schedule();
-        (new BeaconEngine(getContext())).scanAndUpload();
+        BeaconEngine beaconEngine = new BeaconEngine(getContext());
+        Location success = beaconEngine.scanAndUpload();
+        beaconEngine.closeBox();
         return Result.SUCCESS;
     }
 
