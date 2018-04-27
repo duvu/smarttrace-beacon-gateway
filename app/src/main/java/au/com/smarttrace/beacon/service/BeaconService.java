@@ -171,7 +171,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 }
             } finally {
                 if (handler != null) {
-                    handler.postDelayed(this, 10*1000);
+                    handler.postDelayed(this, 30*1000);
                 }
             }
         }
