@@ -155,27 +155,27 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private PendingIntent wakeupIntent;
     private PendingIntent bleWakeupIntent;
-    private final Runnable heartbeat = new Runnable() {
-        @Override
-        public void run() {
-            Logger.d("[>_] #Heartbeat: " + Systems.isDozing(BeaconService.this));
-            try {
-                if (Systems.isDozing(BeaconService.this)) {
-                    try {
-                        wakeupIntent.send();
-                        bleWakeupIntent.send();
-                    } catch (SecurityException | PendingIntent.CanceledException e) {
-                        e.printStackTrace();
-                        Logger.e("Heartbeat location manager keep-alive failed", e);
-                    }
-                }
-            } finally {
-                if (handler != null) {
-                    handler.postDelayed(this, 30*1000);
-                }
-            }
-        }
-    };
+//    private final Runnable heartbeat = new Runnable() {
+//        @Override
+//        public void run() {
+//            Logger.d("[>_] #Heartbeat: " + Systems.isDozing(BeaconService.this));
+//            try {
+//                if (Systems.isDozing(BeaconService.this)) {
+//                    try {
+//                        wakeupIntent.send();
+//                        bleWakeupIntent.send();
+//                    } catch (SecurityException | PendingIntent.CanceledException e) {
+//                        e.printStackTrace();
+//                        Logger.e("Heartbeat location manager keep-alive failed", e);
+//                    }
+//                }
+//            } finally {
+//                if (handler != null) {
+//                    handler.postDelayed(this, 15*1000);
+//                }
+//            }
+//        }
+//    };
 
 
     public BeaconService() {
@@ -196,7 +196,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
         wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
         bleWakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.bluetooth.btservice.action.ALARM_WAKEUP"), 0);
-        handler.postDelayed(heartbeat, 10*1000);
+//        handler.postDelayed(heartbeat, 10*1000);
 
         mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
         mBeaconManager.setForegroundScanPeriod(10*1000);
@@ -335,9 +335,21 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             mWakeLokc.release();
             mWakeLokc.acquire(11 * 60 * 1000);
         }
+        wakeup();
+
         locationWrapper.startLocationUpdates();
         startBLE();
         startAbsoluteTimer();
+    }
+
+    private void wakeup() {
+        try {
+            wakeupIntent.send();
+            bleWakeupIntent.send();
+        } catch (SecurityException | PendingIntent.CanceledException e) {
+            e.printStackTrace();
+            Logger.e("Heartbeat location manager keep-alive failed", e);
+        }
     }
 
     private void stopBLE() {
