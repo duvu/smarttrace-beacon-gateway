@@ -68,7 +68,11 @@ public class App extends Application implements BootstrapNotifier {
         SharedPref.init(getApplicationContext());
 
         //start Android-job
-        JobManager.create(this).addJobCreator(new BeaconJobCreator());
+        try {
+            JobManager.create(this).addJobCreator(new BeaconJobCreator());
+        } catch (Exception e) {
+            Logger.e("[>_] Failed to init JobManager", e);
+        }
 
         AppConfig.populateSetting(App.this);
         boxStore = MyObjectBox.builder().androidContext(App.this).build();
@@ -78,7 +82,7 @@ public class App extends Application implements BootstrapNotifier {
         }
         Logger.d("Using ObjectBox " + BoxStore.getVersion() + " (" + BoxStore.getVersionNative() + ")");
 
-        BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
+        BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
         beaconManager.getBeaconParsers().clear();
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("s:0-1=cbff,m:2-2=11,i:3-4,i:5-5,i:6-9,p:10-10,d:11-11=04,d:12-13,d:14-15,d:16-18"));
         Region region3901 = new Region(BOOTSTRAP_REGION, Identifier.fromInt(0x3901), null, null);

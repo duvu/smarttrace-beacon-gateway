@@ -1,17 +1,29 @@
 package au.com.smarttrace.beacon.ui;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PowerManager;
+import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
 import au.com.smarttrace.beacon.net.Http;
@@ -22,6 +34,18 @@ import au.com.smarttrace.beacon.net.model.LoginResponse;
  * status bar and navigation/system bar) with user interaction.
  */
 public class SplashActivity extends AppCompatActivity {
+
+    private static final String[] INITIAL_PERMS={
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN
+    };
+
+    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+
     private UserLoginTask mAuthTask = null;
 
     private static final int UI_ANIMATION_DELAY = 100;
@@ -54,12 +78,20 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_fullscreen);
         mContentView = findViewById(R.id.fullscreen_content);
         mHideHandler.postDelayed(mHidePart2Runnable, UI_ANIMATION_DELAY);
+
+        ignoreBattOpt();
+
+        if (!checkPermissions()) {
+            requestPermissions();
+        } else {
+            checkLogin();
+        }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        checkLogin();
+        //checkLogin();
     }
 
     @Override
@@ -94,6 +126,97 @@ public class SplashActivity extends AppCompatActivity {
             //try to login
             mAuthTask = new UserLoginTask(username, password);
             mAuthTask.execute((Void) null);
+        }
+    }
+    @SuppressLint("BatteryLife")
+    private void ignoreBattOpt() {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String packageName = getPackageName();
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                Intent intent = new Intent();
+                intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + packageName));
+                startActivity(intent);
+            }
+        }
+    }
+    /**
+     * Returns the current state of the permissions needed.
+     * Manifest.permission.ACCESS_FINE_LOCATION,
+     * Manifest.permission.ACCESS_COARSE_LOCATION,
+     * Manifest.permission.WRITE_EXTERNAL_STORAGE,
+     * Manifest.permission.READ_PHONE_STATE,
+     * Manifest.permission.BLUETOOTH,
+     * Manifest.permission.BLUETOOTH_ADMIN
+     */
+    private boolean checkPermissions() {
+        return (
+                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) &&
+                        PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) &&
+                        PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) &&
+                        PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) &&
+                        PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) &&
+                        PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN)
+
+        );
+    }
+    private void requestPermissions() {
+        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
+
+        if (shouldProvideRationale) {
+            Snackbar.make(
+                    findViewById(R.id.drawer_layout),
+                    R.string.permission_rationale,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.ok, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // Request permission
+                            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
+                        }
+                    })
+                    .show();
+        } else {
+            Logger.i("Requesting permission");
+            // Request permission. It's possible this can be auto answered if device policy
+            // sets the permission in a given state or the user denied the permission
+            // previously and checked "Never ask again".
+            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+    }
+
+    /**
+     * Callback received when a permissions request has been completed.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_PERMISSIONS_REQUEST_CODE:
+                Map<String, Integer> perms = new HashMap<>();
+                for (int i = 0; i < permissions.length; i++) {
+                    perms.put(permissions[i], grantResults[i]);
+                }
+
+                /**
+                 * Returns the current state of the permissions needed.
+                 * Manifest.permission.ACCESS_FINE_LOCATION,
+                 * Manifest.permission.ACCESS_COARSE_LOCATION,
+                 * Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                 * Manifest.permission.READ_PHONE_STATE,
+                 * Manifest.permission.BLUETOOTH,
+                 * Manifest.permission.BLUETOOTH_ADMIN
+                 */
+                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                        perms.get(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                        perms.get(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
+                        perms.get(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+
+                    checkLogin();
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 

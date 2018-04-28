@@ -124,7 +124,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             }
         }
     };
-    private BeaconManager mBeaconManager = BeaconManager.getInstanceForApplication(this);
+    private BeaconManager mBeaconManager;// = BeaconManager.getInstanceForApplication(this.getApplicationContext());
     private final Map<String, BeaconPackage> deviceMap = new ConcurrentHashMap<>();
     private List<Locations> companyShipmentLocations = null;
 
@@ -150,25 +150,25 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     PowerManager.WakeLock mWakeLokc;
 
     private PendingIntent wakeupIntent;
-    private final Runnable heartbeat = new Runnable() {
-        @Override
-        public void run() {
-            try {
-//                if (Systems.isDozing(BeaconService.this)) {
-                    try {
-                        wakeupIntent.send();
-                    } catch (SecurityException | PendingIntent.CanceledException e) {
-                        e.printStackTrace();
-                        Logger.e("Heartbeat location manager keep-alive failed", e);
-                    }
+//    private final Runnable heartbeat = new Runnable() {
+//        @Override
+//        public void run() {
+//            try {
+////                if (Systems.isDozing(BeaconService.this)) {
+//                    try {
+//                        wakeupIntent.send();
+//                    } catch (SecurityException | PendingIntent.CanceledException e) {
+//                        e.printStackTrace();
+//                        Logger.e("Heartbeat location manager keep-alive failed", e);
+//                    }
+////                }
+//            } finally {
+//                if (handler != null) {
+//                    handler.postDelayed(this, 60*1000);
 //                }
-            } finally {
-                if (handler != null) {
-                    handler.postDelayed(this, 60*1000);
-                }
-            }
-        }
-    };
+//            }
+//        }
+//    };
 
 
     public BeaconService() {
@@ -189,9 +189,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
         handler = new Handler();
         wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
-        handler.postDelayed(heartbeat, 10*1000);
+//        handler.postDelayed(heartbeat, 10*1000);
         mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
 
+        mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
         mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
         mBeaconManager.setForegroundScanPeriod(10*1000);
         mBeaconManager.bind(this);
@@ -238,7 +239,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         @Override
         public void run() {
             Logger.d("[-->] Absolute timeout reached!");
-            FireLogger.d("[-->] Absolute timeout reached!");
             stopManagerAndResetAlarm();
         }
     };
@@ -250,14 +250,13 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private void stopManagerAndResetAlarm() {
         stopAbsoluteTimer();
         locationWrapper.stopLocationUpdates();
-        stopBLE();
+        //stopBLE();
         broadcastData();
 
     }
     @TargetApi(23)
     private void setAlarmForNextPoint() {
-        Logger.d("Set alarm for "+getNextPointTimestamp()/1000+" seconds");
-        FireLogger.d("Set alarm for " + getNextPointTimestamp()/1000 + " seconds");
+        Logger.d("[>_] Set alarm at: "+new Date(getNextPointTimestamp()));
 
         Intent i = new Intent(this, BeaconService.class);
         i.putExtra(GET_NEXT_POINT, true);
@@ -285,7 +284,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        FireLogger.d("##Service Started: " + SharedPref.getToken());
         Logger.i("##Service Started: " + SharedPref.getToken());
 
         String token = FirebaseInstanceId.getInstance().getToken();
@@ -326,9 +324,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             mWakeLokc.acquire(10*60*1000);
             locationWrapper.startLocationUpdates();
             startBLE();
-
-        } finally {
             startAbsoluteTimer();
+        } finally {
             mWakeLokc.release();
         }
     }
@@ -369,7 +366,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public void onDestroy() {
         super.onDestroy();
-        FirebaseCrash.log("Service was destroyed");
+
+        Logger.d("[>_] Service is destroying");
         handler.removeCallbacks(null);
         App.serviceEnded();
         unregisterEventBus();
@@ -418,6 +416,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
         if (dataList == null || dataList.size() == 0) {
             Logger.i("[-] no new data");
+            setAlarmForNextPoint();
             return; // not update if no event data;
         }
 
@@ -425,12 +424,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             _mShouldCreateOnBoot = false;
             SharedPref.saveOnBoot(false);
         }
-        List<CellTower> cellTowerList = NetworkUtils.getAllCellInfo();
         BroadcastEvent event = new BroadcastEvent();
-        event.setBeaconPackageList(dataList);
-        event.setLocation(mLocation);
-        event.setGatewayId(NetworkUtils.getGatewayId());
-        event.setCellTowerList(cellTowerList);
+        try {
+            List<CellTower> cellTowerList = NetworkUtils.getAllCellInfo();
+            event.setBeaconPackageList(dataList);
+            event.setLocation(mLocation);
+            event.setGatewayId(NetworkUtils.getGatewayId());
+            event.setCellTowerList(cellTowerList);
+
+        } catch (Exception ex) {
+            Logger.d("[Exception ...]");
+            setAlarmForNextPoint();
+        }
 
         Logger.i("[>] saving to firebase");
         DatabaseReference locRef = ref.child(System.currentTimeMillis()+"");

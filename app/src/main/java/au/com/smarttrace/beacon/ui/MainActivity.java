@@ -131,6 +131,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
+
         ignoreBattOpt();
 
         if (!checkPermissions()) {
