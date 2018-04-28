@@ -192,6 +192,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 //        handler.postDelayed(heartbeat, 10*1000);
         mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
 
+        if (!mWakeLokc.isHeld()) {
+            mWakeLokc.acquire(14* 24 * 60 * 60 * 1000); // 14 days
+        }
+
         mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
         mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
         mBeaconManager.setForegroundScanPeriod(10*1000);
@@ -256,7 +260,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
     @TargetApi(23)
     private void setAlarmForNextPoint() {
-        Logger.d("[>_] Set alarm at: "+new Date(getNextPointTimestamp()));
+        Logger.d("[>_] Set alarm in: " + getNotificationTimeOut() + "seconds");
 
         Intent i = new Intent(this, BeaconService.class);
         i.putExtra(GET_NEXT_POINT, true);
@@ -266,7 +270,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         if(Systems.isDozing(this)){
             //Only invoked once per 15 minutes in doze mode
             Logger.d("Device is dozing, using infrequent alarm");
-            FireLogger.d("Device is dozing, using infrequent alarm");
             nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
         }
         else {
@@ -276,7 +279,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private long getNextPointTimestamp() {
         if (isAtStartLocations()) {
-            return SystemClock.elapsedRealtime() + 60 * 1000;
+            return SystemClock.elapsedRealtime() + 10 * 1000;
         } else {
             return SystemClock.elapsedRealtime() + 10 * 60 * 1000;
         }
@@ -321,12 +324,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.d("[>>] Start scanning");
         FireLogger.d("[>>] Start scanning");
         try {
-            mWakeLokc.acquire(10*60*1000);
             locationWrapper.startLocationUpdates();
             startBLE();
             startAbsoluteTimer();
         } finally {
-            mWakeLokc.release();
         }
     }
 
@@ -384,6 +385,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     public void broadcastData() {
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
+        createNotification();
 
         if (checkIfNewData()) {
             FcmMessage fcmMessage = new FcmMessage();
@@ -528,7 +530,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             BeaconPackage data = (BeaconPackage) entry.getValue();
             if (isPaired(data) && !data.isShouldCreateOnBoot()) {
                 dataList.add(data);
-                deviceMap.get(data.getBluetoothAddress()).setShouldUpload(false); // to prevent repeat upload
+                synchronized (deviceMap) {
+                    deviceMap.get(data.getBluetoothAddress()).setShouldUpload(false); // to prevent repeat upload
+                }
             }
         }
         return dataList;
@@ -682,6 +686,40 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             builder.setChannelId(getString(R.string.default_notification_channel_id));
         }
         return builder.build();
+    }
+
+    private long getNotificationTimeOut() {
+        if (isAtStartLocations()) {
+            return 12*1000;
+        } else {
+            return 12*60*1000;
+        }
+    }
+
+    private void createNotification() {
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel("beacon_engine_tag", "Scanning Jobs", NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription("Scanning Beacon job");
+            this.getSystemService(NotificationManager.class).createNotificationChannel(channel);
+        }
+
+        Notification notification = new NotificationCompat.Builder(this, "beacon_engine_tag")
+                .setContentTitle("Scanning Beacon ...")
+                .setContentText(" Scanning Jobs are running ")
+                .setAutoCancel(true)
+                .setTimeoutAfter(getNotificationTimeOut())
+                .setChannelId("beacon_engine_tag")
+                .setSound(null)
+                .setContentIntent(pendingIntent)
+                .setSmallIcon(R.drawable.notification)
+                .setShowWhen(true)
+                .setColor(Color.GREEN)
+                .setLocalOnly(true)
+                .build();
+
+        NotificationManagerCompat.from(this).notify(new Random().nextInt(), notification);
     }
 
     private void checkIfNeedToCreateShipmentOnBoot() {
