@@ -39,7 +39,6 @@ import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.messaging.FirebaseMessaging;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -49,6 +48,7 @@ import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.service.ScanJobScheduler;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,13 +58,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.FireLogger;
 import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
@@ -82,7 +79,6 @@ import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.model.UpdateEvent;
-import au.com.smarttrace.beacon.model.UpdateToken;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
 import au.com.smarttrace.beacon.net.model.FcmMessage;
@@ -90,7 +86,6 @@ import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import io.objectbox.Box;
-import io.objectbox.BoxStore;
 import io.objectbox.query.Query;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -104,6 +99,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public static final String EXTRA_STARTED_FROM_BOOTSTRAP = PACKAGE_NAME + ".started_from_bootstrap";
 
     public static final String ACTION_BROADCAST = PACKAGE_NAME + ".broadcast";
+    public static final String ACTION_WAKEUP_BROADCAST = PACKAGE_NAME + ".wakeup.broadcast";
     public static final String EXTRA_LOCATION = PACKAGE_NAME + ".location";
 
     public static final String GET_NEXT_POINT = "getnextpoint";
@@ -154,28 +150,25 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     PowerManager.WakeLock mWakeLokc;
 
     private PendingIntent wakeupIntent;
-    private PendingIntent bleWakeupIntent;
-//    private final Runnable heartbeat = new Runnable() {
-//        @Override
-//        public void run() {
-//            Logger.d("[>_] #Heartbeat: " + Systems.isDozing(BeaconService.this));
-//            try {
+    private final Runnable heartbeat = new Runnable() {
+        @Override
+        public void run() {
+            try {
 //                if (Systems.isDozing(BeaconService.this)) {
-//                    try {
-//                        wakeupIntent.send();
-//                        bleWakeupIntent.send();
-//                    } catch (SecurityException | PendingIntent.CanceledException e) {
-//                        e.printStackTrace();
-//                        Logger.e("Heartbeat location manager keep-alive failed", e);
-//                    }
+                    try {
+                        wakeupIntent.send();
+                    } catch (SecurityException | PendingIntent.CanceledException e) {
+                        e.printStackTrace();
+                        Logger.e("Heartbeat location manager keep-alive failed", e);
+                    }
 //                }
-//            } finally {
-//                if (handler != null) {
-//                    handler.postDelayed(this, 15*1000);
-//                }
-//            }
-//        }
-//    };
+            } finally {
+                if (handler != null) {
+                    handler.postDelayed(this, 60*1000);
+                }
+            }
+        }
+    };
 
 
     public BeaconService() {
@@ -189,14 +182,15 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
 
         //--heartbeat
-        handlerThread = new HandlerThread(AppConfig.TAG);
-        handlerThread.start();
-        handler = new Handler(handlerThread.getLooper());
+//        handlerThread = new HandlerThread(AppConfig.TAG);
+//        handlerThread.start();
+
         handler = new Handler();
 
+        handler = new Handler();
         wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
-        bleWakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.bluetooth.btservice.action.ALARM_WAKEUP"), 0);
-//        handler.postDelayed(heartbeat, 10*1000);
+        handler.postDelayed(heartbeat, 10*1000);
+        mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
 
         mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
         mBeaconManager.setForegroundScanPeriod(10*1000);
@@ -232,6 +226,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         intentFilter.addAction(Intent.ACTION_BATTERY_LOW);
         intentFilter.addAction(Intent.ACTION_BATTERY_OKAY);
         registerReceiver(mBatteryLevelReceiver, intentFilter);
+
+        startForeground(NOTIFICATION_ID, getNotification());
     }
 
     private void startAbsoluteTimer() {
@@ -242,6 +238,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         @Override
         public void run() {
             Logger.d("[-->] Absolute timeout reached!");
+            FireLogger.d("[-->] Absolute timeout reached!");
             stopManagerAndResetAlarm();
         }
     };
@@ -259,7 +256,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
     @TargetApi(23)
     private void setAlarmForNextPoint() {
-        Logger.d("Set alarm for 60 seconds");
+        Logger.d("Set alarm for "+getNextPointTimestamp()/1000+" seconds");
+        FireLogger.d("Set alarm for " + getNextPointTimestamp()/1000 + " seconds");
 
         Intent i = new Intent(this, BeaconService.class);
         i.putExtra(GET_NEXT_POINT, true);
@@ -269,13 +267,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         if(Systems.isDozing(this)){
             //Only invoked once per 15 minutes in doze mode
             Logger.d("Device is dozing, using infrequent alarm");
+            FireLogger.d("Device is dozing, using infrequent alarm");
             nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
         }
         else {
             nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
         }
-
-        mWakeLokc.release();
     }
 
     private long getNextPointTimestamp() {
@@ -288,21 +285,16 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        FireLogger.d("##Service Started: " + SharedPref.getToken());
         Logger.i("##Service Started: " + SharedPref.getToken());
-
-        if (mWakeLokc == null) {
-            mWakeLokc = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "myWakeLockTag");
-        }
 
         String token = FirebaseInstanceId.getInstance().getToken();
         mAuth = FirebaseAuth.getInstance();
         database = FirebaseDatabase.getInstance();
         ref = database.getReference(NetworkUtils.getGatewayId());
         ref.child("TOKEN").setValue(token);
-        Logger.i("FirebaseToken: " + token);
-
         currentToken = SharedPref.getToken();
-        startForeground(NOTIFICATION_ID, getNotification());
+
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 
         //-- load Shipment Location
@@ -329,38 +321,32 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     public void start() {
         Logger.d("[>>] Start scanning");
-        if (!mWakeLokc.isHeld()) {
-            mWakeLokc.acquire(11 * 60 * 1000);
-        } else {
-            mWakeLokc.release();
-            mWakeLokc.acquire(11 * 60 * 1000);
-        }
-        wakeup();
-
-        locationWrapper.startLocationUpdates();
-        startBLE();
-        startAbsoluteTimer();
-    }
-
-    private void wakeup() {
+        FireLogger.d("[>>] Start scanning");
         try {
-            wakeupIntent.send();
-            bleWakeupIntent.send();
-        } catch (SecurityException | PendingIntent.CanceledException e) {
-            e.printStackTrace();
-            Logger.e("Heartbeat location manager keep-alive failed", e);
+            mWakeLokc.acquire(10*60*1000);
+            locationWrapper.startLocationUpdates();
+            startBLE();
+
+        } finally {
+            startAbsoluteTimer();
+            mWakeLokc.release();
         }
     }
 
     private void stopBLE() {
-        mBeaconManager.setForegroundBetweenScanPeriod(60*1000);
-        syncSettingsToService();
+        if (!mBeaconManager.getBackgroundMode()) {
+            mBeaconManager.setForegroundBetweenScanPeriod(60 * 1000);
+            syncSettingsToService();
+        }
     }
 
     private void startBLE() {
-        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
-        mBeaconManager.setBackgroundMode(false);
-        syncSettingsToService();
+        FireLogger.d("[>_] startBLE #backgroundMode: " + mBeaconManager.getBackgroundMode());
+        if (mBeaconManager.getBackgroundMode()) {
+            mBeaconManager.setForegroundBetweenScanPeriod(10 * 1000);
+            mBeaconManager.setBackgroundMode(false);
+            syncSettingsToService();
+        }
     }
 
     @Override
@@ -382,6 +368,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
         FirebaseCrash.log("Service was destroyed");
         handler.removeCallbacks(null);
         App.serviceEnded();
@@ -394,23 +381,23 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         if (handlerThread != null) {
             handlerThread.quitSafely();
         }
-        super.onDestroy();
+        mBeaconManager.unbind(this);
     }
 
     public void broadcastData() {
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
 
-        FcmMessage fcmMessage = new FcmMessage();
-        fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis())); // for 10 minute
-        fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
-        fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
-        fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
-        fcmMessage.setMessage("WAKEUP");
-        WebService.nextPoint(fcmMessage);
+        if (checkIfNewData()) {
+            FcmMessage fcmMessage = new FcmMessage();
+            fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis())); // for 10 minute
+            fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
+            fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
+            fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
+            fcmMessage.setMessage("WAKEUP");
+            WebService.nextPoint(fcmMessage);
+        }
 
-        checkAndCreateShipment(getAll());
-
-        final List<BeaconPackage> dataList = getDataPackageList();
+        final List<BeaconPackage> dataList = getDataToUpload();
 
         //warning if no location:
         if (mLocation == null) {
@@ -528,7 +515,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.i("[+] stored #" + id);
     }
 
-    private List<BeaconPackage> getDataPackageList() {
+    private List<BeaconPackage> getDataToUpload() {
         List<BeaconPackage> dataList = new ArrayList<>();
         for (Object o : deviceMap.entrySet()) {
             Map.Entry entry = (Map.Entry) o;
@@ -540,6 +527,18 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             }
         }
         return dataList;
+    }
+
+    private boolean checkIfNewData() {
+        for (Object o : deviceMap.entrySet()) {
+            Map.Entry entry = (Map.Entry) o;
+            String key = (String)entry.getKey();
+            BeaconPackage data = (BeaconPackage) entry.getValue();
+            if (isPaired(data) && data.isShouldUpload()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<BeaconPackage> getAll() {
@@ -635,6 +634,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private void onUpdateLocation(Location location) {
         Logger.d("[+_] onLocationChanged: " + location.getAccuracy());
+        FireLogger.d("[+_] onLocationChanged: " + location.getAccuracy());
         if (mLocation == null) {
             mLocation = location;
         } else {
@@ -735,6 +735,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
                     }
                     broadCastAllBeacon();
+                    checkAndCreateShipment(getAll());
                 }
             }
         });
@@ -755,6 +756,11 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         public BeaconService getService() {
             return BeaconService.this;
         }
+    }
+
+    @Subscribe (threadMode = ThreadMode.MAIN, priority = 0)
+    public void onUpdate(UpdateEvent event) {
+        start();
     }
 
     public class UpdateTokenAsync extends AsyncTask<Void, Void, Boolean> {

@@ -3,6 +3,7 @@ package au.com.smarttrace.beacon.ui;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -13,10 +14,12 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -63,6 +66,7 @@ import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.service.BeaconService;
+import au.com.smarttrace.beacon.service.jobs.firebase.Dispatcher;
 
 import static au.com.smarttrace.beacon.service.BeaconService.EXTRA_STARTED_FROM_NOTIFICATION;
 
@@ -127,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
-//        ignoreBattOpt();
+        ignoreBattOpt();
 
         if (!checkPermissions()) {
             requestPermissions();
@@ -179,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            //super.onBackPressed();
         }
     }
 
@@ -286,7 +290,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         );
     }
     private void requestPermissions() {
-        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION);
+        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
 
         if (shouldProvideRationale) {
             Snackbar.make(
@@ -327,7 +331,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             DBSyncJob.scheduleNow();
             DBSyncJob.schedule(); // update & sync every 15 minutes
-//            BeaconJobX.scheduleNow();
+//            Dispatcher.getInstance(this).schedule();
+            //BeaconJobX.schedule();
 //            BeaconJob00.schedule();
 //            BeaconJob05.schedule();
 //            BeaconJob10.schedule();
@@ -336,19 +341,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     }
 
-//    @SuppressLint("BatteryLife")
-//    private void ignoreBattOpt() {
-//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            String packageName = getPackageName();
-//            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-//            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-//                Intent intent = new Intent();
-//                intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-//                intent.setData(Uri.parse("package:" + packageName));
-//                startActivity(intent);
-//            }
-//        }
-//    }
+    @SuppressLint("BatteryLife")
+    private void ignoreBattOpt() {
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String packageName = getPackageName();
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                Intent intent = new Intent();
+                intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + packageName));
+                startActivity(intent);
+            }
+        }
+    }
 
     /**
      * Callback received when a permissions request has been completed.

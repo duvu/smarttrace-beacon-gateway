@@ -8,11 +8,16 @@ package au.com.smarttrace.beacon;
 
 import android.util.Log;
 
+import com.google.firebase.database.FirebaseDatabase;
+
+import au.com.smarttrace.beacon.service.NetworkUtils;
+
 public class Logger {
 
     public static void d(String message) {
-        if (AppConfig.DEBUG_ENABLED)
+        if (AppConfig.DEBUG_ENABLED) {
             Log.d(AppConfig.TAG, message);
+        }
     }
 
     public static void i(String message) {

@@ -84,16 +84,20 @@ public class NetworkUtils {
 
     @SuppressLint("MissingPermission")
     public static String getGatewayId() {
-        if (TextUtils.isEmpty(AppConfig.GATEWAY_ID)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (mTelephonyManager.getPhoneType() ==  TelephonyManager.PHONE_TYPE_CDMA) {
-                    AppConfig.GATEWAY_ID = mTelephonyManager.getMeid();
+        if (TextUtils.isEmpty(AppConfig.GATEWAY_ID) || "unknownImei".equalsIgnoreCase(AppConfig.GATEWAY_ID)) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (mTelephonyManager.getPhoneType() ==  TelephonyManager.PHONE_TYPE_CDMA) {
+                        AppConfig.GATEWAY_ID = mTelephonyManager.getMeid();
+                    } else {
+                        // GSM
+                        AppConfig.GATEWAY_ID = mTelephonyManager.getImei();
+                    }
                 } else {
-                    // GSM
-                    AppConfig.GATEWAY_ID = mTelephonyManager.getImei();
+                    AppConfig.GATEWAY_ID = mTelephonyManager.getDeviceId();
                 }
-            } else {
-                AppConfig.GATEWAY_ID = mTelephonyManager.getDeviceId();
+            } catch (Exception e) {
+                AppConfig.GATEWAY_ID = "unknownImei";
             }
         }
         return AppConfig.GATEWAY_ID;

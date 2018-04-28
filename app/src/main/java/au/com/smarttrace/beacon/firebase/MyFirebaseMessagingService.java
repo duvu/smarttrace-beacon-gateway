@@ -1,17 +1,24 @@
 package au.com.smarttrace.beacon.firebase;
 
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.support.annotation.WorkerThread;
 
 import com.evernote.android.job.JobManager;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import org.greenrobot.eventbus.EventBus;
+
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.model.UpdateEvent;
+import au.com.smarttrace.beacon.service.NetworkUtils;
 import au.com.smarttrace.beacon.service.jobs.BeaconJob00;
 import au.com.smarttrace.beacon.service.jobs.BeaconJob10;
 import au.com.smarttrace.beacon.service.BeaconService;
@@ -24,6 +31,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     BeaconService mService;
     boolean mBound;
+    PowerManager mPowerManager;
+    PowerManager.WakeLock mWakeLokc;
 
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -40,39 +49,55 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     };
 
+    PendingIntent wakeupIntent, bleWakeupIntent;
+
     @Override
     public void onCreate() {
         super.onCreate();
+        Intent iService = new Intent(this, BeaconService.class);
+        bindService(iService, mConnection, BIND_AUTO_CREATE);
+        mBound = true;
 
+        wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
+        bleWakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.bluetooth.btservice.action.ALARM_WAKEUP"), 0);
+
+        mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        mWakeLokc = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
     }
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
 
-        Logger.i("[MyFirebaseMessagingService >]: " + remoteMessage.getFrom());
-//        if (!App.isServiceRunning()) {
-//            Intent i = new Intent(this, SplashActivity.class);
-//            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//            i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//            startActivity(i);
-//        } else {
-////            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
-            DBSyncJob.scheduleNow();
-////            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
+        try {
+            mWakeLokc.acquire(10*60*1000);
+            Logger.i("[MyFirebaseMessagingService >]: " + remoteMessage.getFrom());
+            if (!App.isServiceRunning()) {
+                Intent i = new Intent(this, SplashActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(i);
+            } else {
+//            JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
+                DBSyncJob.scheduleNow();
+//            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
 ////            BeaconJob00.schedule();
 ////            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
 ////            BeaconJob10.schedule();
 //            BeaconJobX.scheduleNow();
-//        }
+            }
 
-        Intent iService = new Intent(this, BeaconService.class);
-        bindService(iService, mConnection, BIND_AUTO_CREATE);
-        mBound = true;
-        if (mService != null) {
-            mService.start();
-        } else {
-            startService(iService);
+
+            if (mService != null) {
+                mService.start();
+                FirebaseDatabase.getInstance().getReference("logs").child(NetworkUtils.getGatewayId()).child(System.currentTimeMillis()+"").setValue("Start From FCM Message");
+            } else {
+                FirebaseDatabase.getInstance().getReference("logs").child(NetworkUtils.getGatewayId()).child(System.currentTimeMillis()+"").setValue("Service Is Null");
+            }
+            EventBus.getDefault().post(new UpdateEvent());
+        } finally {
+            mWakeLokc.release();
         }
+
 
 //        // ...
 //
@@ -101,22 +126,5 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 //
 //        // Also if you intend on generating your own notifications as a result of a received FCM
 //        // message, here is where that should be initiated. See sendNotification method below.
-    }
-
-    @Override
-    public void onDeletedMessages() {
-        if (mBound) {
-            unbindService(mConnection);
-            mBound = false;
-        }
-    }
-
-    @Override
-    public void onDestroy() {
-        if (mBound) {
-            unbindService(mConnection);
-            mBound = false;
-        }
-        super.onDestroy();
     }
 }

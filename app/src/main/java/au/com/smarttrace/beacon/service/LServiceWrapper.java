@@ -26,6 +26,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.FireLogger;
 import au.com.smarttrace.beacon.Logger;
 
 public class LServiceWrapper {
@@ -38,8 +39,8 @@ public class LServiceWrapper {
     private Location mCurrentLocation;
     private Boolean mRequestingLocationUpdates = false;
 
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 4000;
-    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 12000;
+    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 4;
 
     private static LServiceWrapper instance = null;
     public static LServiceWrapper instances(Context mContext, LCallback mLCallback) {
@@ -98,6 +99,137 @@ public class LServiceWrapper {
         }
     }
 
+
+
+    /**
+     * Uses a {@link com.google.android.gms.location.LocationSettingsRequest.Builder} to build
+     * a {@link com.google.android.gms.location.LocationSettingsRequest} that is used for checking
+     * if a device has the needed location settings.
+     */
+    private void buildLocationSettingsRequest() {
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(mLocationRequest);
+        builder.setAlwaysShow(true);
+        builder.setNeedBle(true);
+        mLocationSettingsRequest = builder.build();
+    }
+
+
+    private void onUpdateLocation(Location location) {
+        Logger.d("[>_] onUpdateLocation");
+        if (mCurrentLocation == null) {
+            mCurrentLocation = location;
+        } else {
+            //1. check time age
+            if (location.getTime() - mCurrentLocation.getTime() >= AppConfig.SCANNING_TIMEOUT) {
+                mCurrentLocation = location;
+            } else
+                //2. check accuracy
+                if (location.hasAccuracy() && (location.getAccuracy() < mCurrentLocation.getAccuracy())) {
+                    mCurrentLocation = location;
+                }
+        }
+    }
+
+    /**
+     * Requests location updates from the FusedLocationApi. Note: we don't call this unless location
+     * runtime permission has been granted.
+     */
+    public void startLocationUpdates() {
+        if (mRequestingLocationUpdates) {
+            Logger.i("[>_] Location is updating");
+        } else {
+            // Begin by checking if the device has the necessary location settings.
+            mSettingsClient.checkLocationSettings(mLocationSettingsRequest)
+                    .addOnSuccessListener(new OnSuccessListener<LocationSettingsResponse>() {
+                        @Override
+                        public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+                            Logger.d("All location settings are satisfied.");
+                            FireLogger.d("All location settings are satisfied.");
+                            try {
+                                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper())
+                                        .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                            @Override
+                                            public void onSuccess(Void aVoid) {
+                                                mRequestingLocationUpdates = true;
+                                            }
+                                        });
+                            } catch (SecurityException unlikely) {
+                                Logger.d("Lost location permission. Could not request update");
+                                FireLogger.d("Lost location permission. Could not request update");
+                            }
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            int statusCode = ((ApiException) e).getStatusCode();
+                            switch (statusCode) {
+                                case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                                    Logger.d("Location settings are not satisfied. Attempting to upgrade location settings ");
+                                    mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+                                    mRequestingLocationUpdates = false;
+                                    break;
+                                case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                                    String errorMessage = "Location settings are inadequate, and cannot be fixed here. Fix in Settings.";
+                                    Logger.d(errorMessage);
+                                    mRequestingLocationUpdates = false;
+                            }
+                        }
+                    });
+        }
+    }
+
+    public void reset() {
+        if (!mRequestingLocationUpdates) {
+            Logger.d("stopLocationUpdates: updates never requested, no-op.");
+            startLocationUpdates();
+            return;
+        } else {
+
+            // It is a good practice to remove location requests when the activity is in a paused or
+            // stopped state. Doing so helps battery performance and is especially
+            // recommended in applications that request frequent location updates.
+//            mFusedLocationClient.removeLocationUpdates(mLocationCallback)
+//                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+//                        @Override
+//                        public void onComplete(@NonNull Task<Void> task) {
+//                            Logger.d("[>_] Removed Location Updates");
+//                            mRequestingLocationUpdates = false;
+//                            startLocationUpdates();
+//                        }
+//                    });
+        }
+    }
+    /**
+     * Removes location updates from the FusedLocationApi.
+     */
+
+    public void stopLocationUpdates() {
+        if (!mRequestingLocationUpdates) {
+            Logger.d("stopLocationUpdates: updates never requested, no-op.");
+            return;
+        }
+
+        // It is a good practice to remove location requests when the activity is in a paused or
+        // stopped state. Doing so helps battery performance and is especially
+        // recommended in applications that request frequent location updates.
+        mFusedLocationClient.removeLocationUpdates(mLocationCallback)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        Logger.d("[>_] Removed Location Updates");
+                        mRequestingLocationUpdates = false;
+                    }
+                });
+    }
+
+    public Location getCurrentLocation() {
+        if (mCurrentLocation == null) {
+            startLocationUpdates();
+        }
+        return mCurrentLocation;
+    }
     /**
      * Sets up the location request. Android has two location request settings:
      * {@code ACCESS_COARSE_LOCATION} and {@code ACCESS_FINE_LOCATION}. These settings control
@@ -126,108 +258,4 @@ public class LServiceWrapper {
 
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
     }
-
-    /**
-     * Uses a {@link com.google.android.gms.location.LocationSettingsRequest.Builder} to build
-     * a {@link com.google.android.gms.location.LocationSettingsRequest} that is used for checking
-     * if a device has the needed location settings.
-     */
-    private void buildLocationSettingsRequest() {
-        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
-        builder.addLocationRequest(mLocationRequest);
-        mLocationSettingsRequest = builder.build();
-    }
-
-
-    private void onUpdateLocation(Location location) {
-        Logger.d("[>_] onUpdateLocation");
-        if (mCurrentLocation == null) {
-            mCurrentLocation = location;
-        } else {
-            //1. check time age
-            if (location.getTime() - mCurrentLocation.getTime() >= AppConfig.SCANNING_TIMEOUT) {
-                mCurrentLocation = location;
-            } else
-                //2. check accuracy
-                if (location.hasAccuracy() && (location.getAccuracy() < mCurrentLocation.getAccuracy())) {
-                    mCurrentLocation = location;
-                }
-        }
-    }
-
-    /**
-     * Requests location updates from the FusedLocationApi. Note: we don't call this unless location
-     * runtime permission has been granted.
-     */
-    public void startLocationUpdates() {
-        if (mRequestingLocationUpdates) {
-            Logger.i("[>_] Location is updating");
-            return;
-        }
-        // Begin by checking if the device has the necessary location settings.
-        mSettingsClient.checkLocationSettings(mLocationSettingsRequest)
-                .addOnSuccessListener(new OnSuccessListener<LocationSettingsResponse>() {
-                    @Override
-                    public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
-                        Logger.d("All location settings are satisfied.");
-                        try {
-                            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper())
-                                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                        @Override
-                                        public void onSuccess(Void aVoid) {
-                                            mRequestingLocationUpdates = true;
-                                        }
-                                    });
-                        } catch (SecurityException unlikely) {
-                            Logger.d("Lost location permission. Could not request update");
-                        }
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        int statusCode = ((ApiException) e).getStatusCode();
-                        switch (statusCode) {
-                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                                Logger.d("Location settings are not satisfied. Attempting to upgrade location settings ");
-                                mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-                                mRequestingLocationUpdates = false;
-                                break;
-                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                                String errorMessage = "Location settings are inadequate, and cannot be fixed here. Fix in Settings.";
-                                Logger.d(errorMessage);
-                                mRequestingLocationUpdates = false;
-                        }
-                    }
-                });
-    }
-    /**
-     * Removes location updates from the FusedLocationApi.
-     */
-    public void stopLocationUpdates() {
-        if (!mRequestingLocationUpdates) {
-            Logger.d("stopLocationUpdates: updates never requested, no-op.");
-            return;
-        }
-
-        // It is a good practice to remove location requests when the activity is in a paused or
-        // stopped state. Doing so helps battery performance and is especially
-        // recommended in applications that request frequent location updates.
-        mFusedLocationClient.removeLocationUpdates(mLocationCallback)
-                .addOnCompleteListener(new OnCompleteListener<Void>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Void> task) {
-                        Logger.d("[>_] Removed Location Updates");
-                        mRequestingLocationUpdates = false;
-                    }
-                });
-    }
-
-    public Location getCurrentLocation() {
-        if (mCurrentLocation == null) {
-            startLocationUpdates();
-        }
-        return mCurrentLocation;
-    }
-
 }
