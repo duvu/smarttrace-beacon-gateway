@@ -25,6 +25,7 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.provider.AlarmClock;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -79,6 +80,7 @@ import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.model.UpdateEvent;
+import au.com.smarttrace.beacon.model.WakeUpEvent;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
 import au.com.smarttrace.beacon.net.model.FcmMessage;
@@ -197,8 +199,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
 
         mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
-        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
-        mBeaconManager.setForegroundScanPeriod(10*1000);
+//        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
+//        mBeaconManager.setForegroundScanPeriod(10*1000);
         mBeaconManager.bind(this);
         mBeaconManager.setBackgroundMode(false);
         syncSettingsToService();
@@ -239,6 +241,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             handler.postDelayed(stopManagerRunnable, AppConfig.SCANNING_TIMEOUT); //working for 30 seconds
     }
 
+
     private Runnable stopManagerRunnable = new Runnable() {
         @Override
         public void run() {
@@ -254,8 +257,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private void stopManagerAndResetAlarm() {
         stopAbsoluteTimer();
         locationWrapper.stopLocationUpdates();
-        //stopBLE();
+        stopBLE();
         broadcastData();
+        EventBus.getDefault().post(new WakeUpEvent());
 
     }
     @TargetApi(23)
@@ -331,19 +335,29 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
     }
 
-    private void stopBLE() {
-        if (!mBeaconManager.getBackgroundMode()) {
-            mBeaconManager.setForegroundBetweenScanPeriod(60 * 1000);
-            syncSettingsToService();
-        }
-    }
-
     private void startBLE() {
         FireLogger.d("[>_] startBLE #backgroundMode: " + mBeaconManager.getBackgroundMode());
         if (mBeaconManager.getBackgroundMode()) {
-            mBeaconManager.setForegroundBetweenScanPeriod(10 * 1000);
+            mBeaconManager.setForegroundBetweenScanPeriod(1100);
             mBeaconManager.setBackgroundMode(false);
-            syncSettingsToService();
+            try {
+                mBeaconManager.updateScanPeriods();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                Logger.e("Cannot update period", e);
+            }
+        }
+    }
+
+    private void stopBLE() {
+        if (!mBeaconManager.getBackgroundMode()) {
+            mBeaconManager.setForegroundBetweenScanPeriod(30000);
+            try {
+                mBeaconManager.updateScanPeriods();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                Logger.e("Cannot update period", e);
+            }
         }
     }
 
@@ -528,6 +542,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             Map.Entry entry = (Map.Entry) o;
             String key = (String)entry.getKey();
             BeaconPackage data = (BeaconPackage) entry.getValue();
+            Logger.d("[>_] getDataToUpload #" + data.getSerialNumberString());
             if (isPaired(data) && !data.isShouldCreateOnBoot()) {
                 dataList.add(data);
                 synchronized (deviceMap) {
@@ -543,6 +558,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             Map.Entry entry = (Map.Entry) o;
             String key = (String)entry.getKey();
             BeaconPackage data = (BeaconPackage) entry.getValue();
+            Logger.d("[>_] CheckIfNewData #" + data.getSerialNumberString());
             if (isPaired(data) && data.isShouldUpload()) {
                 return true;
             }
@@ -559,7 +575,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 .equal(PhonePaired_.phoneImei, NetworkUtils.getGatewayId())
                 .equal(PhonePaired_.beaconSerialNumber, data.getSerialNumberString())
                 .build();
-        Logger.i("[>... paired? ] " + data.getSerialNumberString() + " :#" + (query.findFirst() != null));
         return query.findFirst() != null;
     }
 

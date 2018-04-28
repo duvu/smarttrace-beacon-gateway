@@ -93,6 +93,8 @@ public class App extends Application implements BootstrapNotifier {
         regionBootstrap.addRegion(region3A01);
         regionBootstrap.addRegion(region3C01);
         regionBootstrap.addRegion(region3A04);
+
+        runActivity();
     }
 
     public BoxStore getBoxStore() {
@@ -104,13 +106,7 @@ public class App extends Application implements BootstrapNotifier {
         // check if service is running
         // if not, start it.
         Logger.d("[>_] Beacon enter region ... Service is running: " + isServiceRunning());
-        if (!isActivityVisible() && !isServiceRunning()) {
-            //start activity
-            Intent i = new Intent(this, SplashActivity.class);
-            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            this.startActivity(i);
-        }
+        runActivity();
     }
 
     @Override
@@ -121,5 +117,15 @@ public class App extends Application implements BootstrapNotifier {
     @Override
     public void didDetermineStateForRegion(int i, Region region) {
 
+    }
+
+    private void runActivity() {
+        if (!isActivityVisible() && !isServiceRunning()) {
+            //start activity
+            Intent i = new Intent(this, SplashActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            this.startActivity(i);
+        }
     }
 }

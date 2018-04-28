@@ -5,6 +5,8 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.KeyguardManager;
+import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -36,6 +38,9 @@ import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,7 +57,9 @@ import java.util.List;
 import java.util.Map;
 
 import au.com.smarttrace.beacon.App;
+import au.com.smarttrace.beacon.DeviceAdminReceiver;
 import au.com.smarttrace.beacon.Logger;
+import au.com.smarttrace.beacon.model.WakeUpEvent;
 import au.com.smarttrace.beacon.service.jobs.BeaconJob00;
 import au.com.smarttrace.beacon.service.jobs.BeaconJob05;
 import au.com.smarttrace.beacon.service.jobs.BeaconJob10;
@@ -109,9 +116,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     };
 
+    protected DevicePolicyManager mDPM;
+    protected ComponentName mDeviceAdmin;
+    protected boolean mAdminActive;
+    private static final int REQUEST_CODE_ENABLE_ADMIN = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mDPM = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
+        mDeviceAdmin = new ComponentName(this, DeviceAdminReceiver.class);
+
 
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
@@ -139,6 +155,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             makeServiceRunning();
         }
+
+        Button btnAdm = findViewById(R.id.btn_admin);
+
+        btnAdm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Logger.d("[>_] Made admin");
+                admin();
+            }
+        });
+    }
+
+    private void admin() {
+        //-- start admin
+        Logger.d("Enabled Admin");
+        Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+        intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, mDeviceAdmin);
+        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.app_name));
+        startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN);
+
+
     }
 
     @Override
@@ -342,6 +379,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     }
 
+    private void setTest() {
+        Window window = this.getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+
+        KeyguardManager manager = (KeyguardManager) this.getSystemService(Context.KEYGUARD_SERVICE);
+        KeyguardManager.KeyguardLock lock = manager.newKeyguardLock("abc");
+        lock.disableKeyguard();
+
+    }
+
     @SuppressLint("BatteryLife")
     private void ignoreBattOpt() {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -399,6 +447,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 //            Logger.d("[MainActivity]" + (i+1) + "、SN:" + BeaconPackageList.get(i).getSerialNumber() +" Temperature:" + BeaconPackageList.get(i).getTemperature() +"℃  Humidity:" + BeaconPackageList.get(i).getHumidity() + "% Battery:"+BeaconPackageList.get(i).getBatteryLevel()+"%");
 //        }
         showProgress(false);
+    }
+
+    @Subscribe
+    public void onWakeupRequest(WakeUpEvent event) {
+        Logger.d("[>_] WakeUpEvent ...");
+        setTest();
     }
 
     private void registerEventBus() {

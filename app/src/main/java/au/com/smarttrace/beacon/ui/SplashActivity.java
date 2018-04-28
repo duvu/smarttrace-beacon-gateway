@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.provider.AlarmClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -41,7 +42,8 @@ public class SplashActivity extends AppCompatActivity {
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.SET_ALARM
     };
 
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
@@ -87,6 +89,14 @@ public class SplashActivity extends AppCompatActivity {
             checkLogin();
         }
     }
+
+//    private void setUpAlarmClock() {
+//        Intent openNewAlarm = new Intent(AlarmClock.ACTION_SET_ALARM);
+//        openNewAlarm.putExtra(AlarmClock.EXTRA_HOUR, 0);
+//        openNewAlarm.putExtra(AlarmClock.EXTRA_MINUTES, 5);
+//        startActivity(openNewAlarm);
+//    }
+
 
     @Override
     protected void onStart() {
