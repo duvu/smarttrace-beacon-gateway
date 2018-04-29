@@ -35,8 +35,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.support.v4.content.ContextCompat;
-
-import com.google.common.base.Strings;
+import android.text.TextUtils;
 
 import java.util.List;
 import java.util.Locale;
@@ -115,7 +114,7 @@ public class Systems {
 
     public static void setLocale(String userSpecifiedLocale, Context baseContext, Resources resources) {
 
-        if (!Strings.isNullOrEmpty(userSpecifiedLocale)) {
+        if (!TextUtils.isEmpty(userSpecifiedLocale)) {
             Logger.d("Setting language to " + userSpecifiedLocale);
 
             String language, country="";

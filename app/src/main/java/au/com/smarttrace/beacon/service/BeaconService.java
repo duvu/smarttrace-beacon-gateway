@@ -143,6 +143,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     FirebaseDatabase database;
     DatabaseReference ref;
 
+
+
     LServiceWrapper locationWrapper;
     private LCallback lCallback;
 
@@ -199,7 +201,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
 
         mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
-//        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
+        mBeaconManager.setForegroundBetweenScanPeriod(5*1000);
 //        mBeaconManager.setForegroundScanPeriod(10*1000);
         mBeaconManager.bind(this);
         mBeaconManager.setBackgroundMode(false);
@@ -256,8 +258,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private void stopManagerAndResetAlarm() {
         stopAbsoluteTimer();
-        locationWrapper.stopLocationUpdates();
-        stopBLE();
+        //locationWrapper.stopLocationUpdates();
+        //stopBLE();
         broadcastData();
         EventBus.getDefault().post(new WakeUpEvent());
 
@@ -690,7 +692,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 .addAction(R.drawable.ic_launch, getString(R.string.launch_activity), activityPendingIntent)
                 //.addAction(R.drawable.ic_cancel, getString(R.string.cancel_service), servicePendingIntent)
                 .setContentText(text)
-                .setContentTitle(ServiceUtils.getLocationTitle(this))
+                .setContentTitle("SmartTraceIO")
                 .setOngoing(true)
                 .setPriority(Notification.PRIORITY_HIGH)
                 .setSmallIcon(R.drawable.notification)

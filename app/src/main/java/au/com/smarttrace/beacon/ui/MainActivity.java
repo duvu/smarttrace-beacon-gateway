@@ -156,15 +156,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             makeServiceRunning();
         }
 
-        Button btnAdm = findViewById(R.id.btn_admin);
-
-        btnAdm.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Logger.d("[>_] Made admin");
+//        Button btnAdm = findViewById(R.id.btn_admin);
+//
+//        btnAdm.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Logger.d("[>_] Made admin");
                 admin();
-            }
-        });
+//            }
+//        });
     }
 
     private void admin() {
@@ -251,6 +251,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Intent i = new Intent(MainActivity.this, BeaconListActivity.class);
                 startActivity(i);
                 return true;
+            case R.id.action_remove:
+                mDPM.removeActiveAdmin(mDeviceAdmin);
+                break;
         }
 
         //noinspection SimplifiableIfStatement

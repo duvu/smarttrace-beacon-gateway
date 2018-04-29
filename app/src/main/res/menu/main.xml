@@ -17,7 +17,11 @@
         android:orderInCategory="101"
         android:title="@string/action_beacons"
         app:showAsAction="never" />
-
+    <item
+        android:id="@+id/action_remove"
+        android:orderInCategory="102"
+        android:title="@string/action_remove_admin"
+        app:showAsAction="never" />
     <item
         android:id="@+id/action_logout"
         android:orderInCategory="102"

@@ -21,4 +21,9 @@ public class DeviceAdminReceiver extends android.app.admin.DeviceAdminReceiver {
     public void onEnabled(Context context, Intent intent) {
         showToast(context, context.getString(R.string.admin_receiver_status_enabled));
     }
+
+    @Override
+    public void onDisabled(Context context, Intent intent) {
+        showToast(context, context.getString(R.string.admin_receiver_status_disabled));
+    }
 }

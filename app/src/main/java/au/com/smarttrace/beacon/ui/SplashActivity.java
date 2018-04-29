@@ -43,7 +43,8 @@ public class SplashActivity extends AppCompatActivity {
             Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.BLUETOOTH,
             Manifest.permission.BLUETOOTH_ADMIN,
-            Manifest.permission.SET_ALARM
+            Manifest.permission.SET_ALARM,
+            Manifest.permission.DISABLE_KEYGUARD
     };
 
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;

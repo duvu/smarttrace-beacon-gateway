@@ -416,5 +416,7 @@
     <string name="ok">OK</string>
     <string name="admin_receiver_status">Device Admin: %1$s</string>
     <string name="admin_receiver_status_enabled">Admin Enabled</string>
+    <string name="action_remove_admin">Disable Admin</string>
+    <string name="admin_receiver_status_disabled">Disable Admin</string>
 
 </resources>

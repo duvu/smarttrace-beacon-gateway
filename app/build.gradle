@@ -6,8 +6,8 @@ android {
         applicationId "au.com.smarttrace.beacon"
         minSdkVersion 18
         targetSdkVersion 27
-        versionCode 64
-        versionName "1.4.1"
+        versionCode 65
+        versionName "1.4.3"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         javaCompileOptions {
@@ -54,6 +54,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-crash:15.0.0'
     implementation 'com.google.firebase:firebase-messaging:15.0.0'
     implementation 'com.google.firebase:firebase-auth:15.0.0'
+    implementation 'com.google.firebase:firebase-firestore:15.0.0'
+
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 
     testImplementation 'junit:junit:4.12'
@@ -68,8 +70,6 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.8.2'
 
-
-    implementation 'com.google.guava:guava:24.1-android'
     implementation "io.objectbox:objectbox-android:$objectboxVersion"
     annotationProcessor "io.objectbox:objectbox-processor:$objectboxVersion"
 }

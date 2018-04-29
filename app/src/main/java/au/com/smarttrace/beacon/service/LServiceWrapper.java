@@ -39,8 +39,8 @@ public class LServiceWrapper {
     private Location mCurrentLocation;
     private Boolean mRequestingLocationUpdates = false;
 
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 12000;
-    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 4;
+    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 20000;
+    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 10;
 
     private static LServiceWrapper instance = null;
     public static LServiceWrapper instances(Context mContext, LCallback mLCallback) {
