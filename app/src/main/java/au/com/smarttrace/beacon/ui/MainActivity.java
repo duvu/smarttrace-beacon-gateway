@@ -155,16 +155,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             makeServiceRunning();
         }
-
-//        Button btnAdm = findViewById(R.id.btn_admin);
-//
-//        btnAdm.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Logger.d("[>_] Made admin");
-                admin();
-//            }
-//        });
+        //admin();
     }
 
     private void admin() {
