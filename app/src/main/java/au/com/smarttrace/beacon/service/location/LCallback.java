@@ -1,4 +1,4 @@
-package au.com.smarttrace.beacon.service;
+package au.com.smarttrace.beacon.service.location;
 
 import android.location.Location;
 

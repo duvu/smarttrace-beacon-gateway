@@ -503,7 +503,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Location location = intent.getParcelableExtra(BeaconService.EXTRA_LOCATION);
             if (location != null) {
                 Toast.makeText(MainActivity.this, ServiceUtils.getLocationText(location),
-                        Toast.LENGTH_SHORT).show();
+                        Toast.LENGTH_LONG).show();
             }
         }
     }

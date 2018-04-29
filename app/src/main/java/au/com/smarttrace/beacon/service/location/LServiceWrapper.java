@@ -1,11 +1,10 @@
-package au.com.smarttrace.beacon.service;
+package au.com.smarttrace.beacon.service.location;
 
 import android.content.Context;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Looper;
-import android.os.NetworkOnMainThreadException;
 import android.support.annotation.NonNull;
-import android.support.annotation.WorkerThread;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -22,9 +21,6 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.FireLogger;
 import au.com.smarttrace.beacon.Logger;
@@ -38,6 +34,11 @@ public class LServiceWrapper {
     private LocationCallback mLocationCallback;
     private Location mCurrentLocation;
     private Boolean mRequestingLocationUpdates = false;
+
+    // manually location service
+    private LocationManager mLocationManager;
+    //private LocationManager towerLocationManager;
+
 
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 20000;
     private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 10;
@@ -65,6 +66,8 @@ public class LServiceWrapper {
         createLocationCallback();
         createLocationRequest();
         buildLocationSettingsRequest();
+        //--
+        mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
     }
 
     public LCallback getLCallback() {

@@ -7,6 +7,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -25,7 +26,6 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.provider.AlarmClock;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
@@ -36,7 +36,6 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
@@ -59,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
@@ -86,6 +86,8 @@ import au.com.smarttrace.beacon.net.WebService;
 import au.com.smarttrace.beacon.net.model.FcmMessage;
 import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.net.model.LoginResponse;
+import au.com.smarttrace.beacon.service.location.LCallback;
+import au.com.smarttrace.beacon.service.location.LServiceWrapper;
 import au.com.smarttrace.beacon.ui.MainActivity;
 import io.objectbox.Box;
 import io.objectbox.query.Query;
@@ -111,6 +113,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     boolean _mShouldCreateOnBoot = false;
     private boolean updatingToken = false;
+
+    private final long start_up_time = System.currentTimeMillis();
+    private long last_ble_event;
 
     // phone battery
     private float mBatteryLevel = 0.0f;
@@ -196,9 +201,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 //        handler.postDelayed(heartbeat, 10*1000);
         mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
 
-        if (!mWakeLokc.isHeld()) {
-            mWakeLokc.acquire(14* 24 * 60 * 60 * 1000); // 14 days
-        }
+//        if (!mWakeLokc.isHeld()) {
+//            mWakeLokc.acquire(14* 24 * 60 * 60 * 1000); // 14 days
+//        }
 
         mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
         mBeaconManager.setForegroundBetweenScanPeriod(5*1000);
@@ -239,58 +244,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         startForeground(NOTIFICATION_ID, getNotification());
     }
 
-    private void startAbsoluteTimer() {
-            handler.postDelayed(stopManagerRunnable, AppConfig.SCANNING_TIMEOUT); //working for 30 seconds
-    }
-
-
-    private Runnable stopManagerRunnable = new Runnable() {
-        @Override
-        public void run() {
-            Logger.d("[-->] Absolute timeout reached!");
-            stopManagerAndResetAlarm();
-        }
-    };
-
-    private void stopAbsoluteTimer() {
-        handler.removeCallbacks(stopManagerRunnable);
-    }
-
-    private void stopManagerAndResetAlarm() {
-        stopAbsoluteTimer();
-        //locationWrapper.stopLocationUpdates();
-        //stopBLE();
-        broadcastData();
-        EventBus.getDefault().post(new WakeUpEvent());
-
-    }
-    @TargetApi(23)
-    private void setAlarmForNextPoint() {
-        Logger.d("[>_] Set alarm in: " + getNotificationTimeOut() + "seconds");
-
-        Intent i = new Intent(this, BeaconService.class);
-        i.putExtra(GET_NEXT_POINT, true);
-        PendingIntent pi = PendingIntent.getService(this, 0, i, 0);
-        nextPointAlarmManager.cancel(pi);
-
-        if(Systems.isDozing(this)){
-            //Only invoked once per 15 minutes in doze mode
-            Logger.d("Device is dozing, using infrequent alarm");
-            nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
-        }
-        else {
-            nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointTimestamp(), pi);
-        }
-    }
-
-    private long getNextPointTimestamp() {
-        if (isAtStartLocations()) {
-            return SystemClock.elapsedRealtime() + 10 * 1000;
-        } else {
-            return SystemClock.elapsedRealtime() + 10 * 60 * 1000;
-        }
-    }
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Logger.i("##Service Started: " + SharedPref.getToken());
@@ -326,40 +279,108 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         return START_NOT_STICKY;
     }
 
+    private void startAbsoluteTimer() {
+        handler.postDelayed(stopManagerRunnable, AppConfig.SCANNING_TIMEOUT); //working for 30 seconds
+    }
+
+
+    private Runnable stopManagerRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Logger.d("[-->] Absolute timeout reached!");
+            stopManagerAndResetAlarm();
+        }
+    };
+
+    private void stopAbsoluteTimer() {
+        handler.removeCallbacks(stopManagerRunnable);
+    }
+
+    private void stopManagerAndResetAlarm() {
+        stopAbsoluteTimer();
+        locationWrapper.stopLocationUpdates();
+        stopBLE();
+        broadcastData();
+        EventBus.getDefault().post(new WakeUpEvent());
+
+    }
+    @TargetApi(23)
+    private void setAlarmForNextPoint() {
+        Logger.d("[>_] Set alarm in: " + getNotificationTimeOut() + " seconds");
+
+        Intent i = new Intent(this, BeaconService.class);
+        i.putExtra(GET_NEXT_POINT, true);
+        PendingIntent pi = PendingIntent.getService(this, 0, i, 0);
+        nextPointAlarmManager.cancel(pi);
+
+        if(Systems.isDozing(this)){
+            //Only invoked once per 15 minutes in doze mode
+            Logger.d("Device is dozing, using infrequent alarm");
+            nextPointAlarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointElapsedRealtime(), pi);
+        }
+        else {
+            nextPointAlarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, getNextPointElapsedRealtime(), pi);
+        }
+    }
+
+    private long getNextPointElapsedRealtime() {
+        if (isAtStartLocations() && (System.currentTimeMillis() < (start_up_time + 10*60*1000))) {
+            return SystemClock.elapsedRealtime() + 11 * 1000;
+        } else {
+            return SystemClock.elapsedRealtime() + 10 * 60 * 1000;
+        }
+    }
+
     public void start() {
         Logger.d("[>>] Start scanning");
-        FireLogger.d("[>>] Start scanning");
-        try {
             locationWrapper.startLocationUpdates();
             startBLE();
             startAbsoluteTimer();
-        } finally {
-        }
     }
 
     private void startBLE() {
         FireLogger.d("[>_] startBLE #backgroundMode: " + mBeaconManager.getBackgroundMode());
+        toggleBluetoothIfNeed();
         if (mBeaconManager.getBackgroundMode()) {
-            mBeaconManager.setForegroundBetweenScanPeriod(1100);
+
+            if (mBeaconManager.getForegroundBetweenScanPeriod() > 1100) {
+                mBeaconManager.setForegroundBetweenScanPeriod(1100);
+            }
+
             mBeaconManager.setBackgroundMode(false);
             try {
                 mBeaconManager.updateScanPeriods();
             } catch (RemoteException e) {
-                e.printStackTrace();
                 Logger.e("Cannot update period", e);
             }
+            syncSettingsToService();
         }
     }
 
     private void stopBLE() {
         if (!mBeaconManager.getBackgroundMode()) {
-            mBeaconManager.setForegroundBetweenScanPeriod(30000);
+            mBeaconManager.setBackgroundMode(true);
             try {
                 mBeaconManager.updateScanPeriods();
             } catch (RemoteException e) {
-                e.printStackTrace();
                 Logger.e("Cannot update period", e);
             }
+            syncSettingsToService();
+        }
+    }
+
+    private void toggleBluetoothIfNeed() {
+        if ((last_ble_event + TimeUnit.MINUTES.toMillis(8)) <= System.currentTimeMillis()) {
+            final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (bluetoothAdapter.isEnabled()) {
+                bluetoothAdapter.disable();
+            }
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    bluetoothAdapter.enable();
+                }
+            }, TimeUnit.SECONDS.toMillis(5));
         }
     }
 
@@ -430,6 +451,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                     .build();
 
             NotificationManagerCompat.from(this).notify(new Random().nextInt(), notification);
+            setAlarmForNextPoint();
+            return;
         }
 
         if (dataList == null || dataList.size() == 0) {
@@ -775,7 +798,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     @Override
     public void onBeaconServiceConnect() {
-        Logger.i("[+] onBeaconServiceConnect");
+        Logger.i("[>_] onBeaconServiceConnect ...");
         mBeaconManager.addRangeNotifier(new RangeNotifier() {
             @Override
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
@@ -796,6 +819,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                     }
                     broadCastAllBeacon();
                     checkAndCreateShipment(getAll());
+                    last_ble_event = System.currentTimeMillis();
                 }
             }
         });
@@ -810,6 +834,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private void syncSettingsToService() {
         ScanJobScheduler.getInstance().applySettingsToScheduledJob(this, mBeaconManager);
     }
+
+
+
 
     //-- class LocalBinder --
     public class LocalBinder extends Binder {

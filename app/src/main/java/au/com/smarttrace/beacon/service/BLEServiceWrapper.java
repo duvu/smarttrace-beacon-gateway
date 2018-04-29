@@ -15,7 +15,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 import au.com.smarttrace.beacon.Logger;
-import au.com.smarttrace.beacon.model.BeaconPackage;
+import au.com.smarttrace.beacon.service.location.LServiceWrapper;
 
 public class BLEServiceWrapper {
     LServiceWrapper locationWrapper;
