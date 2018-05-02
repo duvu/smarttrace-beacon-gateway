@@ -106,6 +106,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private final long start_up_time = System.currentTimeMillis();
     private long last_ble_event;
+    private boolean last_changed = false;
 
     // phone battery
     private float mBatteryLevel = 0.0f;
@@ -174,6 +175,13 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         nextPointAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
 
+        mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
+        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
+        mBeaconManager.setForegroundScanPeriod(5*1000);
+        mBeaconManager.bind(this);
+        mBeaconManager.setBackgroundMode(false);
+        syncSettingsToService();
+
         //--heartbeat
         handlerThread = new HandlerThread(AppConfig.TAG);
         handlerThread.start();
@@ -226,12 +234,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Logger.d("##Service Started: " + SharedPref.getToken());
-        mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
-        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
-        mBeaconManager.setForegroundScanPeriod(5*1000);
-        mBeaconManager.bind(this);
-        mBeaconManager.setBackgroundMode(false);
-        syncSettingsToService();
+
+
 
         currentToken = SharedPref.getToken();
 
@@ -267,6 +271,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         stopAbsoluteTimer();
         locationWrapper.stopLocationUpdates();
         stopBLE();
+        checkIfNewData();
+        checkAndCreateShipment(getAll());
         broadcastData();
         EventBus.getDefault().post(new WakeUpEvent());
 
@@ -291,6 +297,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private long getNextPointElapsedRealtime() {
+        if (mLocation == null || !last_changed) {
+            return SystemClock.elapsedRealtime() + 10 * 1000;
+        } else
         if (isAtStartLocations() && (System.currentTimeMillis() < (start_up_time + 10*60*1000))) {
             return SystemClock.elapsedRealtime() + 11 * 1000;
         } else {
@@ -391,7 +400,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
         createNotification();
 
-        if (checkIfNewData()) {
+        if (last_changed) {
             FcmMessage fcmMessage = new FcmMessage();
             fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis())); // for 10 minute
             fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
@@ -546,9 +555,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             BeaconPackage data = (BeaconPackage) entry.getValue();
             Logger.d("[>_] CheckIfNewData #" + data.getSerialNumberString());
             if (isPaired(data) && data.isShouldUpload()) {
+                last_changed = true;
                 return true;
             }
         }
+        Logger.d("[>_] No new data");
+        last_changed = false;
         return false;
     }
 
@@ -689,10 +701,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private long getNotificationTimeOut() {
-        if (isAtStartLocations()) {
-            return 12*1000;
+        if (isAtStartLocations() || mLocation == null || !last_changed) {
+            return 10*1000;
         } else {
-            return 12*60*1000;
+            return 10*60*1000;
         }
     }
 
@@ -780,7 +792,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);
                     }
                     broadCastAllBeacon();
-                    checkAndCreateShipment(getAll());
                     last_ble_event = System.currentTimeMillis();
                 }
             }

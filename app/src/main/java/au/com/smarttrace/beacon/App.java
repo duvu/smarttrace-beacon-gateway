@@ -120,7 +120,7 @@ public class App extends Application implements BootstrapNotifier {
     }
 
     private void runActivity() {
-        if (!isActivityVisible() && !isServiceRunning()) {
+        if (!isActivityVisible()) {
             //start activity
             Intent i = new Intent(this, SplashActivity.class);
             i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);

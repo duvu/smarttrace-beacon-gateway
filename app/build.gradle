@@ -6,8 +6,8 @@ android {
         applicationId "au.com.smarttrace.beacon"
         minSdkVersion 18
         targetSdkVersion 27
-        versionCode 65
-        versionName "1.4.3"
+        versionCode 68
+        versionName "1.4.7"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         javaCompileOptions {
