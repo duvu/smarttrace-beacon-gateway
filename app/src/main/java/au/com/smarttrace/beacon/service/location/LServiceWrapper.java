@@ -22,7 +22,6 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
 import au.com.smarttrace.beacon.AppConfig;
-import au.com.smarttrace.beacon.FireLogger;
 import au.com.smarttrace.beacon.Logger;
 
 public class LServiceWrapper {
@@ -119,7 +118,6 @@ public class LServiceWrapper {
 
 
     private void onUpdateLocation(Location location) {
-        Logger.d("[>_] onUpdateLocation");
         if (mCurrentLocation == null) {
             mCurrentLocation = location;
         } else {
@@ -148,7 +146,6 @@ public class LServiceWrapper {
                         @Override
                         public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
                             Logger.d("All location settings are satisfied.");
-                            FireLogger.d("All location settings are satisfied.");
                             try {
                                 mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper())
                                         .addOnSuccessListener(new OnSuccessListener<Void>() {
@@ -159,7 +156,6 @@ public class LServiceWrapper {
                                         });
                             } catch (SecurityException unlikely) {
                                 Logger.d("Lost location permission. Could not request update");
-                                FireLogger.d("Lost location permission. Could not request update");
                             }
                         }
                     })

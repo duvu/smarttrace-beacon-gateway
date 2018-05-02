@@ -26,18 +26,10 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.AuthResult;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.iid.FirebaseInstanceId;
 
 import org.altbeacon.beacon.Beacon;
@@ -62,7 +54,6 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
-import au.com.smarttrace.beacon.FireLogger;
 import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
@@ -74,7 +65,6 @@ import au.com.smarttrace.beacon.db.Locations_;
 import au.com.smarttrace.beacon.db.PhonePaired;
 import au.com.smarttrace.beacon.db.PhonePaired_;
 import au.com.smarttrace.beacon.db.SensorData;
-import au.com.smarttrace.beacon.firebase.ToFirebase;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
@@ -144,12 +134,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private HandlerThread handlerThread = null;
     private String currentToken = null;
 
-    private FirebaseAuth mAuth;
-    FirebaseDatabase database;
-    DatabaseReference ref;
-
-
-
     LServiceWrapper locationWrapper;
     private LCallback lCallback;
 
@@ -191,26 +175,20 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
 
         //--heartbeat
-//        handlerThread = new HandlerThread(AppConfig.TAG);
-//        handlerThread.start();
+        handlerThread = new HandlerThread(AppConfig.TAG);
+        handlerThread.start();
+        handler = new Handler(handlerThread.getLooper());
 
-        handler = new Handler();
-
-        handler = new Handler();
-        wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
+//        handler = new Handler();
+//        wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
 //        handler.postDelayed(heartbeat, 10*1000);
-        mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
+//        mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
+
 
 //        if (!mWakeLokc.isHeld()) {
 //            mWakeLokc.acquire(14* 24 * 60 * 60 * 1000); // 14 days
 //        }
 
-        mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
-        mBeaconManager.setForegroundBetweenScanPeriod(5*1000);
-//        mBeaconManager.setForegroundScanPeriod(10*1000);
-        mBeaconManager.bind(this);
-        mBeaconManager.setBackgroundMode(false);
-        syncSettingsToService();
 
         lCallback = new LCallback() {
             @Override
@@ -228,7 +206,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             NotificationChannel channel = new NotificationChannel(getString(R.string.default_notification_channel_id), name, NotificationManager.IMPORTANCE_DEFAULT);
             mNotificationManager.createNotificationChannel(channel);
         }
-        registerEventBus();
+
 
         //-- init database;
         eventBox = ((App) getApplicationContext()).getBoxStore().boxFor(EventData.class);
@@ -242,37 +220,25 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         registerReceiver(mBatteryLevelReceiver, intentFilter);
 
         startForeground(NOTIFICATION_ID, getNotification());
+        registerEventBus();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Logger.i("##Service Started: " + SharedPref.getToken());
+        Logger.d("##Service Started: " + SharedPref.getToken());
+        mBeaconManager = BeaconManager.getInstanceForApplication(this.getApplicationContext());
+        mBeaconManager.setForegroundBetweenScanPeriod(10*1000);
+        mBeaconManager.setForegroundScanPeriod(5*1000);
+        mBeaconManager.bind(this);
+        mBeaconManager.setBackgroundMode(false);
+        syncSettingsToService();
 
-        String token = FirebaseInstanceId.getInstance().getToken();
-        mAuth = FirebaseAuth.getInstance();
-        database = FirebaseDatabase.getInstance();
-        ref = database.getReference(NetworkUtils.getGatewayId());
-        ref.child("TOKEN").setValue(token);
         currentToken = SharedPref.getToken();
 
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 
         //-- load Shipment Location
         loadLocations();
-
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        if (currentUser == null || currentUser.isAnonymous()) {
-            Logger.i("LogginInFirebase");
-            mAuth.signInWithEmailAndPassword("hoaivubk@gmail.com", "poiuyt01")
-                    .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                        @Override
-                        public void onComplete(@NonNull Task<AuthResult> task) {
-                            Logger.i("[>] logged in");
-                        }
-                    });
-        }
-
         checkIfNeedToCreateShipmentOnBoot();
         App.serviceStarted();
         start();
@@ -297,6 +263,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void stopManagerAndResetAlarm() {
+        Logger.d("[>_] stopManagerAndResetAlarm");
         stopAbsoluteTimer();
         locationWrapper.stopLocationUpdates();
         stopBLE();
@@ -339,7 +306,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void startBLE() {
-        FireLogger.d("[>_] startBLE #backgroundMode: " + mBeaconManager.getBackgroundMode());
+        Logger.d("[>_] startBLE #backgroundMode: " + mBeaconManager.getBackgroundMode());
         toggleBluetoothIfNeed();
         if (mBeaconManager.getBackgroundMode()) {
 
@@ -477,12 +444,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             Logger.d("[Exception ...]");
             setAlarmForNextPoint();
         }
-
-        Logger.i("[>] saving to firebase");
-        DatabaseReference locRef = ref.child(System.currentTimeMillis()+"");
-        ToFirebase tfb = ToFirebase.fromRaw(event);
-        locRef.setValue(tfb);
-
 
         //2. upload new data
         String dataForUpload = DataUtil.formatData(event);
@@ -683,7 +644,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private void onUpdateLocation(Location location) {
         Logger.d("[+_] onLocationChanged: " + location.getAccuracy());
-        FireLogger.d("[+_] onLocationChanged: " + location.getAccuracy());
         if (mLocation == null) {
             mLocation = location;
         } else {
@@ -813,6 +773,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                             bt04.setShouldCreateOnBoot(_mShouldCreateOnBoot);
                         } else {
                             bt04.updateFromBeacon(beacon);
+                            deviceMap.remove(beacon.getBluetoothAddress());
+
                         }
                         bt04.setPhoneBatteryLevel(mBatteryLevel);
                         deviceMap.put(beacon.getBluetoothAddress(), bt04);

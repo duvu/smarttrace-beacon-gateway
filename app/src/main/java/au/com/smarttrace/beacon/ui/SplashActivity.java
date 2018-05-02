@@ -117,13 +117,13 @@ public class SplashActivity extends AppCompatActivity {
 
     private void moveToMain() {
         Intent intent = new Intent(SplashActivity.this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 
     private void moveToLogin() {
         Intent intent = new Intent(SplashActivity.this, LoginActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 

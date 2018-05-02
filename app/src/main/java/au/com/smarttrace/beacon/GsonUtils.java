@@ -23,8 +23,7 @@ public class GsonUtils {
         try {
             return gson.fromJson(json, classOfT);
         } catch (JsonSyntaxException jse) {
-            //Logger.e("JsonParsing #", jse);
-            Logger.d("[>>JSON ERROR] #" + json);
+            //Logger.d("[>>JSON ERROR] #" + json);
             return null;
         }
     }
@@ -33,7 +32,7 @@ public class GsonUtils {
         try {
             return gson.toJson(ob);
         } catch (Exception ex) {
-            Logger.e("JsonError", ex);
+            //Logger.e("JsonError", ex);
             return null;
         }
     }

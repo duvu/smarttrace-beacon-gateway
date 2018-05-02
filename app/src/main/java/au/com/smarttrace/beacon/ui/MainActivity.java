@@ -77,17 +77,7 @@ import au.com.smarttrace.beacon.service.jobs.firebase.Dispatcher;
 
 import static au.com.smarttrace.beacon.service.BeaconService.EXTRA_STARTED_FROM_NOTIFICATION;
 
-@TargetApi(Build.VERSION_CODES.M)
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
-
-    private static final String[] INITIAL_PERMS={
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_PHONE_STATE,
-            Manifest.permission.BLUETOOTH,
-            Manifest.permission.BLUETOOTH_ADMIN
-    };
 
     // Used in checking for runtime permissions.
     private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
@@ -98,8 +88,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private View mProgressView;
     private View mMainScreenView;
-
-    private final Handler mHandler = new Handler();
 
     private final ServiceConnection mConnection = new ServiceConnection() {
         @Override
@@ -119,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected DevicePolicyManager mDPM;
     protected ComponentName mDeviceAdmin;
     protected boolean mAdminActive;
-    private static final int REQUEST_CODE_ENABLE_ADMIN = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,26 +134,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         mProgressView = findViewById(R.id.main_progress);
         mMainScreenView = findViewById(R.id.main_screen);
-
-        ignoreBattOpt();
-
-        if (!checkPermissions()) {
-            requestPermissions();
-        } else {
-            makeServiceRunning();
-        }
-        //admin();
-    }
-
-    private void admin() {
-        //-- start admin
-        Logger.d("Enabled Admin");
-        Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
-        intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, mDeviceAdmin);
-        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.app_name));
-        startActivityForResult(intent, REQUEST_CODE_ENABLE_ADMIN);
-
-
     }
 
     @Override
@@ -180,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onResume() {
         super.onResume();
         App.activityStarted();
+        makeServiceRunning();
         LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver, new IntentFilter(BeaconService.ACTION_BROADCAST));
     }
 
@@ -201,9 +169,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void onDestroy() {
-        Logger.d("[MainActivity] Destroying");
-        unregisterEventBus();
         super.onDestroy();
+        Logger.d("[MainActivity] Destroying");
+
+        unregisterEventBus();
     }
 
     @Override
@@ -212,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            //super.onBackPressed();
+            super.onBackPressed();
         }
     }
 
@@ -246,37 +215,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 mDPM.removeActiveAdmin(mDeviceAdmin);
                 break;
         }
-
-        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_logout) {
-//            SharedPref.clear();
-//            mService.stopSelf();
-//            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-//            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-//            startActivity(intent);
-//            return true;
-//        }
-//
-//        if (id == R.id.action_beacons) {
-//            Intent i = new Intent(MainActivity.this, BeaconListActivity.class);
-//            startActivity(i);
-//            return true;
-//        }
-
-//        if (id == R.id.action_settings) {
-//            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-//            intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-//            startActivity(intent);
-//            return true;
-//        }
-//
-//        if (id == R.id.action_create_shipment) {
-//            if (mBound) {
-//                mService.wipeAllDataOut();
-//            }
-//            return true;
-//        }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -300,50 +238,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-    /**
-     * Returns the current state of the permissions needed.
-     * Manifest.permission.ACCESS_FINE_LOCATION,
-     * Manifest.permission.ACCESS_COARSE_LOCATION,
-     * Manifest.permission.WRITE_EXTERNAL_STORAGE,
-     * Manifest.permission.READ_PHONE_STATE,
-     * Manifest.permission.BLUETOOTH,
-     * Manifest.permission.BLUETOOTH_ADMIN
-     */
-    private boolean checkPermissions() {
-        return (
-                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) &&
-                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) &&
-                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) &&
-                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) &&
-                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) &&
-                PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN)
-
-        );
-    }
-    private void requestPermissions() {
-        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
-
-        if (shouldProvideRationale) {
-            Snackbar.make(
-                    findViewById(R.id.drawer_layout),
-                    R.string.permission_rationale,
-                    Snackbar.LENGTH_INDEFINITE)
-                    .setAction(R.string.ok, new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            // Request permission
-                            ActivityCompat.requestPermissions(MainActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
-                        }
-                    })
-                    .show();
-        } else {
-            Logger.i("Requesting permission");
-            // Request permission. It's possible this can be auto answered if device policy
-            // sets the permission in a given state or the user denied the permission
-            // previously and checked "Never ask again".
-            ActivityCompat.requestPermissions(MainActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
-        }
     }
 
     private void makeServiceRunning() {
@@ -373,64 +267,39 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     }
 
-    private void setTest() {
-        Window window = this.getWindow();
-        window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
-
-        KeyguardManager manager = (KeyguardManager) this.getSystemService(Context.KEYGUARD_SERVICE);
-        KeyguardManager.KeyguardLock lock = manager.newKeyguardLock("abc");
-        lock.disableKeyguard();
-
-    }
-
-    @SuppressLint("BatteryLife")
-    private void ignoreBattOpt() {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            String packageName = getPackageName();
-            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                Intent intent = new Intent();
-                intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                intent.setData(Uri.parse("package:" + packageName));
-                startActivity(intent);
-            }
-        }
-    }
-
-    /**
-     * Callback received when a permissions request has been completed.
-     */
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case REQUEST_PERMISSIONS_REQUEST_CODE:
-                Map<String, Integer> perms = new HashMap<>();
-                for (int i = 0; i < permissions.length; i++) {
-                    perms.put(permissions[i], grantResults[i]);
-                }
-
-                /**
-                 * Returns the current state of the permissions needed.
-                 * Manifest.permission.ACCESS_FINE_LOCATION,
-                 * Manifest.permission.ACCESS_COARSE_LOCATION,
-                 * Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                 * Manifest.permission.READ_PHONE_STATE,
-                 * Manifest.permission.BLUETOOTH,
-                 * Manifest.permission.BLUETOOTH_ADMIN
-                 */
-                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                        perms.get(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                        perms.get(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
-                        perms.get(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
-
-                    makeServiceRunning();
-                }
-                break;
-            default:
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }
+//    /**
+//     * Callback received when a permissions request has been completed.
+//     */
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        switch (requestCode) {
+//            case REQUEST_PERMISSIONS_REQUEST_CODE:
+//                Map<String, Integer> perms = new HashMap<>();
+//                for (int i = 0; i < permissions.length; i++) {
+//                    perms.put(permissions[i], grantResults[i]);
+//                }
+//
+//                /**
+//                 * Returns the current state of the permissions needed.
+//                 * Manifest.permission.ACCESS_FINE_LOCATION,
+//                 * Manifest.permission.ACCESS_COARSE_LOCATION,
+//                 * Manifest.permission.WRITE_EXTERNAL_STORAGE,
+//                 * Manifest.permission.READ_PHONE_STATE,
+//                 * Manifest.permission.BLUETOOTH,
+//                 * Manifest.permission.BLUETOOTH_ADMIN
+//                 */
+//                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+//                        perms.get(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+//                        perms.get(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
+//                        perms.get(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
+//
+//                    makeServiceRunning();
+//                }
+//                break;
+//            default:
+//                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        }
+//    }
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(BroadcastEvent data) {
@@ -446,7 +315,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Subscribe
     public void onWakeupRequest(WakeUpEvent event) {
         Logger.d("[>_] WakeUpEvent ...");
-        setTest();
+        //setTest();
     }
 
     private void registerEventBus() {

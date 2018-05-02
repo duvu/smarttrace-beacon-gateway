@@ -23,7 +23,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
-import au.com.smarttrace.beacon.FireLogger;
+import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.service.BeaconService;
 import au.com.smarttrace.beacon.ui.MainActivity;
@@ -61,7 +61,7 @@ public class BeaconJobX extends Job {
     @NonNull
     @Override
     protected Result onRunJob(@NonNull Params params) {
-        FireLogger.d("[>_] Run BeaconJobX ...");
+        Logger.d("[>_] Run BeaconJobX ...");
         try {
             mWakeLokc.acquire(10*60*1000);
             mService.start();
