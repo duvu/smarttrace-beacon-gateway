@@ -16,6 +16,7 @@ public class StartupReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             // store flag
             SharedPref.saveOnBoot(true);
+            App.onBoot(true);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Intent activity = new Intent(context, SplashActivity.class);

@@ -33,6 +33,7 @@ public class App extends Application implements BootstrapNotifier {
 
     private static boolean activityVisible = false;
     private static boolean serviceRunning = false;
+    private static boolean onBoot = false;
 
     public static boolean isActivityVisible() {
         return activityVisible;
@@ -127,5 +128,13 @@ public class App extends Application implements BootstrapNotifier {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             this.startActivity(i);
         }
+    }
+
+    public static void onBoot(boolean boot) {
+        App.onBoot = boot;
+    }
+
+    public static boolean isBoot() {
+        return App.onBoot;
     }
 }

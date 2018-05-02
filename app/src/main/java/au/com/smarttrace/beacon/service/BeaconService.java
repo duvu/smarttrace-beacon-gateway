@@ -101,7 +101,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     private Location mLocation;
 
-    boolean _mShouldCreateOnBoot = false;
+//    boolean _mShouldCreateOnBoot = false;
     private boolean updatingToken = false;
 
     private final long start_up_time = System.currentTimeMillis();
@@ -243,7 +243,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
         //-- load Shipment Location
         loadLocations();
-        checkIfNeedToCreateShipmentOnBoot();
+        //checkIfNeedToCreateShipmentOnBoot();
         App.serviceStarted();
         start();
         return START_NOT_STICKY;
@@ -397,7 +397,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     public void broadcastData() {
-        Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " _mShouldCreateOnBoot: " + _mShouldCreateOnBoot);
+        Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " isBoot: " + App.isBoot());
         createNotification();
 
         if (last_changed) {
@@ -438,8 +438,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
 
         if (!isAtStartLocations()) {
-            _mShouldCreateOnBoot = false;
-            SharedPref.saveOnBoot(false);
+//            _mShouldCreateOnBoot = false;
+//            SharedPref.saveOnBoot(false);
+            App.onBoot(false);
         }
         BroadcastEvent event = new BroadcastEvent();
         try {
@@ -734,9 +735,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         NotificationManagerCompat.from(this).notify(new Random().nextInt(), notification);
     }
 
-    private void checkIfNeedToCreateShipmentOnBoot() {
-        _mShouldCreateOnBoot = SharedPref.isOnBoot();
-    }
+//    private void checkIfNeedToCreateShipmentOnBoot() {
+//        _mShouldCreateOnBoot = SharedPref.isOnBoot();
+//    }
 
     // EventBus
     private void registerEventBus() {
@@ -764,7 +765,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
 
         if (key.equalsIgnoreCase(SharedPref.KEY_ONBOOT)) {
-            _mShouldCreateOnBoot = sharedPreferences.getBoolean(SharedPref.KEY_ONBOOT, false);
+//            _mShouldCreateOnBoot = sharedPreferences.getBoolean(SharedPref.KEY_ONBOOT, false);
         }
     }
 
@@ -775,14 +776,15 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             @Override
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
                 if (beacons.size() > 0) {
-                    checkIfNeedToCreateShipmentOnBoot();
+//                    checkIfNeedToCreateShipmentOnBoot();
                     for (Beacon beacon : beacons) {
-                        Logger.i("[BLE #] " + beacon.getIdentifier(2).toHexString() + ", [+onBoot: ] " + _mShouldCreateOnBoot);
+                        Logger.i("[BLE #] " + beacon.getIdentifier(2).toHexString() + ", [+onBoot: ] " + App.isBoot());
                         BeaconPackage bt04 = deviceMap.get(beacon.getBluetoothAddress());
                         if (bt04 == null) {
                             bt04 = BeaconPackage.fromBeacon(beacon);
                             //-- first reading
-                            bt04.setShouldCreateOnBoot(_mShouldCreateOnBoot);
+                            //bt04.setShouldCreateOnBoot(_mShouldCreateOnBoot);
+                            bt04.setShouldCreateOnBoot(App.isBoot());
                         } else {
                             bt04.updateFromBeacon(beacon);
                             deviceMap.remove(beacon.getBluetoothAddress());

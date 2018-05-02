@@ -92,15 +92,17 @@ public class DataUtil {
         }
 
         for (BeaconPackage data : BeaconPackageList) {
-            sb.append(data.getSerialNumberString()).append(AppContants.SEPARATE);
-            sb.append(data.getName()).append(AppContants.SEPARATE);
-            sb.append(data.getTemperature()).append(AppContants.SEPARATE);
-            sb.append(data.getHumidity()).append(AppContants.SEPARATE);
-            sb.append(data.getRssi()).append(AppContants.SEPARATE);
-            sb.append(data.getDistance()).append(AppContants.SEPARATE);
-            sb.append(battPercentToVolt(data.getPhoneBatteryLevel()*100)).append(AppContants.SEPARATE);
-            sb.append(data.getTimestamp()).append(AppContants.SEPARATE);
-            sb.append(data.getModel()).append(AppContants.SEPARATE).append(AppContants.N);
+            if (data.getName() != null && !data.getName().equalsIgnoreCase("null")) {
+                sb.append(data.getSerialNumberString()).append(AppContants.SEPARATE);
+                sb.append(data.getName()).append(AppContants.SEPARATE);
+                sb.append(data.getTemperature()).append(AppContants.SEPARATE);
+                sb.append(data.getHumidity()).append(AppContants.SEPARATE);
+                sb.append(data.getRssi()).append(AppContants.SEPARATE);
+                sb.append(data.getDistance()).append(AppContants.SEPARATE);
+                sb.append(battPercentToVolt(data.getPhoneBatteryLevel() * 100)).append(AppContants.SEPARATE);
+                sb.append(data.getTimestamp()).append(AppContants.SEPARATE);
+                sb.append(data.getModel()).append(AppContants.SEPARATE).append(AppContants.N);
+            }
         }
         return sb.toString();
     }
