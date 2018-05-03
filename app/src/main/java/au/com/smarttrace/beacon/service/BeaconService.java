@@ -143,28 +143,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     PowerManager mPowerManager;
     PowerManager.WakeLock mWakeLokc;
 
-    private PendingIntent wakeupIntent;
-//    private final Runnable heartbeat = new Runnable() {
-//        @Override
-//        public void run() {
-//            try {
-////                if (Systems.isDozing(BeaconService.this)) {
-//                    try {
-//                        wakeupIntent.send();
-//                    } catch (SecurityException | PendingIntent.CanceledException e) {
-//                        e.printStackTrace();
-//                        Logger.e("Heartbeat location manager keep-alive failed", e);
-//                    }
-////                }
-//            } finally {
-//                if (handler != null) {
-//                    handler.postDelayed(this, 60*1000);
-//                }
-//            }
-//        }
-//    };
-
-
     public BeaconService() {
         super();
     }
@@ -186,13 +164,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         handlerThread = new HandlerThread(AppConfig.TAG);
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
-
-//        handler = new Handler();
-//        wakeupIntent = PendingIntent.getBroadcast(getBaseContext(), 0, new Intent("com.android.internal.location.ALARM_WAKEUP"), 0);
-//        handler.postDelayed(heartbeat, 10*1000);
 //        mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
-
-
 //        if (!mWakeLokc.isHeld()) {
 //            mWakeLokc.acquire(14* 24 * 60 * 60 * 1000); // 14 days
 //        }
@@ -275,7 +247,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         checkAndCreateShipment(getAll());
         broadcastData();
         EventBus.getDefault().post(new WakeUpEvent());
-
     }
     @TargetApi(23)
     private void setAlarmForNextPoint() {
