@@ -3,25 +3,31 @@ package au.com.smarttrace.beacon.ui;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.provider.AlarmClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.Button;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.AppConfig;
 import au.com.smarttrace.beacon.Logger;
@@ -120,6 +126,51 @@ public class SplashActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
+    private void retry() {
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.re_try_to_login)
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        moveToLogin();
+                        finish();
+                    }
+                })
+                .create();
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(final DialogInterface dialog) {
+                final Button defaultButton = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_NEGATIVE);
+                final CharSequence positiveButtonText = defaultButton.getText();
+                new CountDownTimer(getWaitingTime(), 1000) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        defaultButton.setText(String.format(
+                                Locale.getDefault(), "%s (%d)",
+                                positiveButtonText,
+                                TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) + 1 //add one so it never displays zero
+                        ));
+                    }
+                    @Override
+                    public void onFinish() {
+                        if (((AlertDialog) dialog).isShowing()) {
+                            dialog.dismiss();
+                        }
+                        checkLogin();
+                    }
+                }.start();
+            }
+        });
+
+        dialog.show();
+    }
+
+    private long count = 0;
+    private long getWaitingTime() {
+        count++;
+        long timeout = count * 5000;
+        return timeout > 60000 ? 60000 : timeout;
+    }
 
     private void moveToLogin() {
         Intent intent = new Intent(SplashActivity.this, LoginActivity.class);
@@ -134,11 +185,13 @@ public class SplashActivity extends AppCompatActivity {
             mHideHandler.removeCallbacks(mMoveToLogin);
             mHideHandler.postDelayed(mMoveToLogin, 1000);
         } else {
-            //try to login
             mAuthTask = new UserLoginTask(username, password);
             mAuthTask.execute((Void) null);
         }
     }
+
+
+
     @SuppressLint("BatteryLife")
     private void ignoreBattOpt() {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -271,8 +324,9 @@ public class SplashActivity extends AppCompatActivity {
                 moveToMain();
                 finish();
             } else {
-                moveToLogin();
-                finish();
+//                moveToLogin();
+//                finish();
+                retry();
             }
         }
 

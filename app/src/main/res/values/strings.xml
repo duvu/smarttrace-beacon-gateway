@@ -405,6 +405,7 @@
     <string name="location_updated">Location Updated: %1$s</string>
     <string name="launch_activity">Launch Activity</string>
     <string name="cancel_service">Cancel Service</string>
+    <string name="cancel">Cancel</string>
     <string name="wipe_old_data_for_new_shipment">Wipe out to start new Shipment</string>
     <string name="action_logout">Logout</string>
     <string name="action_create_shipment">New Manual Shipment</string>
@@ -418,5 +419,6 @@
     <string name="admin_receiver_status_enabled">Admin Enabled</string>
     <string name="action_remove_admin">Disable Admin</string>
     <string name="admin_receiver_status_disabled">Disable Admin</string>
+    <string name="re_try_to_login">Retry to login ...</string>
 
 </resources>

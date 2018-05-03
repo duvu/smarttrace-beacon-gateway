@@ -6,8 +6,8 @@ android {
         applicationId "au.com.smarttrace.beacon"
         minSdkVersion 18
         targetSdkVersion 27
-        versionCode 70
-        versionName "1.5.0"
+        versionCode 71
+        versionName "1.5.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         javaCompileOptions {
@@ -46,21 +46,19 @@ dependencies {
     implementation 'com.android.support:support-v4:27.1.1'
     implementation 'com.android.support:support-vector-drawable:27.1.1'
 
-    implementation 'com.google.android.gms:play-services-location:15.0.0'
-    implementation 'com.google.android.gms:play-services-gcm:15.0.0'
+    implementation 'com.google.android.gms:play-services-location:15.0.1'
+    implementation 'com.google.android.gms:play-services-gcm:15.0.1'
 
-    implementation 'com.google.firebase:firebase-database:15.0.0'
-    implementation 'com.google.firebase:firebase-core:15.0.0'
-    implementation 'com.google.firebase:firebase-crash:15.0.0'
-    implementation 'com.google.firebase:firebase-messaging:15.0.0'
-    implementation 'com.google.firebase:firebase-auth:15.0.0'
-    implementation 'com.google.firebase:firebase-firestore:15.0.0'
+    implementation 'com.google.firebase:firebase-core:15.0.2'
+    implementation 'com.google.firebase:firebase-crash:15.0.2'
+    implementation 'com.google.firebase:firebase-messaging:15.0.2'
+    implementation 'com.google.firebase:firebase-auth:15.1.0'
 
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'org.greenrobot:eventbus:3.1.1'
 
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'

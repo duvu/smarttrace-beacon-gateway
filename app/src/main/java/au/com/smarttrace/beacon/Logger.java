@@ -8,10 +8,6 @@ package au.com.smarttrace.beacon;
 
 import android.util.Log;
 
-import com.google.firebase.database.FirebaseDatabase;
-
-import au.com.smarttrace.beacon.service.NetworkUtils;
-
 public class Logger {
 
     public static void d(String message) {

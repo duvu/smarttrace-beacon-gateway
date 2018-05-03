@@ -6,10 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.PowerManager;
-import android.support.annotation.WorkerThread;
 
-import com.evernote.android.job.JobManager;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -18,13 +15,9 @@ import org.greenrobot.eventbus.EventBus;
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.model.UpdateEvent;
-import au.com.smarttrace.beacon.service.NetworkUtils;
-import au.com.smarttrace.beacon.service.jobs.BeaconJob00;
-import au.com.smarttrace.beacon.service.jobs.BeaconJob10;
 import au.com.smarttrace.beacon.service.BeaconService;
 import au.com.smarttrace.beacon.service.DBSyncJob;
-import au.com.smarttrace.beacon.service.jobs.BeaconJobX;
-import au.com.smarttrace.beacon.service.jobs.BroadcastJob;
+import au.com.smarttrace.beacon.service.NetworkUtils;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
@@ -89,9 +82,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
             if (mService != null) {
                 mService.start();
-                FirebaseDatabase.getInstance().getReference("logs").child(NetworkUtils.getGatewayId()).child(System.currentTimeMillis()+"").setValue("Start From FCM Message");
+                //FirebaseDatabase.getInstance().getReference("logs").child(NetworkUtils.getGatewayId()).child(System.currentTimeMillis()+"").setValue("Start From FCM Message");
             } else {
-                FirebaseDatabase.getInstance().getReference("logs").child(NetworkUtils.getGatewayId()).child(System.currentTimeMillis()+"").setValue("Service Is Null");
+                //FirebaseDatabase.getInstance().getReference("logs").child(NetworkUtils.getGatewayId()).child(System.currentTimeMillis()+"").setValue("Service Is Null");
             }
             EventBus.getDefault().post(new UpdateEvent());
         } finally {
