@@ -681,7 +681,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void createNotification() {
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel("beacon_engine_tag", "Scanning Jobs", NotificationManager.IMPORTANCE_LOW);
@@ -693,17 +692,19 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 .setContentTitle("Scanning Beacon ...")
                 .setContentText(" Scanning Jobs are running ")
                 .setAutoCancel(true)
+                .setOngoing(false)
                 .setTimeoutAfter(getNotificationTimeOut())
                 .setChannelId("beacon_engine_tag")
                 .setSound(null)
-                .setContentIntent(pendingIntent)
                 .setSmallIcon(R.drawable.notification)
                 .setShowWhen(true)
                 .setColor(Color.GREEN)
                 .setLocalOnly(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .build();
 
-        NotificationManagerCompat.from(this).notify(new Random().nextInt(), notification);
+        NotificationManagerCompat.from(this).notify(1234567, notification);
     }
 
 //    private void checkIfNeedToCreateShipmentOnBoot() {
