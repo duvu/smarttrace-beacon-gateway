@@ -57,21 +57,8 @@ public class SplashActivity extends AppCompatActivity {
 
     private UserLoginTask mAuthTask = null;
 
-    private static final int UI_ANIMATION_DELAY = 100;
     private final Handler mHideHandler = new Handler();
     private View mContentView;
-    private final Runnable mHidePart2Runnable = new Runnable() {
-        @SuppressLint("InlinedApi")
-        @Override
-        public void run() {
-            mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
-        }
-    };
 
     private final Runnable mMoveToLogin = new Runnable() {
         @Override
@@ -86,10 +73,16 @@ public class SplashActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_fullscreen);
         mContentView = findViewById(R.id.fullscreen_content);
-        mHideHandler.postDelayed(mHidePart2Runnable, UI_ANIMATION_DELAY);
+
+        mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
         ignoreBattOpt();
-
+        Logger.i("[>_] #Request Perm");
         if (!checkPermissions()) {
             requestPermissions();
         } else {
@@ -97,18 +90,10 @@ public class SplashActivity extends AppCompatActivity {
         }
     }
 
-//    private void setUpAlarmClock() {
-//        Intent openNewAlarm = new Intent(AlarmClock.ACTION_SET_ALARM);
-//        openNewAlarm.putExtra(AlarmClock.EXTRA_HOUR, 0);
-//        openNewAlarm.putExtra(AlarmClock.EXTRA_MINUTES, 5);
-//        startActivity(openNewAlarm);
-//    }
-
-
     @Override
     protected void onStart() {
         super.onStart();
-        //checkLogin();
+
     }
 
     @Override
@@ -226,28 +211,30 @@ public class SplashActivity extends AppCompatActivity {
         );
     }
     private void requestPermissions() {
-        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
-
-        if (shouldProvideRationale) {
-            Snackbar.make(
-                    findViewById(R.id.drawer_layout),
-                    R.string.permission_rationale,
-                    Snackbar.LENGTH_INDEFINITE)
-                    .setAction(R.string.ok, new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            // Request permission
-                            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
-                        }
-                    })
-                    .show();
-        } else {
-            Logger.i("Requesting permission");
-            // Request permission. It's possible this can be auto answered if device policy
-            // sets the permission in a given state or the user denied the permission
-            // previously and checked "Never ask again".
-            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
-        }
+        Logger.i("[>_] #requestPermissions");
+        ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
+//        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
+//
+//        if (shouldProvideRationale) {
+//            Snackbar.make(
+//                    findViewById(R.id.drawer_layout),
+//                    R.string.permission_rationale,
+//                    Snackbar.LENGTH_INDEFINITE)
+//                    .setAction(R.string.ok, new View.OnClickListener() {
+//                        @Override
+//                        public void onClick(View view) {
+//                            // Request permission
+//                            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
+//                        }
+//                    })
+//                    .show();
+//        } else {
+//            Logger.i("Requesting permission");
+//            // Request permission. It's possible this can be auto answered if device policy
+//            // sets the permission in a given state or the user denied the permission
+//            // previously and checked "Never ask again".
+//            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
+//        }
     }
 
     /**

@@ -368,7 +368,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     public void broadcastData() {
-        Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " isBoot: " + App.isBoot());
+        Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " isBoot: " + App.isBoot() + "[>Imei<] " + NetworkUtils.getGatewayId());
         createNotification();
 
         if (last_changed) {
@@ -564,8 +564,11 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.i("[+] checkAndCreateShipment: updatingToken: #" + updatingToken);
         if (updatingToken) return;
         for (final BeaconPackage data: dataList) {
+            if (!isPaired(data) || !isAtStartLocations()) {
+                continue;
+            }
 
-            if ((data.isShouldCreateOnBoot() && isAtStartLocations() && isPaired(data))) {
+            if (data.isShouldCreateOnBoot()) {
                 WebService.createNewAutoSthipment(data.getSerialNumberString(), currentToken, new Callback() {
                     @Override
                     public void onFailure(Call call, IOException e) {
@@ -595,10 +598,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                         NotificationManagerCompat.from(BeaconService.this).notify(new Random().nextInt(), notification);
                     }
                 });
-            } else {
-                deviceMap.get(data.getBluetoothAddress()).setForedCreateNew(false);
-                deviceMap.get(data.getBluetoothAddress()).setShouldCreateShipment(false);
-                deviceMap.get(data.getBluetoothAddress()).setShouldCreateOnBoot(false);
             }
         }
     }

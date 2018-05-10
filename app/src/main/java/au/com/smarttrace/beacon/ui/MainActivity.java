@@ -1,11 +1,8 @@
 package au.com.smarttrace.beacon.ui;
 
-import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -13,19 +10,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.PowerManager;
-import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
@@ -38,9 +28,6 @@ import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,19 +39,12 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.DeviceAdminReceiver;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.model.WakeUpEvent;
-import au.com.smarttrace.beacon.service.jobs.BeaconJob00;
-import au.com.smarttrace.beacon.service.jobs.BeaconJob05;
-import au.com.smarttrace.beacon.service.jobs.BeaconJob10;
-import au.com.smarttrace.beacon.service.jobs.BeaconJob15;
-import au.com.smarttrace.beacon.service.jobs.BeaconJobX;
 import au.com.smarttrace.beacon.service.DBSyncJob;
 import au.com.smarttrace.beacon.service.ServiceUtils;
 import au.com.smarttrace.beacon.R;
@@ -73,7 +53,6 @@ import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.ExitEvent;
 import au.com.smarttrace.beacon.service.BeaconService;
-import au.com.smarttrace.beacon.service.jobs.firebase.Dispatcher;
 
 import static au.com.smarttrace.beacon.service.BeaconService.EXTRA_STARTED_FROM_NOTIFICATION;
 
@@ -104,17 +83,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     };
 
-    protected DevicePolicyManager mDPM;
-    protected ComponentName mDeviceAdmin;
-    protected boolean mAdminActive;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        mDPM = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
-        mDeviceAdmin = new ComponentName(this, DeviceAdminReceiver.class);
-
 
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
@@ -207,13 +178,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
                 startActivity(intent);
                 return true;
-            case R.id.action_beacons:
-                Intent i = new Intent(MainActivity.this, BeaconListActivity.class);
-                startActivity(i);
-                return true;
-            case R.id.action_remove:
-                mDPM.removeActiveAdmin(mDeviceAdmin);
-                break;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -249,57 +213,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             startService(intent1);
 
             JobManager.instance().cancelAllForTag(DBSyncJob.TAG);
-            JobManager.instance().cancelAllForTag(BeaconJob00.TAG);
-            JobManager.instance().cancelAllForTag(BeaconJob05.TAG);
-            JobManager.instance().cancelAllForTag(BeaconJob10.TAG);
-            JobManager.instance().cancelAllForTag(BeaconJob15.TAG);
-            JobManager.instance().cancelAllForTag(BeaconJobX.TAG);
 
             DBSyncJob.scheduleNow();
             DBSyncJob.schedule(); // update & sync every 15 minutes
-//            Dispatcher.getInstance(this).schedule();
-            //BeaconJobX.schedule();
-//            BeaconJob00.schedule();
-//            BeaconJob05.schedule();
-//            BeaconJob10.schedule();
-//            BeaconJob15.schedule();
         }
 
     }
-
-//    /**
-//     * Callback received when a permissions request has been completed.
-//     */
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        switch (requestCode) {
-//            case REQUEST_PERMISSIONS_REQUEST_CODE:
-//                Map<String, Integer> perms = new HashMap<>();
-//                for (int i = 0; i < permissions.length; i++) {
-//                    perms.put(permissions[i], grantResults[i]);
-//                }
-//
-//                /**
-//                 * Returns the current state of the permissions needed.
-//                 * Manifest.permission.ACCESS_FINE_LOCATION,
-//                 * Manifest.permission.ACCESS_COARSE_LOCATION,
-//                 * Manifest.permission.WRITE_EXTERNAL_STORAGE,
-//                 * Manifest.permission.READ_PHONE_STATE,
-//                 * Manifest.permission.BLUETOOTH,
-//                 * Manifest.permission.BLUETOOTH_ADMIN
-//                 */
-//                if (perms.get(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-//                        perms.get(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-//                        perms.get(Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
-//                        perms.get(Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED) {
-//
-//                    makeServiceRunning();
-//                }
-//                break;
-//            default:
-//                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        }
-//    }
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     public void onUpdateScan(BroadcastEvent data) {
