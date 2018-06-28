@@ -15,7 +15,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.Build;
@@ -29,6 +28,7 @@ import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
 
 import com.google.firebase.iid.FirebaseInstanceId;
 
@@ -54,7 +54,6 @@ import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
-import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
@@ -75,7 +74,6 @@ import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
 import au.com.smarttrace.beacon.net.model.FcmMessage;
 import au.com.smarttrace.beacon.net.model.LatLng;
-import au.com.smarttrace.beacon.net.model.LoginResponse;
 import au.com.smarttrace.beacon.service.location.LCallback;
 import au.com.smarttrace.beacon.service.location.LServiceWrapper;
 import au.com.smarttrace.beacon.ui.MainActivity;
@@ -93,16 +91,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public static final String EXTRA_STARTED_FROM_BOOTSTRAP = PACKAGE_NAME + ".started_from_bootstrap";
 
     public static final String ACTION_BROADCAST = PACKAGE_NAME + ".broadcast";
-    public static final String ACTION_WAKEUP_BROADCAST = PACKAGE_NAME + ".wakeup.broadcast";
     public static final String EXTRA_LOCATION = PACKAGE_NAME + ".location";
 
     public static final String GET_NEXT_POINT = "getnextpoint";
 
 
     private Location mLocation;
-
-//    boolean _mShouldCreateOnBoot = false;
-    private boolean updatingToken = false;
 
     private final long start_up_time = System.currentTimeMillis();
     private long last_ble_event;
@@ -123,7 +117,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
     };
     private BeaconManager mBeaconManager;// = BeaconManager.getInstanceForApplication(this.getApplicationContext());
+
     private final Map<String, BeaconPackage> deviceMap = new ConcurrentHashMap<>();
+
     private List<Locations> companyShipmentLocations = null;
 
     private Box<EventData> eventBox;
@@ -141,8 +137,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     AlarmManager nextPointAlarmManager;
 
     PowerManager mPowerManager;
-    PowerManager.WakeLock mWakeLokc;
-
     public BeaconService() {
         super();
     }
@@ -164,11 +158,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         handlerThread = new HandlerThread(AppConfig.TAG);
         handlerThread.start();
         handler = new Handler(handlerThread.getLooper());
-//        mWakeLokc = mPowerManager.newWakeLock(PowerManager.ON_AFTER_RELEASE |PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "myWakeLockTag");
-//        if (!mWakeLokc.isHeld()) {
-//            mWakeLokc.acquire(14* 24 * 60 * 60 * 1000); // 14 days
-//        }
-
 
         lCallback = new LCallback() {
             @Override
@@ -371,15 +360,15 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " isBoot: " + App.isBoot() + "[>Imei<] " + NetworkUtils.getGatewayId());
         createNotification();
 
-        if (last_changed) {
-            FcmMessage fcmMessage = new FcmMessage();
-            fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis())); // for 10 minute
-            fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
-            fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
-            fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
-            fcmMessage.setMessage("WAKEUP");
-            WebService.nextPoint(fcmMessage);
-        }
+//        if (last_changed) {
+//            FcmMessage fcmMessage = new FcmMessage();
+//            fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis())); // for 10 minute
+//            fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
+//            fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
+//            fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
+//            fcmMessage.setMessage("WAKEUP");
+//            WebService.nextPoint(fcmMessage);
+//        }
 
         final List<BeaconPackage> dataList = getDataToUpload();
 
@@ -409,8 +398,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         }
 
         if (!isAtStartLocations()) {
-//            _mShouldCreateOnBoot = false;
-//            SharedPref.saveOnBoot(false);
             App.onBoot(false);
         }
         BroadcastEvent event = new BroadcastEvent();
@@ -561,12 +548,13 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void checkAndCreateShipment(List<BeaconPackage> dataList) {
-        Logger.i("[+] checkAndCreateShipment: updatingToken: #" + updatingToken);
-        if (updatingToken) return;
+        Logger.i("[+] checkAndCreateShipment [_>]" + dataList.size());
         for (final BeaconPackage data: dataList) {
             if (!isPaired(data) || !isAtStartLocations()) {
                 continue;
             }
+
+            Logger.i("[>_] should create on boot: " + data.isShouldCreateOnBoot());
 
             if (data.isShouldCreateOnBoot()) {
                 WebService.createNewAutoSthipment(data.getSerialNumberString(), currentToken, new Callback() {
@@ -706,10 +694,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         NotificationManagerCompat.from(this).notify(1234567, notification);
     }
 
-//    private void checkIfNeedToCreateShipmentOnBoot() {
-//        _mShouldCreateOnBoot = SharedPref.isOnBoot();
-//    }
-
     // EventBus
     private void registerEventBus() {
         EventBus.getDefault().register(this);
@@ -747,14 +731,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             @Override
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
                 if (beacons.size() > 0) {
-//                    checkIfNeedToCreateShipmentOnBoot();
                     for (Beacon beacon : beacons) {
                         Logger.i("[BLE #] " + beacon.getIdentifier(2).toHexString() + ", [+onBoot: ] " + App.isBoot());
                         BeaconPackage bt04 = deviceMap.get(beacon.getBluetoothAddress());
-                        if (bt04 == null) {
+                        if (bt04 == null || TextUtils.isEmpty(bt04.getName())) {
                             bt04 = BeaconPackage.fromBeacon(beacon);
                             //-- first reading
-                            //bt04.setShouldCreateOnBoot(_mShouldCreateOnBoot);
                             bt04.setShouldCreateOnBoot(App.isBoot());
                         } else {
                             bt04.updateFromBeacon(beacon);
@@ -795,39 +777,4 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public void onUpdate(UpdateEvent event) {
         start();
     }
-
-    public class UpdateTokenAsync extends AsyncTask<Void, Void, Boolean> {
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            WebService.login(SharedPref.getUserName(), SharedPref.getPassword(), new Callback() {
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    //updateToken(2* 60 * 1000, false);
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    if (response.body() != null) {
-                        LoginResponse data = GsonUtils.getInstance().fromJson(response.body().string(), LoginResponse.class);
-                        if (data != null && data.getResponse() != null) {
-                            SharedPref.saveToken(data.getResponse().getToken());
-                            SharedPref.saveExpiredStr(data.getResponse().getExpired());
-                            SharedPref.saveTokenInstance(data.getResponse().getInstance());
-                            //stopUpdateToken();
-                        } else {
-                            //updateToken(60 * 1000, false);
-                        }
-                    } else {
-                        //updateToken(60 * 1000, false);
-                    }
-                }
-            });
-            return true;
-        }
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            //updateTokenAsync = null;
-        }
-    }
-
 }
