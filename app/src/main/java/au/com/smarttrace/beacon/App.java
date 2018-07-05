@@ -4,7 +4,6 @@ import android.app.Application;
 import android.content.Intent;
 
 import com.evernote.android.job.JobManager;
-import com.google.firebase.FirebaseApp;
 
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
@@ -14,8 +13,8 @@ import org.altbeacon.beacon.startup.BootstrapNotifier;
 import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.db.MyObjectBox;
-import au.com.smarttrace.beacon.service.jobs.BeaconJobCreator;
 import au.com.smarttrace.beacon.service.NetworkUtils;
+import au.com.smarttrace.beacon.service.jobs.BeaconJobCreator;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
 import io.objectbox.android.AndroidObjectBrowser;
@@ -64,7 +63,6 @@ public class App extends Application implements BootstrapNotifier {
         super.onCreate();
         Logger.d("Application Started!");
 
-        FirebaseApp.initializeApp(this);
         NetworkUtils.init(this);
         SharedPref.init(getApplicationContext());
 

@@ -17,7 +17,6 @@ import com.TZONE.Bluetooth.BLE;
 import com.TZONE.Bluetooth.ILocalBluetoothCallBack;
 import com.TZONE.Bluetooth.Temperature.BroadcastService;
 import com.TZONE.Bluetooth.Temperature.Model.Device;
-import com.google.firebase.iid.FirebaseInstanceId;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -261,12 +260,12 @@ public class BeaconEngine {
     //uploadToServer
     private void uploadToServer() {
         Logger.i("[Engine#] starting upload to server ...");
-        FcmMessage fcmMessage = FcmMessage.create();
-        fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
-        fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
-        fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
-        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis());
-        WebService.nextPoint(fcmMessage);
+//        FcmMessage fcmMessage = FcmMessage.create();
+//        fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
+//        fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
+//        fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
+//        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis());
+//        WebService.nextPoint(fcmMessage);
 
         updateBatteryLevel();
         BroadcastEvent be = new BroadcastEvent();

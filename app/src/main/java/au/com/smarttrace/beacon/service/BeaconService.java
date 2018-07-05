@@ -30,8 +30,6 @@ import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
-import com.google.firebase.iid.FirebaseInstanceId;
-
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
 import org.altbeacon.beacon.BeaconManager;
@@ -72,7 +70,6 @@ import au.com.smarttrace.beacon.model.UpdateEvent;
 import au.com.smarttrace.beacon.model.WakeUpEvent;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
-import au.com.smarttrace.beacon.net.model.FcmMessage;
 import au.com.smarttrace.beacon.net.model.LatLng;
 import au.com.smarttrace.beacon.service.location.LCallback;
 import au.com.smarttrace.beacon.service.location.LServiceWrapper;
@@ -494,9 +491,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         List<BeaconPackage> dataList = new ArrayList<>();
         for (Object o : deviceMap.entrySet()) {
             Map.Entry entry = (Map.Entry) o;
-            String key = (String)entry.getKey();
             BeaconPackage data = (BeaconPackage) entry.getValue();
-            Logger.d("[>_] getDataToUpload #" + data.getSerialNumberString());
+            //Logger.d("[>_] getDataToUpload #" + data.getSerialNumberString());
             if (isPaired(data) && !data.isShouldCreateOnBoot()) {
                 dataList.add(data);
                 synchronized (deviceMap) {

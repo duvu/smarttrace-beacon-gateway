@@ -42,17 +42,12 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support:recyclerview-v7:27.1.1'
     implementation 'com.android.support:design:27.1.1'
-    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.2'
     implementation 'com.android.support:support-v4:27.1.1'
     implementation 'com.android.support:support-vector-drawable:27.1.1'
 
     implementation 'com.google.android.gms:play-services-location:15.0.1'
     implementation 'com.google.android.gms:play-services-gcm:15.0.1'
-
-    implementation 'com.google.firebase:firebase-core:15.0.2'
-    implementation 'com.google.firebase:firebase-crash:15.0.2'
-    implementation 'com.google.firebase:firebase-messaging:15.0.2'
-    implementation 'com.google.firebase:firebase-auth:15.1.0'
 
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 
@@ -64,7 +59,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
     implementation 'com.evernote:android-job:1.2.5'
 
-    implementation 'org.altbeacon:android-beacon-library:2+'
+    implementation 'org.altbeacon:android-beacon-library:2.14'
 
     implementation 'com.google.code.gson:gson:2.8.2'
 
