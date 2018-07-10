@@ -15,6 +15,7 @@ import au.com.smarttrace.beacon.net.model.LocationResponse;
 import au.com.smarttrace.beacon.net.model.PairedBeaconResponse;
 import au.com.smarttrace.beacon.net.model.PairedRequest;
 import au.com.smarttrace.beacon.net.model.UserResponse;
+//import au.com.smarttrace.beacon.model.PairedPhone;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
@@ -111,6 +112,17 @@ public class WebService {
             return null;
         }
     }
+
+//    public static PairedPhone getPairedPhone(String beaconId, String phoneId) {
+//        String urlSb = AppConfig.WEB_SERVICE_URL + "/getPairedPhone/" + SharedPref.getToken()
+//                + "?beacon="+ beaconId
+//                + "&phone="+ phoneId;
+//        try {
+//            return Http.getIntance().get(urlSb, PairedPhone.class);
+//        } catch (IOException e) {
+//            return null;
+//        }
+//    }
 
     public static LocationResponse getLocations(int page, int size, String sortColumn, String sortOrder, String token) {
         if (token == null) {

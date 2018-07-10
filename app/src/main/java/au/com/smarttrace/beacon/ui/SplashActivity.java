@@ -82,7 +82,6 @@ public class SplashActivity extends AppCompatActivity {
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
 
         ignoreBattOpt();
-        Logger.i("[>_] #Request Perm");
         if (!checkPermissions()) {
             requestPermissions();
         } else {
@@ -213,28 +212,6 @@ public class SplashActivity extends AppCompatActivity {
     private void requestPermissions() {
         Logger.i("[>_] #requestPermissions");
         ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
-//        boolean shouldProvideRationale = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_COARSE_LOCATION);
-//
-//        if (shouldProvideRationale) {
-//            Snackbar.make(
-//                    findViewById(R.id.drawer_layout),
-//                    R.string.permission_rationale,
-//                    Snackbar.LENGTH_INDEFINITE)
-//                    .setAction(R.string.ok, new View.OnClickListener() {
-//                        @Override
-//                        public void onClick(View view) {
-//                            // Request permission
-//                            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
-//                        }
-//                    })
-//                    .show();
-//        } else {
-//            Logger.i("Requesting permission");
-//            // Request permission. It's possible this can be auto answered if device policy
-//            // sets the permission in a given state or the user denied the permission
-//            // previously and checked "Never ask again".
-//            ActivityCompat.requestPermissions(SplashActivity.this, INITIAL_PERMS, REQUEST_PERMISSIONS_REQUEST_CODE);
-//        }
     }
 
     /**
@@ -275,7 +252,6 @@ public class SplashActivity extends AppCompatActivity {
      * Represents an asynchronous login/registration task used to authenticate
      * the user.
      */
-    @SuppressLint("StaticFieldLeak")
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mEmail;
@@ -311,8 +287,6 @@ public class SplashActivity extends AppCompatActivity {
                 moveToMain();
                 finish();
             } else {
-//                moveToLogin();
-//                finish();
                 retry();
             }
         }

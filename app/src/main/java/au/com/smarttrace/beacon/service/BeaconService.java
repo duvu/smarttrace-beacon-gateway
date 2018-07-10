@@ -36,9 +36,6 @@ import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.RangeNotifier;
 import org.altbeacon.beacon.Region;
 import org.altbeacon.beacon.service.ScanJobScheduler;
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -186,7 +183,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         registerReceiver(mBatteryLevelReceiver, intentFilter);
 
         startForeground(NOTIFICATION_ID, getNotification());
-        registerEventBus();
     }
 
     @Override
@@ -232,8 +228,8 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         checkIfNewData();
         checkAndCreateShipment(getAll());
         broadcastData();
-        EventBus.getDefault().post(new WakeUpEvent());
     }
+
     @TargetApi(23)
     private void setAlarmForNextPoint() {
         Logger.d("[>_] Set alarm in: " + getNotificationTimeOut() + " seconds");
@@ -341,7 +337,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.d("[>_] Service is destroying");
         handler.removeCallbacks(null);
         App.serviceEnded();
-        unregisterEventBus();
         unregisterReceiver(mBatteryLevelReceiver);
         locationsBox.closeThreadResources();
         eventBox.closeThreadResources();
@@ -356,16 +351,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     public void broadcastData() {
         Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " isBoot: " + App.isBoot() + "[>Imei<] " + NetworkUtils.getGatewayId());
         createNotification();
-
-//        if (last_changed) {
-//            FcmMessage fcmMessage = new FcmMessage();
-//            fcmMessage.setExpectedTimeToReceive((System.currentTimeMillis())); // for 10 minute
-//            fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
-//            fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
-//            fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
-//            fcmMessage.setMessage("WAKEUP");
-//            WebService.nextPoint(fcmMessage);
-//        }
 
         final List<BeaconPackage> dataList = getDataToUpload();
 
@@ -432,8 +417,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     private void tryToSendOldData() {
             //1. upload old data
             List<EventData> evdtList = eventBox.getAll();
-            for (EventData evdt : evdtList) {
-                final long evId = evdt.getId();
+            for (final EventData evdt : evdtList) {
                 Logger.i("[*] check: " + evdt.toString());
                 WebService.sendEvent(evdt.toString(), new Callback() {
                     @Override
@@ -444,7 +428,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                     @Override
                     public void onResponse(Call call, Response response) throws IOException {
                         // remove data from db;
-                        eventBox.remove(evId);
+                        eventBox.remove(evdt);
                     }
                 });
             }
@@ -539,8 +523,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         event.setLocation(mLocation);
         event.setGatewayId(NetworkUtils.getGatewayId());
         event.setCellTowerList(cellTowerList);
-        EventBus.getDefault().removeStickyEvent(BroadcastEvent.class);
-        EventBus.getDefault().postSticky(event);
     }
 
     private void checkAndCreateShipment(List<BeaconPackage> dataList) {
@@ -690,23 +672,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         NotificationManagerCompat.from(this).notify(1234567, notification);
     }
 
-    // EventBus
-    private void registerEventBus() {
-        EventBus.getDefault().register(this);
-    }
-
-    private void unregisterEventBus(){
-        try {
-            EventBus.getDefault().unregister(this);
-        } catch (Throwable t){
-            //this may crash if registration did not go through. just be safe
-        }
-    }
-
-    @Subscribe
-    public void onExitEvent(ExitEvent exitEvent) {
-        stopSelf();
-    }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
@@ -759,18 +724,10 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         ScanJobScheduler.getInstance().applySettingsToScheduledJob(this, mBeaconManager);
     }
 
-
-
-
     //-- class LocalBinder --
     public class LocalBinder extends Binder {
         public BeaconService getService() {
             return BeaconService.this;
         }
-    }
-
-    @Subscribe (threadMode = ThreadMode.MAIN, priority = 0)
-    public void onUpdate(UpdateEvent event) {
-        start();
     }
 }

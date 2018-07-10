@@ -3,7 +3,6 @@ package au.com.smarttrace.beacon.ui;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
-import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -35,14 +34,7 @@ import android.widget.Toast;
 
 import com.evernote.android.job.JobManager;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
-
-import java.util.List;
-
 import au.com.smarttrace.beacon.App;
-import au.com.smarttrace.beacon.DeviceAdminReceiver;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.model.WakeUpEvent;
 import au.com.smarttrace.beacon.service.DBSyncJob;
@@ -89,7 +81,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
-        registerEventBus();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -142,8 +133,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onDestroy() {
         super.onDestroy();
         Logger.d("[MainActivity] Destroying");
-
-        unregisterEventBus();
     }
 
     @Override
@@ -195,8 +184,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             startActivity(new Intent(this, SettingsActivity.class));
         }
         else if (id == R.id.nav_exit) {
-            EventBus.getDefault().post(new ExitEvent());
-            finish();
+//            EventBus.getDefault().post(new ExitEvent());
+//            finish();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -219,36 +208,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
     }
-
-    @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
-    public void onUpdateScan(BroadcastEvent data) {
-        //Logger.d("[MainActivity] onUpdateScan" + data.getBeaconPackageList().size());
-        List<BeaconPackage> BeaconPackageList = data.getBeaconPackageList();
-        Location location = data.getLocation();
-//        for (int i = 0; i < BeaconPackageList.size(); i++) {
-//            Logger.d("[MainActivity]" + (i+1) + "、SN:" + BeaconPackageList.get(i).getSerialNumber() +" Temperature:" + BeaconPackageList.get(i).getTemperature() +"℃  Humidity:" + BeaconPackageList.get(i).getHumidity() + "% Battery:"+BeaconPackageList.get(i).getBatteryLevel()+"%");
-//        }
-        showProgress(false);
-    }
-
-    @Subscribe
-    public void onWakeupRequest(WakeUpEvent event) {
-        Logger.d("[>_] WakeUpEvent ...");
-        //setTest();
-    }
-
-    private void registerEventBus() {
-        EventBus.getDefault().register(this);
-    }
-
-    private void unregisterEventBus(){
-        try {
-            EventBus.getDefault().unregister(this);
-        } catch (Throwable t){
-            //this may crash if registration did not go through. just be safe
-        }
-    }
-
 
     //--
     /**

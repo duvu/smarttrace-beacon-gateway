@@ -260,13 +260,6 @@ public class BeaconEngine {
     //uploadToServer
     private void uploadToServer() {
         Logger.i("[Engine#] starting upload to server ...");
-//        FcmMessage fcmMessage = FcmMessage.create();
-//        fcmMessage.setFcmToken(FirebaseInstanceId.getInstance().getToken());
-//        fcmMessage.setPhoneImei(NetworkUtils.getGatewayId());
-//        fcmMessage.setFcmInstanceId(FirebaseInstanceId.getInstance().getId());
-//        fcmMessage.setExpectedTimeToReceive(System.currentTimeMillis());
-//        WebService.nextPoint(fcmMessage);
-
         updateBatteryLevel();
         BroadcastEvent be = new BroadcastEvent();
         be.setLocation(mCurrentLocation);

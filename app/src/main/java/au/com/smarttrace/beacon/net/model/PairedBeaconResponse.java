@@ -1,6 +1,5 @@
 package au.com.smarttrace.beacon.net.model;
 
-import java.util.List;
 import java.util.Set;
 
 public class PairedBeaconResponse {
