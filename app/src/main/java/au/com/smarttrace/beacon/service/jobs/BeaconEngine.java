@@ -372,7 +372,7 @@ public class BeaconEngine {
                 .equal(PhonePaired_.phoneImei, NetworkUtils.getGatewayId())
                 .equal(PhonePaired_.beaconSerialNumber, data.getSerialNumberString())
                 .build();
-        Logger.i("[>... paired? ] " + data.getSerialNumberString() + " :#" + (query.findFirst() != null));
+        //Logger.i("[>... paired? ] " + data.getSerialNumberString() + " :#" + (query.findFirst() != null));
         return query.findFirst() != null;
     }
 
