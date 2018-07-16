@@ -28,10 +28,6 @@ public class StartupReceiver extends BroadcastReceiver {
                 activity.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
                 activity.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(activity);
-//                Intent i = new Intent(context, BeaconService.class);
-//                i.putExtra(BeaconService.EXTRA_STARTED_FROM_BOOTSTRAP, true);
-//                context.startService(i);
-
             }
         }
     }

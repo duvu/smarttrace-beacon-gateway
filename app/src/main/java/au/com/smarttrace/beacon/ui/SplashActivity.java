@@ -89,22 +89,6 @@ public class SplashActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-    }
-
     private void moveToMain() {
         Intent intent = new Intent(SplashActivity.this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -167,14 +151,12 @@ public class SplashActivity extends AppCompatActivity {
         String password = SharedPref.getPassword();
         if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
             mHideHandler.removeCallbacks(mMoveToLogin);
-            mHideHandler.postDelayed(mMoveToLogin, 1000);
+            mHideHandler.postDelayed(mMoveToLogin, 3000);
         } else {
             mAuthTask = new UserLoginTask(username, password);
             mAuthTask.execute((Void) null);
         }
     }
-
-
 
     @SuppressLint("BatteryLife")
     private void ignoreBattOpt() {
@@ -252,7 +234,7 @@ public class SplashActivity extends AppCompatActivity {
      * Represents an asynchronous login/registration task used to authenticate
      * the user.
      */
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+    private class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mEmail;
         private final String mPassword;
@@ -309,7 +291,6 @@ public class SplashActivity extends AppCompatActivity {
             } else {
                 return false;
             }
-
         }
     }
 }

@@ -14,7 +14,7 @@ import org.altbeacon.beacon.startup.RegionBootstrap;
 
 import au.com.smarttrace.beacon.db.MyObjectBox;
 import au.com.smarttrace.beacon.service.NetworkUtils;
-import au.com.smarttrace.beacon.service.jobs.BeaconJobCreator;
+import au.com.smarttrace.beacon.service.BeaconJobCreator;
 import au.com.smarttrace.beacon.ui.SplashActivity;
 import io.objectbox.BoxStore;
 import io.objectbox.android.AndroidObjectBrowser;

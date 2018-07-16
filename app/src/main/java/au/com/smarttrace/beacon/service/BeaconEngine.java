@@ -1,4 +1,4 @@
-package au.com.smarttrace.beacon.service.jobs;
+package au.com.smarttrace.beacon.service;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;

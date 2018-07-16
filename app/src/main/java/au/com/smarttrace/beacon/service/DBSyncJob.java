@@ -32,8 +32,9 @@ public class DBSyncJob extends Job {
 
     public static void schedule() {
         new JobRequest.Builder(TAG)
-                .setPeriodic(TimeUnit.MINUTES.toMillis(30), TimeUnit.MINUTES.toMillis(5))
+                .setPeriodic(TimeUnit.DAYS.toMillis(30), TimeUnit.DAYS.toMillis(15))
                 .setRequiredNetworkType(JobRequest.NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(true)
                 .build()
                 .schedule();
 

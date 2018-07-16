@@ -679,10 +679,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             Logger.i("[+ Updating token ...]");
             currentToken = sharedPreferences.getString(SharedPref.KEY_SMARRTRACE_IO_TOKEN, "");
         }
-
-        if (key.equalsIgnoreCase(SharedPref.KEY_ONBOOT)) {
-//            _mShouldCreateOnBoot = sharedPreferences.getBoolean(SharedPref.KEY_ONBOOT, false);
-        }
     }
 
     @Override
