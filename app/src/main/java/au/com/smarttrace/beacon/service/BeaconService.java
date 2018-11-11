@@ -25,10 +25,15 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconConsumer;
@@ -40,15 +45,19 @@ import org.altbeacon.beacon.service.ScanJobScheduler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import au.com.smarttrace.beacon.App;
 import au.com.smarttrace.beacon.AppConfig;
+import au.com.smarttrace.beacon.GsonUtils;
 import au.com.smarttrace.beacon.Logger;
 import au.com.smarttrace.beacon.R;
 import au.com.smarttrace.beacon.SharedPref;
@@ -62,12 +71,10 @@ import au.com.smarttrace.beacon.db.SensorData;
 import au.com.smarttrace.beacon.model.BeaconPackage;
 import au.com.smarttrace.beacon.model.BroadcastEvent;
 import au.com.smarttrace.beacon.model.CellTower;
-import au.com.smarttrace.beacon.model.ExitEvent;
-import au.com.smarttrace.beacon.model.UpdateEvent;
-import au.com.smarttrace.beacon.model.WakeUpEvent;
 import au.com.smarttrace.beacon.net.DataUtil;
 import au.com.smarttrace.beacon.net.WebService;
 import au.com.smarttrace.beacon.net.model.LatLng;
+import au.com.smarttrace.beacon.net.model.PairedBeaconResponse;
 import au.com.smarttrace.beacon.service.location.LCallback;
 import au.com.smarttrace.beacon.service.location.LServiceWrapper;
 import au.com.smarttrace.beacon.ui.MainActivity;
@@ -112,13 +119,14 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     };
     private BeaconManager mBeaconManager;// = BeaconManager.getInstanceForApplication(this.getApplicationContext());
 
-    private final Map<String, BeaconPackage> deviceMap = new ConcurrentHashMap<>();
+    private final Map<String, BeaconPackage> deviceMap = Collections.synchronizedMap(new ConcurrentHashMap<String, BeaconPackage>());
 
     private List<Locations> companyShipmentLocations = null;
 
     private Box<EventData> eventBox;
     private Box<PhonePaired> pairedBox;
     private Box<Locations> locationsBox;
+
 
     private final IBinder mBinder = new LocalBinder();
     private Handler handler;
@@ -131,6 +139,23 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     AlarmManager nextPointAlarmManager;
 
     PowerManager mPowerManager;
+
+    private final String gatewayId = NetworkUtils.getGatewayId();
+    private final String token = SharedPref.getToken();
+
+    private LoadingCache<String, Set<String>> phonePairedCache = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .build(new CacheLoader<String, Set<String>>() {
+                @Override
+                public Set<String> load(@NonNull String key) {
+                    PairedBeaconResponse resp = WebService.getPairedBeacons(key, token);
+                    Logger.i("[>_] PairedBeaconResponse: " + GsonUtils.getInstance().toJson(resp));
+                    return resp != null && resp.getResponse() != null ? resp.getResponse() : new HashSet<String>();
+                }
+            });
+
+
     public BeaconService() {
         super();
     }
@@ -183,22 +208,16 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         registerReceiver(mBatteryLevelReceiver, intentFilter);
 
         startForeground(NOTIFICATION_ID, getNotification());
+        App.serviceStarted();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Logger.d("##Service Started: " + SharedPref.getToken());
-
-
-
         currentToken = SharedPref.getToken();
-
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
-
-        //-- load Shipment Location
         loadLocations();
-        //checkIfNeedToCreateShipmentOnBoot();
-        App.serviceStarted();
+
         start();
         return START_NOT_STICKY;
     }
@@ -349,7 +368,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     public void broadcastData() {
-        Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " isBoot: " + App.isBoot() + "[>Imei<] " + NetworkUtils.getGatewayId());
+        Logger.i("[+] broadcasting, isAtStartLocations #" + isAtStartLocations() + " isBoot: " + AppConfig.isBoot() + "[>Imei<] " + NetworkUtils.getGatewayId());
         createNotification();
 
         final List<BeaconPackage> dataList = getDataToUpload();
@@ -513,6 +532,29 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
                 .equal(PhonePaired_.beaconSerialNumber, data.getSerialNumberString())
                 .build();
         return query.findFirst() != null;
+
+//        try {
+//            Set<String> beaconIdSet = phonePairedCache.get(gatewayId);
+//            if (beaconIdSet != null && beaconIdSet.contains(data.getSerialNumberString())) {
+//                return true;
+//            }
+//        } catch (ExecutionException e) {
+//            e.printStackTrace();
+//        }
+//        return false;
+        //return AppConfig.getCacheManager().isPaired(data.getSerialNumberString());
+
+//        String beaconId = data.getSerialNumberString();
+//        Logger.i("[>_] isPaired - cached " + beaconId);
+//        Set<String> beaconIdSet = phonePairedCache.getIfPresent(gatewayId);
+//        Logger.i("[>_ cached: ]" + GsonUtils.getInstance().toJson(beaconIdSet));
+//        if (beaconIdSet == null || beaconIdSet.isEmpty()) {
+//            phonePairedCache.invalidate(gatewayId);
+//            return false;
+//        } else if (beaconIdSet.contains(beaconId)) {
+//            return true;
+//        }
+//        return false;
     }
 
     private void broadCastAllBeacon() {
@@ -526,8 +568,9 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
     }
 
     private void checkAndCreateShipment(List<BeaconPackage> dataList) {
-        Logger.i("[+] checkAndCreateShipment [_>]" + dataList.size());
+        Logger.i("[+] checkAndCreateShipment: " + dataList.size());
         for (final BeaconPackage data: dataList) {
+            Logger.i("[>_] paired: (" + data.getSerialNumberString() + ") /" + isPaired(data));
             if (!isPaired(data) || !isAtStartLocations()) {
                 continue;
             }
@@ -689,12 +732,12 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
             public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
                 if (beacons.size() > 0) {
                     for (Beacon beacon : beacons) {
-                        Logger.i("[BLE #] " + beacon.getIdentifier(2).toHexString() + ", [+onBoot: ] " + App.isBoot());
+                        Logger.i("[BLE #] " + beacon.getIdentifier(2).toHexString() + ", [+onBoot: ] " + AppConfig.isBoot());
                         BeaconPackage bt04 = deviceMap.get(beacon.getBluetoothAddress());
                         if (bt04 == null || TextUtils.isEmpty(bt04.getName())) {
                             bt04 = BeaconPackage.fromBeacon(beacon);
                             //-- first reading
-                            bt04.setShouldCreateOnBoot(App.isBoot());
+                            bt04.setShouldCreateOnBoot(AppConfig.isBoot());
                         } else {
                             bt04.updateFromBeacon(beacon);
                             deviceMap.remove(beacon.getBluetoothAddress());

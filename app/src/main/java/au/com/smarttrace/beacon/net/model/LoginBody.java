@@ -7,6 +7,7 @@ package au.com.smarttrace.beacon.net.model;
 public class LoginBody {
     private String token;
     private String expired;
+    private Long expiredTimestamp;
     private String instance;
 
     public String getToken() {
@@ -23,6 +24,14 @@ public class LoginBody {
 
     public void setExpired(String expired) {
         this.expired = expired;
+    }
+
+    public Long getExpiredTimestamp() {
+        return expiredTimestamp;
+    }
+
+    public void setExpiredTimestamp(Long expiredTimestamp) {
+        this.expiredTimestamp = expiredTimestamp;
     }
 
     public String getInstance() {

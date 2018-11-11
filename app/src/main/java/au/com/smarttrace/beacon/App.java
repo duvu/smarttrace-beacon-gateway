@@ -131,8 +131,4 @@ public class App extends Application implements BootstrapNotifier {
     public static void onBoot(boolean boot) {
         App.onBoot = boot;
     }
-
-    public static boolean isBoot() {
-        return App.onBoot;
-    }
 }

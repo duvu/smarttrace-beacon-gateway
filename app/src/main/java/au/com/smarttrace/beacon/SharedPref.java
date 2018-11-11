@@ -10,6 +10,7 @@ public class SharedPref {
     public static final String KEY_SMARRTRACE_IO_PASSWORD       = "smarttrace_io_password";
     public static final String KEY_SMARRTRACE_IO_TOKEN          = "smarttrace_io_token";
     public static final String KEY_SMARRTRACE_IO_TOKEN_EXPIRED  = "smarttrace_io_token_expired";
+    public static final String KEY_SMARRTRACE_IO_TOKEN_EXPIRED_T  = "smarttrace_io_token_expired_t";
     public static final String KEY_SMARRTRACE_IO_TOKEN_INSTANCE = "smarttrace_io_token_instance";
 
     public static final String KEY_USER_TIMEZONE                = "user_timezone";
@@ -20,6 +21,7 @@ public class SharedPref {
     private static SharedPreferences.Editor editor;
     public static void init(Context ctx) {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx);
+
     }
 
     private static SharedPreferences.Editor getEditor() {
@@ -64,6 +66,15 @@ public class SharedPref {
         getEditor().putString(KEY_SMARRTRACE_IO_TOKEN_EXPIRED, exp);
         getEditor().apply();
     }
+
+    public static void saveExpiredTimestamp(Long timestamp) {
+        getEditor().putLong(KEY_SMARRTRACE_IO_TOKEN_EXPIRED_T, timestamp).apply();
+    }
+
+    public static Long getExpiredTimestamp() {
+        return sharedPreferences.getLong(KEY_SMARRTRACE_IO_TOKEN_EXPIRED_T, 0);
+    }
+
     //8.
     public static String getExpiredStr() {
         return sharedPreferences.getString(KEY_SMARRTRACE_IO_TOKEN_EXPIRED, "");

@@ -12,7 +12,7 @@ public class StartupReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Logger.i("[StartupReceiver] starting ...");
+        Logger.i("[>_] StartupReceiver starting ...");
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             // store flag
             SharedPref.saveOnBoot(true);

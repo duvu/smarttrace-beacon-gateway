@@ -1,9 +1,7 @@
 package au.com.smarttrace.beacon;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.preference.PreferenceManager;
 
 /**
  * Created by beou on 3/7/18.
@@ -33,7 +31,7 @@ public class AppConfig {
     //ensure update startLocations for 1hours. default value is 12.
     public static final int COUNT_FOR_UPDATE_SHIPMENT_LOCATIONS = 1;
 
-    public static final boolean DEBUG_ENABLED                           = true;
+    public static final boolean DEBUG_ENABLED                           = false;
     public static int TemperatureUnit = 0;
 
     public static final String SMARTTRACE_URL                           = "https://smarttrace.com.au";
@@ -75,5 +73,10 @@ public class AppConfig {
     }
     public static String getVersionName() {
         return VERSION;
+    }
+
+    public static boolean isBoot() {
+        long t = android.os.SystemClock.elapsedRealtime();
+        return t < 10 * 60 * 1000; //10 minutes
     }
 }

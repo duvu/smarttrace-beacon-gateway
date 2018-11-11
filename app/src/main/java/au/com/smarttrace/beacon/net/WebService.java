@@ -108,7 +108,7 @@ public class WebService {
         try {
             return Http.getIntance().get(urlSb, PairedBeaconResponse.class);
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.e("Got error!", e);
             return null;
         }
     }

@@ -254,10 +254,11 @@ public class LoginActivity extends AppCompatActivity {
                  if (data.getStatus().getCode() != 0) {
                      return false;
                  } else if (data.getResponse() != null) {
-                     Logger.d("[+] token: " + data.getResponse().getToken());
-                    SharedPref.saveToken(data.getResponse().getToken());
-                    SharedPref.saveExpiredStr(data.getResponse().getExpired());
-                    SharedPref.saveTokenInstance(data.getResponse().getInstance());
+                     Logger.i("[>_ Login] token: " + data.getResponse().getToken());
+                     SharedPref.saveToken(data.getResponse().getToken());
+                     SharedPref.saveExpiredTimestamp(data.getResponse().getExpiredTimestamp());
+                     SharedPref.saveExpiredStr(data.getResponse().getExpired());
+                     SharedPref.saveTokenInstance(data.getResponse().getInstance());
                     return true;
                 } else {
                     return false;

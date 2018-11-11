@@ -24,6 +24,7 @@ import android.view.View;
 import android.widget.Button;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -149,9 +150,16 @@ public class SplashActivity extends AppCompatActivity {
     private void checkLogin() {
         String username = SharedPref.getUserName();
         String password = SharedPref.getPassword();
+        Long expiredTime = SharedPref.getExpiredTimestamp();
+        String token = SharedPref.getToken();
+
+        Logger.i("[+] token: " + token + " Expired: " + new Date(expiredTime*1000));
+
         if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
             mHideHandler.removeCallbacks(mMoveToLogin);
             mHideHandler.postDelayed(mMoveToLogin, 3000);
+        } else if (!TextUtils.isEmpty(token) && (expiredTime <= System.currentTimeMillis()/1000)) {
+            moveToMain();
         } else {
             mAuthTask = new UserLoginTask(username, password);
             mAuthTask.execute((Void) null);
@@ -234,7 +242,7 @@ public class SplashActivity extends AppCompatActivity {
      * Represents an asynchronous login/registration task used to authenticate
      * the user.
      */
-    private class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+    private class UserLoginTask extends AsyncTask<Void, Void, Object> {
 
         private final String mEmail;
         private final String mPassword;
@@ -245,31 +253,29 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Object doInBackground(Void... params) {
 
             String url = AppConfig.WEB_SERVICE_URL + "/login?email=" + mEmail + "&password="+mPassword;
             try {
-                LoginResponse response = Http.getIntance().get(url, LoginResponse.class);
-                if (response.getStatus().getCode() != 0) {
-                    return false;
-                }
-                //-- start store login data
-                // get more data and store
-                return storeUserData(response);
+                return Http.getIntance().get(url, LoginResponse.class);
             } catch (IOException e) {
                 return false;
             }
         }
 
         @Override
-        protected void onPostExecute(final Boolean success) {
+        protected void onPostExecute(final Object resp) {
             mAuthTask = null;
 
-            if (success) {
-                moveToMain();
-                finish();
-            } else {
-                retry();
+            if (resp instanceof LoginResponse) {
+                LoginResponse loginResponse = (LoginResponse) resp;
+                if (loginResponse.getStatus().getCode() == 0) {
+                    storeUserData(loginResponse);
+                    moveToMain();
+                    finish();
+                } else {
+                    retry();
+                }
             }
         }
 
@@ -278,18 +284,13 @@ public class SplashActivity extends AppCompatActivity {
             mAuthTask = null;
         }
 
-        private boolean storeUserData(LoginResponse data) {
-            if (data != null) {
-                if (data.getResponse() != null) {
-                    SharedPref.saveToken(data.getResponse().getToken());
-                    SharedPref.saveExpiredStr(data.getResponse().getExpired());
-                    SharedPref.saveTokenInstance(data.getResponse().getInstance());
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
+        private void storeUserData(LoginResponse data) {
+            if (data != null && data.getResponse() != null) {
+                Logger.i("[+ Splash] token: " + data.getResponse().getToken());
+                SharedPref.saveToken(data.getResponse().getToken());
+                SharedPref.saveExpiredStr(data.getResponse().getExpired());
+                SharedPref.saveExpiredTimestamp(data.getResponse().getExpiredTimestamp());
+                SharedPref.saveTokenInstance(data.getResponse().getInstance());
             }
         }
     }
