@@ -140,22 +140,6 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
 
     PowerManager mPowerManager;
 
-    private final String gatewayId = NetworkUtils.getGatewayId();
-    private final String token = SharedPref.getToken();
-
-    private LoadingCache<String, Set<String>> phonePairedCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(1, TimeUnit.MINUTES)
-            .build(new CacheLoader<String, Set<String>>() {
-                @Override
-                public Set<String> load(@NonNull String key) {
-                    PairedBeaconResponse resp = WebService.getPairedBeacons(key, token);
-                    Logger.i("[>_] PairedBeaconResponse: " + GsonUtils.getInstance().toJson(resp));
-                    return resp != null && resp.getResponse() != null ? resp.getResponse() : new HashSet<String>();
-                }
-            });
-
-
     public BeaconService() {
         super();
     }
