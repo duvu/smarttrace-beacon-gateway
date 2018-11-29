@@ -555,7 +555,7 @@ public class BeaconService extends Service implements BeaconConsumer, SharedPref
         Logger.i("[+] checkAndCreateShipment: " + dataList.size());
         for (final BeaconPackage data: dataList) {
             Logger.i("[>_] paired: (" + data.getSerialNumberString() + ") /" + isPaired(data));
-            if (!isPaired(data) || !isAtStartLocations()) {
+            if (!isPaired(data) /*|| !isAtStartLocations()*/) {
                 continue;
             }
 
