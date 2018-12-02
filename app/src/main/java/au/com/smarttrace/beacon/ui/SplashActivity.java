@@ -154,13 +154,13 @@ public class SplashActivity extends AppCompatActivity {
         String token = SharedPref.getToken();
 
         Logger.i("[+] token: " + token + " Expired: " + new Date(expiredTime*1000));
-
-        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
+        if (!TextUtils.isEmpty(token) && (expiredTime >= System.currentTimeMillis()/1000)) {
+            moveToMain();
+        } else if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
             mHideHandler.removeCallbacks(mMoveToLogin);
             mHideHandler.postDelayed(mMoveToLogin, 3000);
-        } else if (!TextUtils.isEmpty(token) && (expiredTime <= System.currentTimeMillis()/1000)) {
-            moveToMain();
         } else {
+            SharedPref.saveExpiredTimestamp(0l);
             mAuthTask = new UserLoginTask(username, password);
             mAuthTask.execute((Void) null);
         }
